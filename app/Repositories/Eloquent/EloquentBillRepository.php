@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Repositories\Eloquent;
+
+use App\Models\Bill;
+use App\Repositories\Contracts\BillRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
+
+class EloquentBillRepository implements BillRepositoryInterface
+{
+    public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
+    {
+        return Bill::query()
+            ->with(['vendor', 'lines'])
+            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('bill_number', 'like', "%{$search}%")
+                        ->orWhereHas('vendor', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->orderByDesc('bill_date')
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function find(int $id): ?Bill
+    {
+        return Bill::query()->with(['vendor', 'lines.account', 'payableAccount', 'purchaseOrder'])->find($id);
+    }
+
+    public function create(array $attributes, array $lines): Bill
+    {
+        $bill = Bill::create($attributes);
+        $bill->lines()->createMany($lines);
+
+        return $bill->load(['lines.account', 'vendor']);
+    }
+
+    public function updateStatus(Bill $bill, string $status, ?\DateTimeInterface $paidAt = null): Bill
+    {
+        $bill->update(['status' => $status, 'paid_at' => $paidAt]);
+
+        return $bill;
+    }
+}

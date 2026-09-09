@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -30,5 +31,20 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $user->assignRole('Super Admin');
+
+        // Dev-login account (see DevLoginController) — recreated on every
+        // seed/migrate:fresh so it survives database resets during local
+        // development instead of silently disappearing.
+        $devUser = User::updateOrCreate(
+            ['email' => 'micheal.sameh@avarewase.com'],
+            [
+                'name' => 'Micheal Sameh',
+                'tenant_id' => $tenant->id,
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ],
+        );
+
+        $devUser->syncRoles(['Super Admin']);
     }
 }

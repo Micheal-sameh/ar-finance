@@ -50,8 +50,10 @@ class EloquentVendorRepository implements VendorRepositoryInterface
         return $vendor->delete();
     }
 
-    public function hasExpenses(Vendor $vendor): bool
+    public function hasActivity(Vendor $vendor): bool
     {
-        return $vendor->expenses()->exists();
+        return $vendor->expenses()->exists()
+            || $vendor->purchaseOrders()->exists()
+            || $vendor->bills()->exists();
     }
 }

@@ -48,8 +48,8 @@ class VendorService
 
     public function delete(Vendor $vendor): void
     {
-        if ($this->vendors->hasExpenses($vendor)) {
-            throw new RuntimeException("Vendor {$vendor->name} cannot be deleted: it has expenses on file.");
+        if ($this->vendors->hasActivity($vendor)) {
+            throw new RuntimeException("Vendor {$vendor->name} cannot be deleted: it has expenses, purchase orders, or bills on file.");
         }
 
         $this->vendors->delete($vendor);

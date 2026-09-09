@@ -20,5 +20,9 @@ interface VendorRepositoryInterface
 
     public function delete(Vendor $vendor): bool;
 
-    public function hasExpenses(Vendor $vendor): bool;
+    /**
+     * True if the vendor has any expenses, purchase orders, or bills on
+     * file — anything that should block deletion.
+     */
+    public function hasActivity(Vendor $vendor): bool;
 }

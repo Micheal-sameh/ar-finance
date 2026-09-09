@@ -26,4 +26,14 @@ class Vendor extends Model
     {
         return $this->hasMany(Expense::class);
     }
+
+    public function purchaseOrders(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class);
+    }
+
+    public function bills(): HasMany
+    {
+        return $this->hasMany(Bill::class);
+    }
 }

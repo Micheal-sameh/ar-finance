@@ -1,4 +1,4 @@
-import { BookOpen, FileText, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, Scale, TrendingUp, Truck, Users } from 'lucide-react';
+import { BookOpen, ClipboardList, FileText, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Scale, TrendingUp, Truck, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -28,6 +28,8 @@ export const navConfig: NavConfigGroup[] = [
         items: [
             { label: 'Invoices', routeName: 'invoices.index', icon: FileText },
             { label: 'Expenses', routeName: 'expenses.index', icon: Receipt },
+            { label: 'Purchase Orders', routeName: 'purchase-orders.index', icon: ClipboardList },
+            { label: 'Bills', routeName: 'bills.index', icon: ReceiptText },
             { label: 'Clients', routeName: 'clients.index', icon: Users },
             { label: 'Vendors', routeName: 'vendors.index', icon: Truck },
         ],

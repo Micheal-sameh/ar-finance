@@ -37,6 +37,12 @@ class RolePermissionSeeder extends Seeder
         'expenses.manage',
         'cost_centers.view',
         'cost_centers.manage',
+        'purchase_orders.view',
+        'purchase_orders.create',
+        'purchase_orders.manage',
+        'bills.view',
+        'bills.create',
+        'bills.manage',
     ];
 
     /**
@@ -62,6 +68,12 @@ class RolePermissionSeeder extends Seeder
         'expenses.manage',
         'cost_centers.view',
         'cost_centers.manage',
+        'purchase_orders.view',
+        'purchase_orders.create',
+        'purchase_orders.manage',
+        'bills.view',
+        'bills.create',
+        'bills.manage',
     ];
 
     /**
@@ -79,6 +91,8 @@ class RolePermissionSeeder extends Seeder
         'invoices.view',
         'expenses.view',
         'cost_centers.view',
+        'purchase_orders.view',
+        'bills.view',
     ];
 
     public function run(): void

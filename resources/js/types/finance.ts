@@ -215,3 +215,52 @@ export interface CostCenterSummaryRow {
     net: number;
     utilization_percent: number | null;
 }
+
+export type PurchaseOrderStatus = 'draft' | 'sent' | 'closed' | 'cancelled';
+export type BillStatus = 'draft' | 'approved' | 'paid';
+
+export interface PurchaseOrderLine {
+    id: number;
+    description: string;
+    quantity: string;
+    unit_price: string;
+    account_id: number;
+    account?: Account;
+}
+
+export interface PurchaseOrder {
+    id: number;
+    vendor_id: number;
+    vendor?: Vendor;
+    po_number: string;
+    order_date: string;
+    expected_date: string | null;
+    status: PurchaseOrderStatus;
+    lines: PurchaseOrderLine[];
+}
+
+export interface BillLine {
+    id: number;
+    description: string;
+    quantity: string;
+    unit_price: string;
+    account_id: number;
+    account?: Account;
+}
+
+export interface Bill {
+    id: number;
+    vendor_id: number;
+    vendor?: Vendor;
+    purchase_order_id: number | null;
+    purchase_order?: PurchaseOrder | null;
+    bill_number: string;
+    bill_date: string;
+    due_date: string;
+    status: BillStatus;
+    payable_account_id: number;
+    payable_account?: Account;
+    cost_center_id: number | null;
+    paid_at: string | null;
+    lines: BillLine[];
+}

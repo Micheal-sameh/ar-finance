@@ -1,0 +1,100 @@
+import { Head, Link, router } from '@inertiajs/react';
+import { Plus, ReceiptText } from 'lucide-react';
+import { FormEvent, useState } from 'react';
+import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
+import { PageHeader } from '@/Components/layout/PageHeader';
+import { Badge } from '@/Components/ui/Badge';
+import { Button } from '@/Components/ui/Button';
+import { Card } from '@/Components/ui/Card';
+import { EmptyState } from '@/Components/ui/EmptyState';
+import { Input } from '@/Components/ui/Input';
+import { Table } from '@/Components/ui/Table';
+import { AppLayout } from '@/Layouts/AppLayout';
+import type { Bill, BillStatus, Paginated } from '@/types/finance';
+
+interface Props {
+    bills: Paginated<Bill>;
+    filters: { status?: string; search?: string };
+}
+
+function billTotal(bill: Bill): number {
+    return bill.lines.reduce((sum, line) => sum + parseFloat(line.quantity) * parseFloat(line.unit_price), 0);
+}
+
+function statusVariant(status: BillStatus) {
+    return { draft: 'neutral', approved: 'warning', paid: 'success' }[status] as 'neutral' | 'warning' | 'success';
+}
+
+export default function BillsIndex({ bills, filters }: Props) {
+    const [search, setSearch] = useState(filters.search ?? '');
+
+    function runSearch(e: FormEvent) {
+        e.preventDefault();
+        router.get(route('bills.index'), { ...filters, search }, { preserveState: true });
+    }
+
+    return (
+        <AppLayout>
+            <Head title="Bills" />
+
+            <PageHeader
+                title="Bills"
+                subtitle="Vendor bills — approving posts spend to the ledger."
+                action={
+                    <Link href={route('bills.create')}>
+                        <Button leadingIcon={<Plus size={16} />}>New Bill</Button>
+                    </Link>
+                }
+            />
+
+            <Card padded={false}>
+                <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
+                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
+                        <Input placeholder="Search bill # or vendor…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <Button type="submit" variant="outline">
+                            Search
+                        </Button>
+                    </form>
+                </div>
+
+                {bills.data.length === 0 ? (
+                    <EmptyState
+                        icon={<ReceiptText size={20} />}
+                        title="No bills yet"
+                        description="Create a bill directly, or convert a purchase order into one."
+                        action={
+                            <Link href={route('bills.create')}>
+                                <Button>New Bill</Button>
+                            </Link>
+                        }
+                    />
+                ) : (
+                    <Table>
+                        <Table.Head>
+                            <Table.HeadCell className="ps-3">Bill Number</Table.HeadCell>
+                            <Table.HeadCell>Vendor</Table.HeadCell>
+                            <Table.HeadCell>Due date</Table.HeadCell>
+                            <Table.HeadCell>Status</Table.HeadCell>
+                            <Table.HeadCell className="text-end pe-3">Total</Table.HeadCell>
+                        </Table.Head>
+                        <tbody>
+                            {bills.data.map((bill) => (
+                                <Table.Row key={bill.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('bills.show', bill.id))}>
+                                    <Table.Cell className="ps-3">{bill.bill_number}</Table.Cell>
+                                    <Table.Cell>{bill.vendor?.name ?? '—'}</Table.Cell>
+                                    <Table.Cell>{bill.due_date}</Table.Cell>
+                                    <Table.Cell>
+                                        <Badge variant={statusVariant(bill.status)}>{bill.status}</Badge>
+                                    </Table.Cell>
+                                    <Table.Cell className="text-end pe-3">
+                                        <MoneyDisplay amount={billTotal(bill)} />
+                                    </Table.Cell>
+                                </Table.Row>
+                            ))}
+                        </tbody>
+                    </Table>
+                )}
+            </Card>
+        </AppLayout>
+    );
+}

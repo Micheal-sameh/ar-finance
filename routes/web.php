@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\BillController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\DashboardController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JournalEntryController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
@@ -60,6 +62,15 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
     Route::post('expenses/{expense}/pay', [ExpenseController::class, 'markPaid'])->name('expenses.mark-paid');
+
+    Route::resource('purchase-orders', PurchaseOrderController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('purchase-orders/{purchase_order}/send', [PurchaseOrderController::class, 'send'])->name('purchase-orders.send');
+    Route::post('purchase-orders/{purchase_order}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
+    Route::post('purchase-orders/{purchase_order}/convert-to-bill', [PurchaseOrderController::class, 'convertToBill'])->name('purchase-orders.convert-to-bill');
+
+    Route::resource('bills', BillController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
+    Route::post('bills/{bill}/pay', [BillController::class, 'markPaid'])->name('bills.mark-paid');
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
