@@ -1,4 +1,4 @@
-import { BookOpen, LayoutDashboard, ListTree, Scale } from 'lucide-react';
+import { BookOpen, FileText, ListTree, LayoutDashboard, Receipt, Scale, Truck, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -15,13 +15,22 @@ export interface NavConfigGroup {
 /**
  * Sidebar is entirely data-driven from this config — add a module's nav
  * entry here rather than hardcoding JSX in the Sidebar component. Groups
- * with no items yet (Transactions, Tools, Settings) land as later phases
- * build out their routes.
+ * with no items yet (Tools, Settings) land as later phases build out
+ * their routes.
  */
 export const navConfig: NavConfigGroup[] = [
     {
         label: 'Overview',
         items: [{ label: 'Dashboard', routeName: 'dashboard', icon: LayoutDashboard }],
+    },
+    {
+        label: 'Transactions',
+        items: [
+            { label: 'Invoices', routeName: 'invoices.index', icon: FileText },
+            { label: 'Expenses', routeName: 'expenses.index', icon: Receipt },
+            { label: 'Clients', routeName: 'clients.index', icon: Users },
+            { label: 'Vendors', routeName: 'vendors.index', icon: Truck },
+        ],
     },
     {
         label: 'Accounting',

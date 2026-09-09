@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Repositories\Eloquent;
+
+use App\Models\Invoice;
+use App\Repositories\Contracts\InvoiceRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
+
+class EloquentInvoiceRepository implements InvoiceRepositoryInterface
+{
+    public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
+    {
+        return Invoice::query()
+            ->with(['client', 'lines'])
+            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('invoice_number', 'like', "%{$search}%")
+                        ->orWhereHas('client', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->orderByDesc('issue_date')
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function find(int $id): ?Invoice
+    {
+        return Invoice::query()->with(['client', 'lines.account', 'receivableAccount'])->find($id);
+    }
+
+    public function create(array $attributes, array $lines): Invoice
+    {
+        $invoice = Invoice::create($attributes);
+        $invoice->lines()->createMany($lines);
+
+        return $invoice->load(['lines.account', 'client']);
+    }
+
+    public function updateStatus(Invoice $invoice, string $status, ?\DateTimeInterface $paidAt = null): Invoice
+    {
+        $invoice->update(['status' => $status, 'paid_at' => $paidAt]);
+
+        return $invoice;
+    }
+
+    public function existsByNumber(int $tenantId, string $invoiceNumber): bool
+    {
+        return Invoice::query()
+            ->where('tenant_id', $tenantId)
+            ->where('invoice_number', $invoiceNumber)
+            ->exists();
+    }
+}

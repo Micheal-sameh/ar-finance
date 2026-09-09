@@ -1,0 +1,105 @@
+import { Head, Link, router } from '@inertiajs/react';
+import { FileText, Plus } from 'lucide-react';
+import { FormEvent, useState } from 'react';
+import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
+import { PageHeader } from '@/Components/layout/PageHeader';
+import { Badge } from '@/Components/ui/Badge';
+import { Button } from '@/Components/ui/Button';
+import { Card } from '@/Components/ui/Card';
+import { EmptyState } from '@/Components/ui/EmptyState';
+import { Input } from '@/Components/ui/Input';
+import { Table } from '@/Components/ui/Table';
+import { AppLayout } from '@/Layouts/AppLayout';
+import type { Invoice, Paginated } from '@/types/finance';
+import { invoiceStatusVariant } from '@/utils/finance';
+
+interface Props {
+    invoices: Paginated<Invoice>;
+    filters: { status?: string; search?: string };
+}
+
+function invoiceTotal(invoice: Invoice): number {
+    return invoice.lines.reduce((sum, line) => {
+        const qty = parseFloat(line.quantity);
+        const price = parseFloat(line.unit_price);
+        const tax = parseFloat(line.tax_rate);
+
+        return sum + qty * price * (1 + tax / 100);
+    }, 0);
+}
+
+export default function InvoicesIndex({ invoices, filters }: Props) {
+    const [search, setSearch] = useState(filters.search ?? '');
+
+    function runSearch(e: FormEvent) {
+        e.preventDefault();
+        router.get(route('invoices.index'), { ...filters, search }, { preserveState: true });
+    }
+
+    return (
+        <AppLayout>
+            <Head title="Invoices" />
+
+            <PageHeader
+                title="Invoices"
+                subtitle="Revenue recognized against clients."
+                action={
+                    <Link href={route('invoices.create')}>
+                        <Button leadingIcon={<Plus size={16} />}>New Invoice</Button>
+                    </Link>
+                }
+            />
+
+            <Card padded={false}>
+                <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
+                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
+                        <Input placeholder="Search invoice # or client…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <Button type="submit" variant="outline">
+                            Search
+                        </Button>
+                    </form>
+                </div>
+
+                {invoices.data.length === 0 ? (
+                    <EmptyState
+                        icon={<FileText size={20} />}
+                        title="No invoices yet"
+                        description="Create your first invoice to start billing clients."
+                        action={
+                            <Link href={route('invoices.create')}>
+                                <Button>New Invoice</Button>
+                            </Link>
+                        }
+                    />
+                ) : (
+                    <Table>
+                        <Table.Head>
+                            <Table.HeadCell className="ps-3">Number</Table.HeadCell>
+                            <Table.HeadCell>Client</Table.HeadCell>
+                            <Table.HeadCell>Issue date</Table.HeadCell>
+                            <Table.HeadCell>Due date</Table.HeadCell>
+                            <Table.HeadCell>Status</Table.HeadCell>
+                            <Table.HeadCell className="text-end pe-3">Total</Table.HeadCell>
+                        </Table.Head>
+                        <tbody>
+                            {invoices.data.map((invoice) => (
+                                <Table.Row key={invoice.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('invoices.show', invoice.id))}>
+                                    <Table.Cell className="ps-3">{invoice.invoice_number}</Table.Cell>
+                                    <Table.Cell>{invoice.client?.name ?? '—'}</Table.Cell>
+                                    <Table.Cell>{invoice.issue_date}</Table.Cell>
+                                    <Table.Cell>{invoice.due_date}</Table.Cell>
+                                    <Table.Cell>
+                                        <Badge variant={invoiceStatusVariant(invoice.status)}>{invoice.status}</Badge>
+                                    </Table.Cell>
+                                    <Table.Cell className="text-end pe-3">
+                                        <MoneyDisplay amount={invoiceTotal(invoice)} currency={invoice.currency} />
+                                    </Table.Cell>
+                                </Table.Row>
+                            ))}
+                        </tbody>
+                    </Table>
+                )}
+            </Card>
+        </AppLayout>
+    );
+}

@@ -28,10 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
 
-        // There's no local login page — an unauthenticated visitor to a
-        // protected route goes straight to "Login with Avarewase" instead
-        // of Laravel's default route('login') (which doesn't exist here).
-        $middleware->redirectGuestsTo(fn () => route('avarewase.login'));
+        // Laravel's default Authenticate middleware redirects guests to
+        // route('login') — that now resolves to our branded login page
+        // (routes/web.php), which itself links on to "Login with
+        // Avarewase", so no override is needed here.
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

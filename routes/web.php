@@ -1,15 +1,35 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevComponentsController;
+use App\Http\Controllers\DevLoginController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JournalEntryController;
+use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
 
 // Not behind auth: a static preview of the ui/ primitive library, useful
 // without a live SSO server in local dev.
 Route::get('/dev/components', DevComponentsController::class)->name('dev.components');
+
+// Branded landing page with a "Continue with Avarewase" button — guests
+// land here (see redirectGuestsTo in bootstrap/app.php) rather than being
+// silently bounced straight to the SSO server.
+Route::get('/login', LoginController::class)->name('login');
+
+// Email/password fallback so the app can be exercised without a live SSO
+// server. Gated to local by DevLoginController/DevLoginRequest as well —
+// route is only registered here for defense in depth.
+if (app()->environment('local')) {
+    Route::post('/dev-login', DevLoginController::class)
+        ->middleware('throttle:10,1')
+        ->name('dev-login');
+}
 
 // avarewase/sso-client logs the user into a normal session guard (see
 // avarewase.login / avarewase.callback, registered by the package) — so
@@ -24,6 +44,18 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('accounts', AccountController::class)->except(['create', 'edit']);
 
     Route::resource('journals', JournalEntryController::class)->only(['index', 'create', 'store', 'show']);
+
+    Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('vendors', VendorController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+    Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.record-payment');
+    Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+
+    Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
+    Route::post('expenses/{expense}/pay', [ExpenseController::class, 'markPaid'])->name('expenses.mark-paid');
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');

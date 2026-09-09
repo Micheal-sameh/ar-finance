@@ -1,0 +1,165 @@
+import { Head, router, useForm } from '@inertiajs/react';
+import { Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { FormEvent, useState } from 'react';
+import { PageHeader } from '@/Components/layout/PageHeader';
+import { Button } from '@/Components/ui/Button';
+import { Card } from '@/Components/ui/Card';
+import { EmptyState } from '@/Components/ui/EmptyState';
+import { Input } from '@/Components/ui/Input';
+import { Modal } from '@/Components/ui/Modal';
+import { Table } from '@/Components/ui/Table';
+import { AppLayout } from '@/Layouts/AppLayout';
+import type { Client, Paginated } from '@/types/finance';
+
+interface Props {
+    clients: Paginated<Client>;
+    filters: { search?: string };
+}
+
+export default function ClientsIndex({ clients, filters }: Props) {
+    const [search, setSearch] = useState(filters.search ?? '');
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editing, setEditing] = useState<Client | null>(null);
+
+    const form = useForm({
+        name: '',
+        email: '',
+        phone: '',
+        tax_number: '',
+        address: '',
+        currency: 'USD',
+    });
+
+    function openCreate() {
+        setEditing(null);
+        form.reset();
+        form.clearErrors();
+        setModalOpen(true);
+    }
+
+    function openEdit(client: Client) {
+        setEditing(client);
+        form.setData({
+            name: client.name,
+            email: client.email ?? '',
+            phone: client.phone ?? '',
+            tax_number: client.tax_number ?? '',
+            address: client.address ?? '',
+            currency: client.currency,
+        });
+        form.clearErrors();
+        setModalOpen(true);
+    }
+
+    function submit(e: FormEvent) {
+        e.preventDefault();
+
+        if (editing) {
+            form.put(route('clients.update', editing.id), { onSuccess: () => setModalOpen(false) });
+        } else {
+            form.post(route('clients.store'), { onSuccess: () => setModalOpen(false) });
+        }
+    }
+
+    function destroy(client: Client) {
+        if (confirm(`Delete client "${client.name}"?`)) {
+            router.delete(route('clients.destroy', client.id));
+        }
+    }
+
+    function runSearch(e: FormEvent) {
+        e.preventDefault();
+        router.get(route('clients.index'), { search }, { preserveState: true });
+    }
+
+    return (
+        <AppLayout>
+            <Head title="Clients" />
+
+            <PageHeader
+                title="Clients"
+                subtitle="Everyone you invoice."
+                action={
+                    <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                        New Client
+                    </Button>
+                }
+            />
+
+            <Card padded={false}>
+                <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
+                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
+                        <Input placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                        <Button type="submit" variant="outline">
+                            Search
+                        </Button>
+                    </form>
+                </div>
+
+                {clients.data.length === 0 ? (
+                    <EmptyState
+                        icon={<Users size={20} />}
+                        title="No clients yet"
+                        description="Add a client before creating your first invoice."
+                        action={<Button onClick={openCreate}>New Client</Button>}
+                    />
+                ) : (
+                    <Table>
+                        <Table.Head>
+                            <Table.HeadCell className="ps-3">Name</Table.HeadCell>
+                            <Table.HeadCell>Email</Table.HeadCell>
+                            <Table.HeadCell>Phone</Table.HeadCell>
+                            <Table.HeadCell>Currency</Table.HeadCell>
+                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
+                        </Table.Head>
+                        <tbody>
+                            {clients.data.map((client) => (
+                                <Table.Row key={client.id}>
+                                    <Table.Cell className="ps-3">{client.name}</Table.Cell>
+                                    <Table.Cell>{client.email ?? '—'}</Table.Cell>
+                                    <Table.Cell>{client.phone ?? '—'}</Table.Cell>
+                                    <Table.Cell>{client.currency}</Table.Cell>
+                                    <Table.Cell className="text-end pe-3">
+                                        <div className="d-flex justify-content-end gap-1">
+                                            <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(client)} aria-label="Edit">
+                                                <Pencil size={15} />
+                                            </button>
+                                            <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => destroy(client)} aria-label="Delete">
+                                                <Trash2 size={15} />
+                                            </button>
+                                        </div>
+                                    </Table.Cell>
+                                </Table.Row>
+                            ))}
+                        </tbody>
+                    </Table>
+                )}
+            </Card>
+
+            <Modal
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                title={editing ? 'Edit Client' : 'New Client'}
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={submit} loading={form.processing}>
+                            {editing ? 'Save changes' : 'Create client'}
+                        </Button>
+                    </>
+                }
+            >
+                <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                    <Input label="Email" type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
+                    <Input label="Phone" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} />
+                    <Input label="Tax number" value={form.data.tax_number} onChange={(e) => form.setData('tax_number', e.target.value)} error={form.errors.tax_number} />
+                    <Input label="Address" value={form.data.address} onChange={(e) => form.setData('address', e.target.value)} error={form.errors.address} />
+                    <Input label="Currency" value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value.toUpperCase())} error={form.errors.currency} maxLength={3} />
+                </form>
+            </Modal>
+        </AppLayout>
+    );
+}

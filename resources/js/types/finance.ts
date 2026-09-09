@@ -83,3 +83,67 @@ export interface GeneralLedgerReport {
     lines: GeneralLedgerLine[];
     ending_balance: number;
 }
+
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'void';
+export type ExpenseStatus = 'pending' | 'approved' | 'paid';
+
+export interface Client {
+    id: number;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    tax_number: string | null;
+    address: string | null;
+    currency: string;
+}
+
+export interface Vendor {
+    id: number;
+    name: string;
+    email: string | null;
+    tax_number: string | null;
+    payment_terms: string | null;
+}
+
+export interface InvoiceLine {
+    id: number;
+    description: string;
+    quantity: string;
+    unit_price: string;
+    tax_rate: string;
+    account_id: number;
+    account?: Account;
+}
+
+export interface Invoice {
+    id: number;
+    client_id: number;
+    client?: Client;
+    invoice_number: string;
+    issue_date: string;
+    due_date: string;
+    status: InvoiceStatus;
+    currency: string;
+    exchange_rate: string;
+    receivable_account_id: number;
+    receivable_account?: Account;
+    paid_at: string | null;
+    lines: InvoiceLine[];
+}
+
+export interface Expense {
+    id: number;
+    description: string;
+    account_id: number;
+    account?: Account;
+    amount: string;
+    date: string;
+    vendor_id: number | null;
+    vendor?: Vendor | null;
+    cost_center_id: number | null;
+    payable_account_id: number;
+    payable_account?: Account;
+    receipt_path: string | null;
+    status: ExpenseStatus;
+    paid_at: string | null;
+}
