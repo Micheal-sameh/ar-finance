@@ -47,4 +47,31 @@ class ReportController extends Controller
             'filters' => ['account_id' => $accountId, 'from' => $from, 'to' => $to],
         ]);
     }
+
+    public function profitAndLoss(Request $request): Response
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $from = $request->string('from')->value() ?: now()->startOfMonth()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
+        $compareFrom = $request->string('compare_from')->value() ?: null;
+        $compareTo = $request->string('compare_to')->value() ?: null;
+
+        return Inertia::render('Accounting/Reports/ProfitAndLoss', [
+            'report' => $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo),
+            'filters' => ['from' => $from, 'to' => $to, 'compare_from' => $compareFrom, 'compare_to' => $compareTo],
+        ]);
+    }
+
+    public function balanceSheet(Request $request): Response
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $asOf = $request->string('as_of')->value() ?: now()->toDateString();
+
+        return Inertia::render('Accounting/Reports/BalanceSheet', [
+            'report' => $this->reports->balanceSheet($asOf),
+            'filters' => ['as_of' => $asOf],
+        ]);
+    }
 }

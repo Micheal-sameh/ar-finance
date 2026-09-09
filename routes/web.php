@@ -60,5 +60,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
         Route::get('general-ledger', [ReportController::class, 'generalLedger'])->name('general-ledger');
+        Route::get('profit-and-loss', [ReportController::class, 'profitAndLoss'])->name('profit-and-loss');
+        Route::get('balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
     });
 });

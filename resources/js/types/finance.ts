@@ -147,3 +147,41 @@ export interface Expense {
     status: ExpenseStatus;
     paid_at: string | null;
 }
+
+export interface ProfitLossRow {
+    account_id: number;
+    code: string;
+    name: string;
+    current: number;
+    prior: number;
+}
+
+export interface ProfitAndLossReport {
+    from: string;
+    to: string;
+    compare_from: string | null;
+    compare_to: string | null;
+    revenue: ProfitLossRow[];
+    expenses: ProfitLossRow[];
+    total_revenue: { current: number; prior: number };
+    total_expenses: { current: number; prior: number };
+    net_profit: { current: number; prior: number };
+}
+
+export interface BalanceSheetRow {
+    account_id: number;
+    code: string;
+    name: string;
+    balance: number;
+}
+
+export interface BalanceSheetReport {
+    as_of: string;
+    assets: BalanceSheetRow[];
+    liabilities: BalanceSheetRow[];
+    equity: BalanceSheetRow[];
+    total_assets: number;
+    total_liabilities: number;
+    total_equity: number;
+    is_balanced: boolean;
+}
