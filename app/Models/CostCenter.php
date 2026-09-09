@@ -42,4 +42,14 @@ class CostCenter extends Model
     {
         return $this->hasMany(CostCenter::class, 'parent_id');
     }
+
+    public function journalLines(): HasMany
+    {
+        return $this->hasMany(JournalLine::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
 }

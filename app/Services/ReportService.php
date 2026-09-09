@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\AccountType;
 use App\Models\Account;
+use App\Repositories\Contracts\CostCenterRepositoryInterface;
 use App\Repositories\Contracts\JournalRepositoryInterface;
 use Illuminate\Support\Collection;
 
@@ -16,6 +17,7 @@ class ReportService
 {
     public function __construct(
         private readonly JournalRepositoryInterface $journals,
+        private readonly CostCenterRepositoryInterface $costCenters,
     ) {
     }
 
@@ -307,5 +309,54 @@ class ReportService
                 'prior' => $priorRow['current'] ?? 0.0,
             ];
         })->sortBy('code')->values()->all();
+    }
+
+    /**
+     * Budget vs actual per active cost center, for a period. "Spent" is
+     * expense-type activity tagged to the center (what a budget tracks);
+     * "revenue" is included too so profit centers show their net
+     * contribution, not just spend. Centers with no tagged activity in
+     * the period still appear, at zero.
+     *
+     * @return array<int, array{
+     *     cost_center_id: int, name: string, type: string, budget: ?float,
+     *     spent: float, revenue: float, net: float, utilization_percent: ?float,
+     * }>
+     */
+    public function costCenterSummary(?string $from = null, ?string $to = null): array
+    {
+        $centers = $this->costCenters->all();
+
+        $actuals = $this->journals->postedLinesWithAccounts($from, $to)
+            ->filter(fn ($line) => $line->cost_center_id !== null)
+            ->groupBy('cost_center_id')
+            ->map(fn ($lines) => [
+                'spent' => round(
+                    (float) $lines->filter(fn ($line) => $line->account->type === AccountType::Expense)
+                        ->sum(fn ($line) => (float) $line->debit - (float) $line->credit),
+                    2,
+                ),
+                'revenue' => round(
+                    (float) $lines->filter(fn ($line) => $line->account->type === AccountType::Revenue)
+                        ->sum(fn ($line) => (float) $line->credit - (float) $line->debit),
+                    2,
+                ),
+            ]);
+
+        return $centers->map(function ($center) use ($actuals) {
+            $actual = $actuals->get($center->id, ['spent' => 0.0, 'revenue' => 0.0]);
+            $budget = $center->budget !== null ? (float) $center->budget : null;
+
+            return [
+                'cost_center_id' => $center->id,
+                'name' => $center->name,
+                'type' => $center->type->value,
+                'budget' => $budget,
+                'spent' => $actual['spent'],
+                'revenue' => $actual['revenue'],
+                'net' => round($actual['revenue'] - $actual['spent'], 2),
+                'utilization_percent' => ($budget && $budget > 0) ? round(($actual['spent'] / $budget) * 100, 1) : null,
+            ];
+        })->values()->all();
     }
 }

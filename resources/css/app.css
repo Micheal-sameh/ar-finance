@@ -34,3 +34,11 @@ body {
 #app {
     min-height: 100vh;
 }
+
+/* Bootstrap's responsive offcanvas resets background/box-shadow to
+ * transparent once it becomes a static panel at its breakpoint (it's
+ * designed to blend into a navbar, not stay panel-colored) — override
+ * for the app sidebar, which should stay solid at every width. */
+.af-sidebar {
+    background-color: var(--af-primary) !important;
+}

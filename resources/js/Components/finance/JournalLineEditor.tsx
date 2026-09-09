@@ -1,16 +1,18 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/Components/ui/Button';
 import { AccountPicker } from './AccountPicker';
+import { CostCenterPicker } from './CostCenterPicker';
 
 export interface JournalLineInput {
     account_id: number | null;
     debit: string;
     credit: string;
+    cost_center_id: number | null;
     description: string;
 }
 
 export function emptyJournalLine(): JournalLineInput {
-    return { account_id: null, debit: '', credit: '', description: '' };
+    return { account_id: null, debit: '', credit: '', cost_center_id: null, description: '' };
 }
 
 export interface JournalLineEditorProps {
@@ -44,6 +46,7 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                 <div style={{ flex: '2 1 0' }}>Account</div>
                 <div style={{ flex: '1 1 0' }} className="text-end">Debit</div>
                 <div style={{ flex: '1 1 0' }} className="text-end">Credit</div>
+                <div style={{ flex: '1.3 1 0' }} className="ps-2">Cost center</div>
                 <div style={{ flex: '1.5 1 0' }} className="ps-2">Description</div>
                 <div style={{ width: '36px' }} />
             </div>
@@ -79,6 +82,13 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                             value={line.credit}
                             onChange={(e) => updateLine(index, { credit: e.target.value, debit: e.target.value ? '' : line.debit })}
                             placeholder="0.00"
+                        />
+                    </div>
+                    <div style={{ flex: '1.3 1 0' }}>
+                        <CostCenterPicker
+                            value={line.cost_center_id}
+                            onChange={(costCenterId) => updateLine(index, { cost_center_id: costCenterId })}
+                            error={errors[`lines.${index}.cost_center_id`]}
                         />
                     </div>
                     <div style={{ flex: '1.5 1 0' }}>

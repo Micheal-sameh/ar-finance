@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
+import { CostCenterPicker } from '@/Components/finance/CostCenterPicker';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
@@ -21,6 +22,7 @@ export default function ExpensesCreate({ vendors }: Props) {
         date: string;
         vendor_id: number | '';
         payable_account_id: number | null;
+        cost_center_id: number | null;
     }>({
         description: '',
         account_id: null,
@@ -28,6 +30,7 @@ export default function ExpensesCreate({ vendors }: Props) {
         date: new Date().toISOString().slice(0, 10),
         vendor_id: '',
         payable_account_id: null,
+        cost_center_id: null,
     });
 
     function submit(e: FormEvent) {
@@ -113,6 +116,17 @@ export default function ExpensesCreate({ vendors }: Props) {
                                     </option>
                                 ))}
                             </Select>
+                        </div>
+                    </div>
+
+                    <div className="row g-3 mb-4">
+                        <div className="col-md-4">
+                            <CostCenterPicker
+                                label="Cost center (optional)"
+                                value={form.data.cost_center_id}
+                                onChange={(id) => form.setData('cost_center_id', id)}
+                                error={form.errors.cost_center_id}
+                            />
                         </div>
                     </div>
 

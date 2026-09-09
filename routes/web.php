@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevComponentsController;
 use App\Http\Controllers\DevLoginController;
@@ -44,6 +45,9 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('accounts', AccountController::class)->except(['create', 'edit']);
 
     Route::resource('journals', JournalEntryController::class)->only(['index', 'create', 'store', 'show']);
+
+    Route::get('cost-centers/options', [CostCenterController::class, 'options'])->name('cost-centers.options');
+    Route::resource('cost-centers', CostCenterController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('vendors', VendorController::class)->only(['index', 'store', 'update', 'destroy']);

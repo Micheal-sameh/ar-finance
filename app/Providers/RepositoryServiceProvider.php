@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Repositories\Contracts\AccountRepositoryInterface;
 use App\Repositories\Contracts\ClientRepositoryInterface;
+use App\Repositories\Contracts\CostCenterRepositoryInterface;
 use App\Repositories\Contracts\ExpenseRepositoryInterface;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Repositories\Contracts\JournalRepositoryInterface;
 use App\Repositories\Contracts\VendorRepositoryInterface;
 use App\Repositories\Eloquent\EloquentAccountRepository;
 use App\Repositories\Eloquent\EloquentClientRepository;
+use App\Repositories\Eloquent\EloquentCostCenterRepository;
 use App\Repositories\Eloquent\EloquentExpenseRepository;
 use App\Repositories\Eloquent\EloquentInvoiceRepository;
 use App\Repositories\Eloquent\EloquentJournalRepository;
@@ -26,5 +28,6 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(VendorRepositoryInterface::class, EloquentVendorRepository::class);
         $this->app->bind(InvoiceRepositoryInterface::class, EloquentInvoiceRepository::class);
         $this->app->bind(ExpenseRepositoryInterface::class, EloquentExpenseRepository::class);
+        $this->app->bind(CostCenterRepositoryInterface::class, EloquentCostCenterRepository::class);
     }
 }

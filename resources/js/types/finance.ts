@@ -185,3 +185,33 @@ export interface BalanceSheetReport {
     total_equity: number;
     is_balanced: boolean;
 }
+
+export type CostCenterType = 'cost' | 'profit';
+
+export interface CostCenter {
+    id: number;
+    name: string;
+    type: CostCenterType;
+    budget: string | null;
+    parent_id: number | null;
+    is_active: boolean;
+    parent?: CostCenter | null;
+}
+
+/** Lightweight shape returned by /cost-centers/options for pickers. */
+export interface CostCenterOption {
+    id: number;
+    name: string;
+    type: CostCenterType;
+}
+
+export interface CostCenterSummaryRow {
+    cost_center_id: number;
+    name: string;
+    type: CostCenterType;
+    budget: number | null;
+    spent: number;
+    revenue: number;
+    net: number;
+    utilization_percent: number | null;
+}

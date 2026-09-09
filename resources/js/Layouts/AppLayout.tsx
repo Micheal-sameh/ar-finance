@@ -11,9 +11,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
     const { flash } = usePage<{ flash: FlashProps }>().props;
 
     return (
-        <div className="d-flex" style={{ minHeight: '100vh', backgroundColor: 'var(--af-bg)' }}>
+        <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '100vh', backgroundColor: 'var(--af-bg)' }}>
             <Sidebar />
-            <main className="flex-grow-1" style={{ padding: '28px 32px', minWidth: 0 }}>
+            <main className="flex-grow-1 px-3 px-lg-4 py-3 py-lg-4" style={{ minWidth: 0 }}>
                 {flash?.success && (
                     <div
                         className="mb-3 px-3 py-2"

@@ -18,7 +18,7 @@ export function NavItem({ label, href, icon: Icon, active = false }: NavItemProp
                 borderRadius: 'var(--af-radius-sm)',
                 fontSize: '14px',
                 color: active ? '#fff' : 'rgba(255,255,255,0.75)',
-                backgroundColor: active ? 'var(--af-primary)' : 'transparent',
+                backgroundColor: active ? 'rgba(255,255,255,0.18)' : 'transparent',
             }}
         >
             <Icon size={16} />

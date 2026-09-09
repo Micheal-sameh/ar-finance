@@ -24,6 +24,7 @@ class StoreJournalEntryRequest extends FormRequest
             'lines.*.account_id' => ['required', 'exists:accounts,id'],
             'lines.*.debit' => ['required', 'numeric', 'min:0'],
             'lines.*.credit' => ['required', 'numeric', 'min:0'],
+            'lines.*.cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'lines.*.description' => ['nullable', 'string', 'max:255'],
         ];
     }

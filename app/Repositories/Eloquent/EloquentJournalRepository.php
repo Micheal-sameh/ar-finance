@@ -45,7 +45,7 @@ class EloquentJournalRepository implements JournalRepositoryInterface
     public function postedLinesWithAccounts(?string $from = null, ?string $to = null): Collection
     {
         return JournalLine::query()
-            ->with('account')
+            ->with(['account', 'costCenter'])
             ->whereHas('journalEntry', function ($query) use ($from, $to) {
                 $query->whereNotNull('posted_at')
                     ->when($from, fn ($query, $value) => $query->whereDate('date', '>=', $value))

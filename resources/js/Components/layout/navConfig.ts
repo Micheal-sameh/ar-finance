@@ -1,4 +1,4 @@
-import { BookOpen, FileText, LandmarkIcon, ListTree, LayoutDashboard, Receipt, Scale, TrendingUp, Truck, Users } from 'lucide-react';
+import { BookOpen, FileText, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, Scale, TrendingUp, Truck, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -37,6 +37,7 @@ export const navConfig: NavConfigGroup[] = [
         items: [
             { label: 'Chart of Accounts', routeName: 'accounts.index', icon: ListTree },
             { label: 'Journal Entries', routeName: 'journals.index', icon: BookOpen },
+            { label: 'Cost Centers', routeName: 'cost-centers.index', icon: PiggyBank },
         ],
     },
     {
