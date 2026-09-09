@@ -1,0 +1,36 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+:root {
+    --af-primary: #2563eb;
+    --af-primary-hover: #1d4ed8;
+    --af-gold: #c9922a;
+    --af-navy: #1e2d4a;
+    --af-bg: #f1f3f7;
+    --af-surface: #ffffff;
+    --af-text: #0f172a;
+    --af-label: #6b7a99;
+    --af-border: #d1d9e6;
+    --af-success: #16a34a;
+    --af-danger: #dc2626;
+    --af-warning: #d97706;
+    --af-info: #2563eb;
+
+    --af-radius: 12px;
+    --af-radius-sm: 8px;
+    --af-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 3px 0 rgb(15 23 42 / 0.08);
+
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+}
+
+body {
+    margin: 0;
+    background-color: var(--af-bg);
+    color: var(--af-text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+}
+
+#app {
+    min-height: 100vh;
+}
