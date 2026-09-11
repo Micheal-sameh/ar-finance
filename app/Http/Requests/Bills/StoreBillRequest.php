@@ -25,11 +25,16 @@ class StoreBillRequest extends FormRequest
             'bill_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:bill_date'],
             'payable_account_id' => ['required', 'exists:accounts,id'],
+            'tax_receivable_account_id' => [
+                Rule::requiredIf(fn () => collect($this->input('lines', []))->sum('tax_rate') > 0),
+                'nullable', 'exists:accounts,id',
+            ],
             'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.description' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.01'],
             'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'lines.*.tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'lines.*.account_id' => ['required', 'exists:accounts,id'],
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Repositories\Contracts;
 
 use App\Models\Bill;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface BillRepositoryInterface
@@ -17,4 +18,10 @@ interface BillRepositoryInterface
     public function create(array $attributes, array $lines): Bill;
 
     public function updateStatus(Bill $bill, string $status, ?\DateTimeInterface $paidAt = null): Bill;
+
+    /**
+     * Approved/paid bills dated in a range, lines eager-loaded — for the
+     * VAT return report (input VAT).
+     */
+    public function postedBetween(string $from, string $to): Collection;
 }

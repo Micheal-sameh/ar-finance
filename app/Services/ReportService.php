@@ -4,20 +4,26 @@ namespace App\Services;
 
 use App\Enums\AccountType;
 use App\Models\Account;
+use App\Repositories\Contracts\BillRepositoryInterface;
 use App\Repositories\Contracts\CostCenterRepositoryInterface;
+use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Repositories\Contracts\JournalRepositoryInterface;
 use Illuminate\Support\Collection;
 
 /**
  * Every figure here is derived from posted journal_lines, never from
  * module tables (invoices/expenses/...) directly — the GL stays the
- * single source of truth for every report.
+ * single source of truth for every report. The one exception is
+ * vatReturn(): see its docblock for why that one reads invoice/bill
+ * lines instead.
  */
 class ReportService
 {
     public function __construct(
         private readonly JournalRepositoryInterface $journals,
         private readonly CostCenterRepositoryInterface $costCenters,
+        private readonly InvoiceRepositoryInterface $invoices,
+        private readonly BillRepositoryInterface $bills,
     ) {
     }
 
@@ -358,5 +364,49 @@ class ReportService
                 'utilization_percent' => ($budget && $budget > 0) ? round(($actual['spent'] / $budget) * 100, 1) : null,
             ];
         })->values()->all();
+    }
+
+    /**
+     * Output VAT (from sent/paid invoices) less input VAT (from
+     * approved/paid bills) for a period — net VAT payable to the
+     * authority.
+     *
+     * Unlike every other report here, this reads invoice_lines/bill_lines
+     * directly rather than scanning journal_lines for a designated "tax"
+     * account. There's no tenant-level "default VAT account" setting yet
+     * (each invoice/bill picks its own tax_payable/tax_receivable
+     * account), so there's no single account to reliably scan in the GL.
+     * The figures still match what actually posted, since send()/
+     * approve() compute tax the same way — this is a reporting
+     * convenience, not a second source of truth. Revisit once a Settings
+     * module adds one designated VAT account per direction.
+     *
+     * @return array{
+     *     from: string, to: string,
+     *     sales_subtotal: float, output_vat: float,
+     *     purchases_subtotal: float, input_vat: float,
+     *     net_vat_payable: float,
+     * }
+     */
+    public function vatReturn(string $from, string $to): array
+    {
+        $invoices = $this->invoices->postedBetween($from, $to);
+        $bills = $this->bills->postedBetween($from, $to);
+
+        $salesSubtotal = round($invoices->sum(fn ($invoice) => $invoice->subtotal() * (float) $invoice->exchange_rate), 2);
+        $outputVat = round($invoices->sum(fn ($invoice) => $invoice->totalTax() * (float) $invoice->exchange_rate), 2);
+
+        $purchasesSubtotal = round($bills->sum(fn ($bill) => $bill->subtotal()), 2);
+        $inputVat = round($bills->sum(fn ($bill) => $bill->totalTax()), 2);
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'sales_subtotal' => $salesSubtotal,
+            'output_vat' => $outputVat,
+            'purchases_subtotal' => $purchasesSubtotal,
+            'input_vat' => $inputVat,
+            'net_vat_payable' => round($outputVat - $inputVat, 2),
+        ];
     }
 }

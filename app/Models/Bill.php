@@ -27,6 +27,7 @@ class Bill extends Model
         'due_date',
         'status',
         'payable_account_id',
+        'tax_receivable_account_id',
         'cost_center_id',
         'paid_at',
     ];
@@ -53,13 +54,28 @@ class Bill extends Model
         return $this->belongsTo(Account::class, 'payable_account_id');
     }
 
+    public function taxReceivableAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'tax_receivable_account_id');
+    }
+
     public function lines(): HasMany
     {
         return $this->hasMany(BillLine::class);
     }
 
-    public function total(): float
+    public function subtotal(): float
     {
         return round($this->lines->sum(fn (BillLine $line) => $line->subtotal()), 2);
+    }
+
+    public function totalTax(): float
+    {
+        return round($this->lines->sum(fn (BillLine $line) => $line->taxAmount()), 2);
+    }
+
+    public function total(): float
+    {
+        return round($this->subtotal() + $this->totalTax(), 2);
     }
 }

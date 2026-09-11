@@ -19,7 +19,7 @@ function statusVariant(status: BillStatus) {
 }
 
 function lineTotal(line: Bill['lines'][number]): number {
-    return parseFloat(line.quantity) * parseFloat(line.unit_price);
+    return parseFloat(line.quantity) * parseFloat(line.unit_price) * (1 + parseFloat(line.tax_rate) / 100);
 }
 
 export default function BillsShow({ bill }: Props) {
@@ -95,6 +95,10 @@ export default function BillsShow({ bill }: Props) {
                         <div>{bill.payable_account ? `${bill.payable_account.code} · ${bill.payable_account.name}` : '—'}</div>
                     </div>
                     <div className="col-md-3">
+                        <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Tax receivable account</div>
+                        <div>{bill.tax_receivable_account ? `${bill.tax_receivable_account.code} · ${bill.tax_receivable_account.name}` : '—'}</div>
+                    </div>
+                    <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>From purchase order</div>
                         <div>{bill.purchase_order?.po_number ?? '—'}</div>
                     </div>
@@ -105,6 +109,7 @@ export default function BillsShow({ bill }: Props) {
                         <Table.HeadCell className="ps-3">Description</Table.HeadCell>
                         <Table.HeadCell className="text-end">Qty</Table.HeadCell>
                         <Table.HeadCell className="text-end">Unit price</Table.HeadCell>
+                        <Table.HeadCell className="text-end">Tax %</Table.HeadCell>
                         <Table.HeadCell>Account</Table.HeadCell>
                         <Table.HeadCell className="text-end pe-3">Total</Table.HeadCell>
                     </Table.Head>
@@ -116,6 +121,7 @@ export default function BillsShow({ bill }: Props) {
                                 <Table.Cell className="text-end">
                                     <MoneyDisplay amount={line.unit_price} />
                                 </Table.Cell>
+                                <Table.Cell className="text-end">{line.tax_rate}%</Table.Cell>
                                 <Table.Cell>{line.account ? `${line.account.code} · ${line.account.name}` : '—'}</Table.Cell>
                                 <Table.Cell className="text-end pe-3">
                                     <MoneyDisplay amount={lineTotal(line)} />
@@ -123,7 +129,7 @@ export default function BillsShow({ bill }: Props) {
                             </Table.Row>
                         ))}
                         <Table.Row style={{ fontWeight: 600 }}>
-                            <Table.Cell className="ps-3" colSpan={4}>
+                            <Table.Cell className="ps-3" colSpan={5}>
                                 Total
                             </Table.Cell>
                             <Table.Cell className="text-end pe-3">

@@ -15,12 +15,14 @@ class BillLine extends Model
         'description',
         'quantity',
         'unit_price',
+        'tax_rate',
         'account_id',
     ];
 
     protected $casts = [
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
+        'tax_rate' => 'decimal:2',
     ];
 
     public function bill(): BelongsTo
@@ -36,5 +38,15 @@ class BillLine extends Model
     public function subtotal(): float
     {
         return round((float) $this->quantity * (float) $this->unit_price, 2);
+    }
+
+    public function taxAmount(): float
+    {
+        return round($this->subtotal() * (float) $this->tax_rate / 100, 2);
+    }
+
+    public function lineTotal(): float
+    {
+        return round($this->subtotal() + $this->taxAmount(), 2);
     }
 }

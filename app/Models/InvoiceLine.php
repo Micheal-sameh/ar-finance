@@ -40,14 +40,13 @@ class InvoiceLine extends Model
         return round((float) $this->quantity * (float) $this->unit_price, 2);
     }
 
-    /**
-     * Line total including tax. Tax is currently folded into the same
-     * revenue-account credit rather than split out to a VAT-payable
-     * control account — see InvoiceService::send(). Revisit once the
-     * Tax/VAT phase adds proper tax-account configuration.
-     */
+    public function taxAmount(): float
+    {
+        return round($this->subtotal() * (float) $this->tax_rate / 100, 2);
+    }
+
     public function lineTotal(): float
     {
-        return round($this->subtotal() * (1 + (float) $this->tax_rate / 100), 2);
+        return round($this->subtotal() + $this->taxAmount(), 2);
     }
 }

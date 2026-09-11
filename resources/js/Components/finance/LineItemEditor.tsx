@@ -7,15 +7,18 @@ export interface LineItemInput {
     description: string;
     quantity: string;
     unit_price: string;
+    tax_rate: string;
     account_id: number | null;
 }
 
 export function emptyLineItem(): LineItemInput {
-    return { description: '', quantity: '1', unit_price: '', account_id: null };
+    return { description: '', quantity: '1', unit_price: '', tax_rate: '0', account_id: null };
 }
 
-export function lineItemTotal(line: LineItemInput): number {
-    return (parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0);
+export function lineItemTotal(line: LineItemInput, withTax = false): number {
+    const subtotal = (parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0);
+
+    return withTax ? subtotal * (1 + (parseFloat(line.tax_rate) || 0) / 100) : subtotal;
 }
 
 export interface LineItemEditorProps {
@@ -23,15 +26,17 @@ export interface LineItemEditorProps {
     onChange: (lines: LineItemInput[]) => void;
     accountLabel?: string;
     currency?: string;
+    /** Show a tax-rate column and include tax in the computed total — Bills need this, Purchase Orders don't. */
+    showTax?: boolean;
     errors?: Record<string, string>;
 }
 
 /**
- * Description + qty + unit price + account grid, with a computed total —
- * the untaxed sibling of InvoiceLineEditor, used for Purchase Order and
- * Bill line items (no tax_rate concept on the AP side yet).
+ * Description + qty + unit price + (optional tax) + account grid, with a
+ * computed total. The untaxed mode is Purchase Order lines (no tax
+ * concept there); showTax=true is Bill lines (Input VAT).
  */
-export function LineItemEditor({ lines, onChange, accountLabel = 'Account', currency = 'USD', errors = {} }: LineItemEditorProps) {
+export function LineItemEditor({ lines, onChange, accountLabel = 'Account', currency = 'USD', showTax = false, errors = {} }: LineItemEditorProps) {
     function updateLine(index: number, patch: Partial<LineItemInput>) {
         onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
     }
@@ -44,7 +49,7 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
         onChange(lines.filter((_, i) => i !== index));
     }
 
-    const total = lines.reduce((sum, line) => sum + lineItemTotal(line), 0);
+    const total = lines.reduce((sum, line) => sum + lineItemTotal(line, showTax), 0);
 
     return (
         <div>
@@ -52,6 +57,7 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
                 <div style={{ flex: '2 1 0' }}>Description</div>
                 <div style={{ flex: '0 0 90px' }} className="text-end">Qty</div>
                 <div style={{ flex: '1 1 0' }} className="text-end">Unit price</div>
+                {showTax && <div style={{ flex: '0 0 90px' }} className="text-end">Tax %</div>}
                 <div style={{ flex: '1.5 1 0' }} className="ps-2">{accountLabel}</div>
                 <div style={{ flex: '1 1 0' }} className="text-end">Total</div>
                 <div style={{ width: '36px' }} />
@@ -92,6 +98,20 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
                             placeholder="0.00"
                         />
                     </div>
+                    {showTax && (
+                        <div style={{ flex: '0 0 90px' }}>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                className="form-control text-end"
+                                style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
+                                value={line.tax_rate}
+                                onChange={(e) => updateLine(index, { tax_rate: e.target.value })}
+                            />
+                        </div>
+                    )}
                     <div style={{ flex: '1.5 1 0' }}>
                         <AccountPicker
                             value={line.account_id}
@@ -101,7 +121,7 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
                         />
                     </div>
                     <div style={{ flex: '1 1 0' }} className="text-end pt-2">
-                        <MoneyDisplay amount={lineItemTotal(line)} currency={currency} />
+                        <MoneyDisplay amount={lineItemTotal(line, showTax)} currency={currency} />
                     </div>
                     <div style={{ width: '36px' }} className="pt-1">
                         <button

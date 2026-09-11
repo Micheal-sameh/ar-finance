@@ -4,6 +4,7 @@ namespace App\Repositories\Eloquent;
 
 use App\Models\Invoice;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class EloquentInvoiceRepository implements InvoiceRepositoryInterface
@@ -51,5 +52,15 @@ class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             ->where('tenant_id', $tenantId)
             ->where('invoice_number', $invoiceNumber)
             ->exists();
+    }
+
+    public function postedBetween(string $from, string $to): Collection
+    {
+        return Invoice::query()
+            ->with('lines')
+            ->whereIn('status', ['sent', 'paid'])
+            ->whereDate('issue_date', '>=', $from)
+            ->whereDate('issue_date', '<=', $to)
+            ->get();
     }
 }

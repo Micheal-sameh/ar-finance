@@ -4,6 +4,7 @@ namespace App\Repositories\Eloquent;
 
 use App\Models\Bill;
 use App\Repositories\Contracts\BillRepositoryInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class EloquentBillRepository implements BillRepositoryInterface
@@ -43,5 +44,15 @@ class EloquentBillRepository implements BillRepositoryInterface
         $bill->update(['status' => $status, 'paid_at' => $paidAt]);
 
         return $bill;
+    }
+
+    public function postedBetween(string $from, string $to): Collection
+    {
+        return Bill::query()
+            ->with('lines')
+            ->whereIn('status', ['approved', 'paid'])
+            ->whereDate('bill_date', '>=', $from)
+            ->whereDate('bill_date', '<=', $to)
+            ->get();
     }
 }

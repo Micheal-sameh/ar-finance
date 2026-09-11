@@ -127,6 +127,8 @@ export interface Invoice {
     exchange_rate: string;
     receivable_account_id: number;
     receivable_account?: Account;
+    tax_payable_account_id: number | null;
+    tax_payable_account?: Account | null;
     paid_at: string | null;
     lines: InvoiceLine[];
 }
@@ -244,6 +246,7 @@ export interface BillLine {
     description: string;
     quantity: string;
     unit_price: string;
+    tax_rate: string;
     account_id: number;
     account?: Account;
 }
@@ -260,6 +263,8 @@ export interface Bill {
     status: BillStatus;
     payable_account_id: number;
     payable_account?: Account;
+    tax_receivable_account_id: number | null;
+    tax_receivable_account?: Account | null;
     cost_center_id: number | null;
     paid_at: string | null;
     lines: BillLine[];

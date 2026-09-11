@@ -71,8 +71,16 @@ class InvoiceController extends Controller
 
     public function recordPayment(RecordInvoicePaymentRequest $request, Invoice $invoice): RedirectResponse
     {
+        $settlementRate = $request->validated('settlement_exchange_rate');
+        $fxAccountId = $request->validated('fx_gain_loss_account_id');
+
         try {
-            $this->invoices->recordPayment($invoice, (int) $request->validated('payment_account_id'));
+            $this->invoices->recordPayment(
+                $invoice,
+                (int) $request->validated('payment_account_id'),
+                $settlementRate !== null ? (float) $settlementRate : null,
+                $fxAccountId !== null ? (int) $fxAccountId : null,
+            );
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }

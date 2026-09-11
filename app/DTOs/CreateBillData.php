@@ -14,6 +14,7 @@ final readonly class CreateBillData
         public string $billDate,
         public string $dueDate,
         public int $payableAccountId,
+        public ?int $taxReceivableAccountId,
         public ?int $costCenterId,
         public array $lines,
     ) {
@@ -28,6 +29,7 @@ final readonly class CreateBillData
             billDate: $data['bill_date'],
             dueDate: $data['due_date'],
             payableAccountId: (int) $data['payable_account_id'],
+            taxReceivableAccountId: isset($data['tax_receivable_account_id']) ? (int) $data['tax_receivable_account_id'] : null,
             costCenterId: isset($data['cost_center_id']) ? (int) $data['cost_center_id'] : null,
             lines: array_map(
                 fn (array $line) => BillLineData::fromArray($line),

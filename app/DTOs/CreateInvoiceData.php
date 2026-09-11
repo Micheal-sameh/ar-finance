@@ -15,6 +15,7 @@ final readonly class CreateInvoiceData
         public string $currency,
         public float $exchangeRate,
         public int $receivableAccountId,
+        public ?int $taxPayableAccountId,
         public array $lines,
     ) {
     }
@@ -29,6 +30,7 @@ final readonly class CreateInvoiceData
             currency: $data['currency'] ?? 'USD',
             exchangeRate: (float) ($data['exchange_rate'] ?? 1),
             receivableAccountId: (int) $data['receivable_account_id'],
+            taxPayableAccountId: isset($data['tax_payable_account_id']) ? (int) $data['tax_payable_account_id'] : null,
             lines: array_map(
                 fn (array $line) => InvoiceLineData::fromArray($line),
                 $data['lines'],

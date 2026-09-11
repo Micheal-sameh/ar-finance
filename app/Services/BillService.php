@@ -17,7 +17,11 @@ use RuntimeException;
 /**
  * The AP mirror of InvoiceService: draft → approve (posts to the GL) →
  * markPaid (a second, separate journal entry). See InvoiceService for the
- * AR side of the same pattern.
+ * AR side of the same pattern, including the VAT-split rationale.
+ *
+ * Bills are single-currency (the tenant's base currency) for now —
+ * unlike Invoice, there's no currency/exchange_rate here yet. Revisit if
+ * AP needs foreign-currency vendor bills.
  */
 class BillService
 {
@@ -50,6 +54,7 @@ class BillService
                 'bill_date' => $data->billDate,
                 'due_date' => $data->dueDate,
                 'payable_account_id' => $data->payableAccountId,
+                'tax_receivable_account_id' => $data->taxReceivableAccountId,
                 'cost_center_id' => $data->costCenterId,
                 'status' => 'draft',
             ],
@@ -57,6 +62,7 @@ class BillService
                 'description' => $line->description,
                 'quantity' => $line->quantity,
                 'unit_price' => $line->unitPrice,
+                'tax_rate' => $line->taxRate,
                 'account_id' => $line->accountId,
             ], $data->lines),
         );
@@ -65,7 +71,8 @@ class BillService
     /**
      * Prefills a draft bill from a purchase order's vendor and lines —
      * the PO itself never posts to the ledger, only the bill created
-     * from it does, once approved.
+     * from it does, once approved. POs carry no tax_rate, so lines start
+     * untaxed; edit the bill to add tax before approving if needed.
      */
     public function createFromPurchaseOrder(
         PurchaseOrder $purchaseOrder,
@@ -81,19 +88,25 @@ class BillService
             billDate: $billDate,
             dueDate: $dueDate,
             payableAccountId: $payableAccountId,
+            taxReceivableAccountId: null,
             costCenterId: null,
             lines: $purchaseOrder->lines->map(fn ($line) => new BillLineData(
                 description: $line->description,
                 quantity: (float) $line->quantity,
                 unitPrice: (float) $line->unit_price,
+                taxRate: 0.0,
                 accountId: $line->account_id,
             ))->all(),
         ));
     }
 
     /**
-     * Recognizes the expense: debits each line's account, credits the
-     * bill's payable control account for the total.
+     * Recognizes the expense: debits each line's account for its pre-tax
+     * subtotal, debits the recoverable input-VAT portion separately to
+     * tax_receivable_account_id (an asset, not folded into the expense),
+     * credits the bill's payable control account for the tax-inclusive
+     * total. The payable credit is the *sum* of the debit lines, so
+     * per-line rounding can't throw the entry out of balance.
      */
     public function approve(Bill $bill): Bill
     {
@@ -101,19 +114,41 @@ class BillService
             throw new RuntimeException("Bill {$bill->bill_number} has already been approved.");
         }
 
+        $totalTax = $bill->totalTax();
+
+        if ($totalTax > 0 && ! $bill->tax_receivable_account_id) {
+            throw new RuntimeException("Bill {$bill->bill_number} has tax on its lines but no tax receivable account was set.");
+        }
+
         return DB::transaction(function () use ($bill) {
-            $lines = [
-                ...$bill->lines->map(fn ($line) => new JournalLineData(
-                    accountId: $line->account_id,
-                    debit: $line->subtotal(),
+            $debitLines = $bill->lines->map(fn ($line) => new JournalLineData(
+                accountId: $line->account_id,
+                debit: $line->subtotal(),
+                credit: 0,
+                costCenterId: $bill->cost_center_id,
+                description: $line->description,
+            ))->all();
+
+            if ($bill->totalTax() > 0) {
+                $debitLines[] = new JournalLineData(
+                    accountId: $bill->tax_receivable_account_id,
+                    debit: $bill->totalTax(),
                     credit: 0,
-                    costCenterId: $bill->cost_center_id,
-                    description: $line->description,
-                ))->all(),
+                    description: "Tax on bill {$bill->bill_number}",
+                );
+            }
+
+            $payableTotal = round(
+                array_sum(array_map(fn (JournalLineData $line) => $line->debit, $debitLines)),
+                2,
+            );
+
+            $lines = [
+                ...$debitLines,
                 new JournalLineData(
                     accountId: $bill->payable_account_id,
                     debit: 0,
-                    credit: $bill->total(),
+                    credit: $payableTotal,
                     description: "Bill {$bill->bill_number}",
                 ),
             ];

@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Invoice } from '@/types/finance';
@@ -23,7 +24,13 @@ export default function InvoicesShow({ invoice }: Props) {
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const total = invoice.lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
-    const paymentForm = useForm({ payment_account_id: null as number | null });
+    const isForeignCurrency = invoice.currency.trim().toUpperCase() !== 'USD';
+
+    const paymentForm = useForm({
+        payment_account_id: null as number | null,
+        settlement_exchange_rate: invoice.exchange_rate,
+        fx_gain_loss_account_id: null as number | null,
+    });
 
     function send() {
         if (confirm('Send this invoice? This posts revenue to the ledger and it can no longer be edited.')) {
@@ -70,7 +77,7 @@ export default function InvoicesShow({ invoice }: Props) {
 
             {showPaymentForm && (
                 <Card className="mb-3">
-                    <div className="d-flex align-items-end gap-2">
+                    <div className="d-flex align-items-end gap-2 flex-wrap">
                         <div style={{ maxWidth: '320px', flex: 1 }}>
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
                                 Deposit into
@@ -82,6 +89,33 @@ export default function InvoicesShow({ invoice }: Props) {
                                 placeholder="e.g. Bank account"
                             />
                         </div>
+                        {isForeignCurrency && (
+                            <>
+                                <div style={{ maxWidth: '200px' }}>
+                                    <Input
+                                        type="number"
+                                        step="0.000001"
+                                        min="0"
+                                        label="Settlement rate"
+                                        value={paymentForm.data.settlement_exchange_rate}
+                                        onChange={(e) => paymentForm.setData('settlement_exchange_rate', e.target.value)}
+                                        error={paymentForm.errors.settlement_exchange_rate}
+                                        help={`Booked at ${invoice.exchange_rate}`}
+                                    />
+                                </div>
+                                <div style={{ maxWidth: '260px', flex: 1 }}>
+                                    <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                        FX gain/loss account (if rate differs)
+                                    </label>
+                                    <AccountPicker
+                                        value={paymentForm.data.fx_gain_loss_account_id}
+                                        onChange={(id) => paymentForm.setData('fx_gain_loss_account_id', id)}
+                                        error={paymentForm.errors.fx_gain_loss_account_id}
+                                        placeholder="e.g. FX Gain/Loss"
+                                    />
+                                </div>
+                            </>
+                        )}
                         <Button onClick={recordPayment} loading={paymentForm.processing}>
                             Confirm Payment
                         </Button>

@@ -22,6 +22,7 @@ export default function BillsCreate({ vendors }: Props) {
         bill_date: string;
         due_date: string;
         payable_account_id: number | null;
+        tax_receivable_account_id: number | null;
         cost_center_id: number | null;
         lines: LineItemInput[];
     }>({
@@ -30,9 +31,12 @@ export default function BillsCreate({ vendors }: Props) {
         bill_date: new Date().toISOString().slice(0, 10),
         due_date: new Date().toISOString().slice(0, 10),
         payable_account_id: null,
+        tax_receivable_account_id: null,
         cost_center_id: null,
         lines: [emptyLineItem()],
     });
+
+    const hasTax = form.data.lines.some((line) => parseFloat(line.tax_rate) > 0);
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -100,22 +104,38 @@ export default function BillsCreate({ vendors }: Props) {
                         </div>
                     </div>
 
-                    <div className="mb-4" style={{ maxWidth: '360px' }}>
-                        <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Payable account
-                        </label>
-                        <AccountPicker
-                            value={form.data.payable_account_id}
-                            onChange={(id) => form.setData('payable_account_id', id)}
-                            error={form.errors.payable_account_id}
-                            placeholder="e.g. Accounts Payable"
-                        />
+                    <div className="row g-3 mb-4">
+                        <div className="col-md-6">
+                            <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                Payable account
+                            </label>
+                            <AccountPicker
+                                value={form.data.payable_account_id}
+                                onChange={(id) => form.setData('payable_account_id', id)}
+                                error={form.errors.payable_account_id}
+                                placeholder="e.g. Accounts Payable"
+                            />
+                        </div>
+                        {hasTax && (
+                            <div className="col-md-6">
+                                <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                    Tax receivable account
+                                </label>
+                                <AccountPicker
+                                    value={form.data.tax_receivable_account_id}
+                                    onChange={(id) => form.setData('tax_receivable_account_id', id)}
+                                    error={form.errors.tax_receivable_account_id}
+                                    placeholder="e.g. VAT Receivable"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <LineItemEditor
                         lines={form.data.lines}
                         onChange={(lines) => form.setData('lines', lines)}
                         accountLabel="Expense account"
+                        showTax
                         errors={form.errors as Record<string, string>}
                     />
 

@@ -8,6 +8,7 @@ final readonly class BillLineData
         public string $description,
         public float $quantity,
         public float $unitPrice,
+        public float $taxRate,
         public int $accountId,
     ) {
     }
@@ -18,6 +19,7 @@ final readonly class BillLineData
             description: $data['description'],
             quantity: (float) $data['quantity'],
             unitPrice: (float) $data['unit_price'],
+            taxRate: (float) ($data['tax_rate'] ?? 0),
             accountId: (int) $data['account_id'],
         );
     }

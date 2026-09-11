@@ -21,7 +21,9 @@ export default function InvoicesCreate({ clients }: Props) {
         issue_date: string;
         due_date: string;
         currency: string;
+        exchange_rate: string;
         receivable_account_id: number | null;
+        tax_payable_account_id: number | null;
         lines: InvoiceLineInput[];
     }>({
         client_id: '',
@@ -29,9 +31,14 @@ export default function InvoicesCreate({ clients }: Props) {
         issue_date: new Date().toISOString().slice(0, 10),
         due_date: new Date().toISOString().slice(0, 10),
         currency: 'USD',
+        exchange_rate: '1',
         receivable_account_id: null,
+        tax_payable_account_id: null,
         lines: [emptyInvoiceLine()],
     });
+
+    const hasTax = form.data.lines.some((line) => parseFloat(line.tax_rate) > 0);
+    const isForeignCurrency = form.data.currency.trim().toUpperCase() !== 'USD';
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -100,16 +107,48 @@ export default function InvoicesCreate({ clients }: Props) {
                         </div>
                     </div>
 
-                    <div className="mb-4" style={{ maxWidth: '360px' }}>
-                        <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Receivable account
-                        </label>
-                        <AccountPicker
-                            value={form.data.receivable_account_id}
-                            onChange={(id) => form.setData('receivable_account_id', id)}
-                            error={form.errors.receivable_account_id}
-                            placeholder="e.g. Accounts Receivable"
-                        />
+                    {isForeignCurrency && (
+                        <div className="row g-3 mb-4">
+                            <div className="col-md-3">
+                                <Input
+                                    type="number"
+                                    step="0.000001"
+                                    min="0"
+                                    label={`Exchange rate (1 ${form.data.currency || 'FX'} = ? base currency)`}
+                                    value={form.data.exchange_rate}
+                                    onChange={(e) => form.setData('exchange_rate', e.target.value)}
+                                    error={form.errors.exchange_rate}
+                                    help="Posts to the ledger in your base currency using this rate."
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="row g-3 mb-4">
+                        <div className="col-md-4">
+                            <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                Receivable account
+                            </label>
+                            <AccountPicker
+                                value={form.data.receivable_account_id}
+                                onChange={(id) => form.setData('receivable_account_id', id)}
+                                error={form.errors.receivable_account_id}
+                                placeholder="e.g. Accounts Receivable"
+                            />
+                        </div>
+                        {hasTax && (
+                            <div className="col-md-4">
+                                <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                    Tax payable account
+                                </label>
+                                <AccountPicker
+                                    value={form.data.tax_payable_account_id}
+                                    onChange={(id) => form.setData('tax_payable_account_id', id)}
+                                    error={form.errors.tax_payable_account_id}
+                                    placeholder="e.g. VAT Payable"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <InvoiceLineEditor

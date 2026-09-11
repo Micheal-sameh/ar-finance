@@ -3,6 +3,7 @@
 namespace App\Repositories\Contracts;
 
 use App\Models\Invoice;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface InvoiceRepositoryInterface
@@ -19,4 +20,10 @@ interface InvoiceRepositoryInterface
     public function updateStatus(Invoice $invoice, string $status, ?\DateTimeInterface $paidAt = null): Invoice;
 
     public function existsByNumber(int $tenantId, string $invoiceNumber): bool;
+
+    /**
+     * Sent/paid invoices issued in a date range, lines eager-loaded — for
+     * the VAT return report (output VAT).
+     */
+    public function postedBetween(string $from, string $to): Collection;
 }

@@ -26,6 +26,10 @@ class StoreInvoiceRequest extends FormRequest
             'currency' => ['nullable', 'string', 'size:3'],
             'exchange_rate' => ['nullable', 'numeric', 'min:0'],
             'receivable_account_id' => ['required', 'exists:accounts,id'],
+            'tax_payable_account_id' => [
+                Rule::requiredIf(fn () => collect($this->input('lines', []))->sum('tax_rate') > 0),
+                'nullable', 'exists:accounts,id',
+            ],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.description' => ['required', 'string', 'max:255'],
             'lines.*.quantity' => ['required', 'numeric', 'min:0.01'],

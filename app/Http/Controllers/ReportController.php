@@ -74,4 +74,17 @@ class ReportController extends Controller
             'filters' => ['as_of' => $asOf],
         ]);
     }
+
+    public function vatReturn(Request $request): Response
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $from = $request->string('from')->value() ?: now()->startOfQuarter()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
+
+        return Inertia::render('Accounting/Reports/VatReturn', [
+            'report' => $this->reports->vatReturn($from, $to),
+            'filters' => ['from' => $from, 'to' => $to],
+        ]);
+    }
 }

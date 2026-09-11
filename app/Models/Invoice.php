@@ -26,6 +26,7 @@ class Invoice extends Model
         'currency',
         'exchange_rate',
         'receivable_account_id',
+        'tax_payable_account_id',
         'paid_at',
     ];
 
@@ -47,13 +48,33 @@ class Invoice extends Model
         return $this->belongsTo(Account::class, 'receivable_account_id');
     }
 
+    public function taxPayableAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'tax_payable_account_id');
+    }
+
     public function lines(): HasMany
     {
         return $this->hasMany(InvoiceLine::class);
     }
 
+    public function subtotal(): float
+    {
+        return round($this->lines->sum(fn (InvoiceLine $line) => $line->subtotal()), 2);
+    }
+
+    public function totalTax(): float
+    {
+        return round($this->lines->sum(fn (InvoiceLine $line) => $line->taxAmount()), 2);
+    }
+
+    /**
+     * Grand total, in the invoice's own currency — GL postings convert
+     * this (and the subtotal/tax split) to the tenant's base currency
+     * using exchange_rate. See InvoiceService::send().
+     */
     public function total(): float
     {
-        return round($this->lines->sum(fn (InvoiceLine $line) => $line->lineTotal()), 2);
+        return round($this->subtotal() + $this->totalTax(), 2);
     }
 }
