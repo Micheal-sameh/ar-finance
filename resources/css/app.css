@@ -42,3 +42,16 @@ body {
 .af-sidebar {
     background-color: var(--af-primary) !important;
 }
+
+/* Once the offcanvas becomes a static in-flow panel at lg+, pin it to the
+ * viewport and let it scroll on its own instead of scrolling together with
+ * the main content (which shares the same flex row). */
+@media (min-width: 992px) {
+    .af-sidebar {
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        height: 100vh;
+        overflow-y: auto;
+    }
+}
