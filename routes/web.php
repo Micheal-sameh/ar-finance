@@ -7,11 +7,13 @@ use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevComponentsController;
 use App\Http\Controllers\DevLoginController;
+use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JournalEntryController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VendorController;
@@ -76,6 +78,12 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('fixed-assets', FixedAssetController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('fixed-assets/{fixed_asset}/post-depreciation', [FixedAssetController::class, 'postDepreciation'])->name('fixed-assets.post-depreciation');
     Route::post('fixed-assets/run-depreciation', [FixedAssetController::class, 'runAll'])->name('fixed-assets.run-depreciation');
+
+    Route::resource('employees', EmployeeController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    Route::resource('payroll-runs', PayrollRunController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('payroll-runs/{payroll_run}/approve', [PayrollRunController::class, 'approve'])->name('payroll-runs.approve');
+    Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'markPaid'])->name('payroll-runs.mark-paid');
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');

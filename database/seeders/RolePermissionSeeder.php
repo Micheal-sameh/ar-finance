@@ -45,6 +45,11 @@ class RolePermissionSeeder extends Seeder
         'bills.manage',
         'fixed_assets.view',
         'fixed_assets.manage',
+        'employees.view',
+        'employees.manage',
+        'payroll.view',
+        'payroll.create',
+        'payroll.manage',
     ];
 
     /**
@@ -78,6 +83,11 @@ class RolePermissionSeeder extends Seeder
         'bills.manage',
         'fixed_assets.view',
         'fixed_assets.manage',
+        'employees.view',
+        'employees.manage',
+        'payroll.view',
+        'payroll.create',
+        'payroll.manage',
     ];
 
     /**
@@ -98,6 +108,8 @@ class RolePermissionSeeder extends Seeder
         'purchase_orders.view',
         'bills.view',
         'fixed_assets.view',
+        'employees.view',
+        'payroll.view',
     ];
 
     public function run(): void

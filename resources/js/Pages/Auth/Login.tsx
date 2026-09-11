@@ -20,7 +20,7 @@ export default function Login({ devLoginEnabled }: LoginProps) {
     return (
         <div
             className="d-flex align-items-center justify-content-center"
-            style={{ minHeight: '100vh', backgroundColor: 'var(--af-navy)', padding: '24px' }}
+            style={{ minHeight: '100vh', backgroundColor: 'var(--af-primary)', padding: '24px' }}
         >
             <Head title="Log in" />
 

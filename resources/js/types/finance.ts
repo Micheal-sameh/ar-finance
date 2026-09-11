@@ -291,3 +291,40 @@ export interface DepreciationScheduleRow {
     book_value: number;
     posted: boolean;
 }
+
+export interface Employee {
+    id: number;
+    name: string;
+    email: string | null;
+    job_title: string | null;
+    salary: string;
+    hire_date: string;
+    is_active: boolean;
+}
+
+export type PayrollRunStatus = 'draft' | 'approved' | 'paid';
+
+export interface Payslip {
+    id: number;
+    employee_id: number;
+    employee?: Employee;
+    gross_pay: string;
+    deductions: string;
+    net_pay: string;
+}
+
+export interface PayrollRun {
+    id: number;
+    period_start: string;
+    period_end: string;
+    pay_date: string;
+    status: PayrollRunStatus;
+    expense_account_id: number;
+    expense_account?: Account;
+    payable_account_id: number;
+    payable_account?: Account;
+    deductions_payable_account_id: number | null;
+    deductions_payable_account?: Account | null;
+    paid_at: string | null;
+    payslips: Payslip[];
+}
