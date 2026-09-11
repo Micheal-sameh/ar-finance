@@ -264,3 +264,30 @@ export interface Bill {
     paid_at: string | null;
     lines: BillLine[];
 }
+
+export type DepreciationMethod = 'straight_line';
+
+export interface FixedAsset {
+    id: number;
+    name: string;
+    purchase_date: string;
+    cost: string;
+    salvage_value: string;
+    useful_life_years: number;
+    depreciation_method: DepreciationMethod;
+    asset_account_id: number;
+    asset_account?: Account;
+    depreciation_account_id: number;
+    depreciation_account?: Account;
+    accumulated_depreciation_account_id: number;
+    accumulated_depreciation_account?: Account;
+    accumulated_depreciation: string;
+}
+
+export interface DepreciationScheduleRow {
+    month: string;
+    amount: number;
+    cumulative: number;
+    book_value: number;
+    posted: boolean;
+}

@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Listeners\SyncAvarewaseRoleClaims;
+use App\Support\ResilientVite;
 use Avarewase\SsoClient\Events\AvarewaseUserAuthenticated;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Vite;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -16,7 +18,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(Vite::class, ResilientVite::class);
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevComponentsController;
 use App\Http\Controllers\DevLoginController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JournalEntryController;
 use App\Http\Controllers\LoginController;
@@ -71,6 +72,10 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('bills', BillController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
     Route::post('bills/{bill}/pay', [BillController::class, 'markPaid'])->name('bills.mark-paid');
+
+    Route::resource('fixed-assets', FixedAssetController::class)->only(['index', 'create', 'store', 'show']);
+    Route::post('fixed-assets/{fixed_asset}/post-depreciation', [FixedAssetController::class, 'postDepreciation'])->name('fixed-assets.post-depreciation');
+    Route::post('fixed-assets/run-depreciation', [FixedAssetController::class, 'runAll'])->name('fixed-assets.run-depreciation');
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');

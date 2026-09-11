@@ -66,4 +66,25 @@ class EloquentJournalRepository implements JournalRepositoryInterface
             })
             ->get();
     }
+
+    public function existsForSourceInDateRange(string $sourceType, int $sourceId, string $from, string $to): bool
+    {
+        return JournalEntry::query()
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->whereNotNull('posted_at')
+            ->whereDate('date', '>=', $from)
+            ->whereDate('date', '<=', $to)
+            ->exists();
+    }
+
+    public function entriesForSource(string $sourceType, int $sourceId): Collection
+    {
+        return JournalEntry::query()
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->whereNotNull('posted_at')
+            ->orderBy('date')
+            ->get();
+    }
 }

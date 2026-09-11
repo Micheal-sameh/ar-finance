@@ -43,6 +43,8 @@ class RolePermissionSeeder extends Seeder
         'bills.view',
         'bills.create',
         'bills.manage',
+        'fixed_assets.view',
+        'fixed_assets.manage',
     ];
 
     /**
@@ -74,6 +76,8 @@ class RolePermissionSeeder extends Seeder
         'bills.view',
         'bills.create',
         'bills.manage',
+        'fixed_assets.view',
+        'fixed_assets.manage',
     ];
 
     /**
@@ -93,6 +97,7 @@ class RolePermissionSeeder extends Seeder
         'cost_centers.view',
         'purchase_orders.view',
         'bills.view',
+        'fixed_assets.view',
     ];
 
     public function run(): void

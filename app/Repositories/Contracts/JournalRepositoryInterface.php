@@ -26,4 +26,17 @@ interface JournalRepositoryInterface
     public function postedLinesWithAccounts(?string $from = null, ?string $to = null): Collection;
 
     public function postedLinesForAccount(int $accountId, ?string $from = null, ?string $to = null): Collection;
+
+    /**
+     * True if a posted entry already exists for this source within the
+     * date range — the guard against double-posting a period (monthly
+     * depreciation, payroll runs, ...).
+     */
+    public function existsForSourceInDateRange(string $sourceType, int $sourceId, string $from, string $to): bool;
+
+    /**
+     * All posted entries for a given source, for history/schedule
+     * displays (e.g. which months a fixed asset has been depreciated).
+     */
+    public function entriesForSource(string $sourceType, int $sourceId): Collection;
 }

@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\DTOs\CreateJournalEntryData;
+use App\Enums\JournalSourceType;
 use App\Exceptions\UnbalancedJournalEntryException;
 use App\Models\JournalEntry;
 use App\Repositories\Contracts\JournalRepositoryInterface;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -101,5 +104,22 @@ class JournalService
     public function paginate(array $filters = [], int $perPage = 25)
     {
         return $this->journals->paginate($filters, $perPage);
+    }
+
+    /**
+     * True if a posted entry already exists for this source in the date
+     * range — the guard against double-posting a period.
+     */
+    public function existsForSourceInDateRange(JournalSourceType $sourceType, int $sourceId, Carbon $from, Carbon $to): bool
+    {
+        return $this->journals->existsForSourceInDateRange($sourceType->value, $sourceId, $from->toDateString(), $to->toDateString());
+    }
+
+    /**
+     * @return Collection<int, JournalEntry>
+     */
+    public function entriesForSource(JournalSourceType $sourceType, int $sourceId): Collection
+    {
+        return $this->journals->entriesForSource($sourceType->value, $sourceId);
     }
 }
