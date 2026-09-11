@@ -307,6 +307,17 @@ export interface Employee {
     is_active: boolean;
 }
 
+export type UserStatus = 'active' | 'suspended';
+
+export interface AppUser {
+    id: number;
+    name: string;
+    email: string;
+    membership_code: string | null;
+    status: UserStatus;
+    roles: string[];
+}
+
 export type PayrollRunStatus = 'draft' | 'approved' | 'paid';
 
 export interface Payslip {

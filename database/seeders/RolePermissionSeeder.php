@@ -52,6 +52,10 @@ class RolePermissionSeeder extends Seeder
         'payroll.manage',
         'bank_accounts.view',
         'bank_accounts.manage',
+        'exchange_rates.view',
+        'exchange_rates.manage',
+        'users.view',
+        'users.manage',
     ];
 
     /**
@@ -92,6 +96,8 @@ class RolePermissionSeeder extends Seeder
         'payroll.manage',
         'bank_accounts.view',
         'bank_accounts.manage',
+        'exchange_rates.view',
+        'exchange_rates.manage',
     ];
 
     /**
@@ -115,6 +121,7 @@ class RolePermissionSeeder extends Seeder
         'employees.view',
         'payroll.view',
         'bank_accounts.view',
+        'exchange_rates.view',
     ];
 
     public function run(): void
@@ -128,11 +135,10 @@ class RolePermissionSeeder extends Seeder
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
         $superAdmin->syncPermissions(self::PERMISSIONS);
 
-        // Admin = all modules except Users (no users.* permissions exist
-        // yet — the Users module lands later; this role already excludes
-        // them by construction since it only syncs what's defined above).
+        // Admin = all modules except Users — user management (status,
+        // role visibility) is reserved for Super Admin.
         $admin = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
-        $admin->syncPermissions(self::PERMISSIONS);
+        $admin->syncPermissions(array_diff(self::PERMISSIONS, ['users.view', 'users.manage']));
 
         $accountant = Role::firstOrCreate(['name' => 'Accountant', 'guard_name' => 'web']);
         $accountant->syncPermissions(self::ACCOUNTANT_PERMISSIONS);

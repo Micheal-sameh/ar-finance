@@ -17,6 +17,7 @@ class ProfileController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'tenant_name' => $user->tenant?->name,
+                'membership_code' => $user->avarewase_membership_code,
                 'roles' => $user->getRoleNames(),
             ],
         ]);

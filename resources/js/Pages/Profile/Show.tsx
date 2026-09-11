@@ -9,6 +9,7 @@ interface Props {
         name: string;
         email: string;
         tenant_name: string | null;
+        membership_code: string | null;
         roles: string[];
     };
 }
@@ -35,6 +36,7 @@ export default function ProfileShow({ user }: Props) {
                         <Field label="Name" value={user.name} />
                         <Field label="Email" value={user.email} />
                         {user.tenant_name && <Field label="Organization" value={user.tenant_name} />}
+                        {user.membership_code && <Field label="Membership Code" value={user.membership_code} />}
                         <div>
                             <div style={{ fontSize: '12px', color: 'var(--af-label)', marginBottom: '6px' }}>Roles</div>
                             <div className="d-flex gap-2 flex-wrap">

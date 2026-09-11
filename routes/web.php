@@ -20,6 +20,7 @@ use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,11 +48,13 @@ if (app()->environment('local')) {
 // not by the package's separate bearer-token `avarewase.auth` middleware
 // (that one's for a resource server taking an Authorization header on
 // every request, which doesn't fit a cookie-session Inertia app).
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('logout', LogoutController::class)->name('logout');
+
+    Route::resource('users', UserController::class)->only(['index', 'update']);
 
     Route::get('accounts/options', [AccountController::class, 'options'])->name('accounts.options');
     Route::resource('accounts', AccountController::class)->except(['create', 'edit']);

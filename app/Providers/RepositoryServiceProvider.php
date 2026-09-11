@@ -9,12 +9,14 @@ use App\Repositories\Contracts\BillRepositoryInterface;
 use App\Repositories\Contracts\ClientRepositoryInterface;
 use App\Repositories\Contracts\CostCenterRepositoryInterface;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Repositories\Contracts\ExchangeRateRepositoryInterface;
 use App\Repositories\Contracts\ExpenseRepositoryInterface;
 use App\Repositories\Contracts\FixedAssetRepositoryInterface;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Repositories\Contracts\JournalRepositoryInterface;
 use App\Repositories\Contracts\PayrollRunRepositoryInterface;
 use App\Repositories\Contracts\PurchaseOrderRepositoryInterface;
+use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\Contracts\VendorRepositoryInterface;
 use App\Repositories\Eloquent\EloquentAccountRepository;
 use App\Repositories\Eloquent\EloquentBankAccountRepository;
@@ -23,12 +25,14 @@ use App\Repositories\Eloquent\EloquentBillRepository;
 use App\Repositories\Eloquent\EloquentClientRepository;
 use App\Repositories\Eloquent\EloquentCostCenterRepository;
 use App\Repositories\Eloquent\EloquentEmployeeRepository;
+use App\Repositories\Eloquent\EloquentExchangeRateRepository;
 use App\Repositories\Eloquent\EloquentExpenseRepository;
 use App\Repositories\Eloquent\EloquentFixedAssetRepository;
 use App\Repositories\Eloquent\EloquentInvoiceRepository;
 use App\Repositories\Eloquent\EloquentJournalRepository;
 use App\Repositories\Eloquent\EloquentPayrollRunRepository;
 use App\Repositories\Eloquent\EloquentPurchaseOrderRepository;
+use App\Repositories\Eloquent\EloquentUserRepository;
 use App\Repositories\Eloquent\EloquentVendorRepository;
 use Illuminate\Support\ServiceProvider;
 
@@ -50,5 +54,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(PayrollRunRepositoryInterface::class, EloquentPayrollRunRepository::class);
         $this->app->bind(BankAccountRepositoryInterface::class, EloquentBankAccountRepository::class);
         $this->app->bind(BankTransactionRepositoryInterface::class, EloquentBankTransactionRepository::class);
+        $this->app->bind(ExchangeRateRepositoryInterface::class, EloquentExchangeRateRepository::class);
+        $this->app->bind(UserRepositoryInterface::class, EloquentUserRepository::class);
     }
 }
