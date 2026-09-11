@@ -7,6 +7,7 @@ use App\Models\Concerns\HasMoney;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class JournalLine extends Model
 {
@@ -36,5 +37,14 @@ class JournalLine extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    /**
+     * The bank transaction (if any) that has claimed this line during
+     * reconciliation — see BankTransaction::matched_journal_line_id.
+     */
+    public function matchedByBankTransaction(): HasOne
+    {
+        return $this->hasOne(BankTransaction::class, 'matched_journal_line_id');
     }
 }

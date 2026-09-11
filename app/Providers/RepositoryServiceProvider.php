@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Repositories\Contracts\AccountRepositoryInterface;
+use App\Repositories\Contracts\BankAccountRepositoryInterface;
+use App\Repositories\Contracts\BankTransactionRepositoryInterface;
 use App\Repositories\Contracts\BillRepositoryInterface;
 use App\Repositories\Contracts\ClientRepositoryInterface;
 use App\Repositories\Contracts\CostCenterRepositoryInterface;
@@ -15,6 +17,8 @@ use App\Repositories\Contracts\PayrollRunRepositoryInterface;
 use App\Repositories\Contracts\PurchaseOrderRepositoryInterface;
 use App\Repositories\Contracts\VendorRepositoryInterface;
 use App\Repositories\Eloquent\EloquentAccountRepository;
+use App\Repositories\Eloquent\EloquentBankAccountRepository;
+use App\Repositories\Eloquent\EloquentBankTransactionRepository;
 use App\Repositories\Eloquent\EloquentBillRepository;
 use App\Repositories\Eloquent\EloquentClientRepository;
 use App\Repositories\Eloquent\EloquentCostCenterRepository;
@@ -44,5 +48,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(FixedAssetRepositoryInterface::class, EloquentFixedAssetRepository::class);
         $this->app->bind(EmployeeRepositoryInterface::class, EloquentEmployeeRepository::class);
         $this->app->bind(PayrollRunRepositoryInterface::class, EloquentPayrollRunRepository::class);
+        $this->app->bind(BankAccountRepositoryInterface::class, EloquentBankAccountRepository::class);
+        $this->app->bind(BankTransactionRepositoryInterface::class, EloquentBankTransactionRepository::class);
     }
 }

@@ -328,3 +328,39 @@ export interface PayrollRun {
     paid_at: string | null;
     payslips: Payslip[];
 }
+
+export interface BankAccount {
+    id: number;
+    name: string;
+    account_id: number;
+    account?: Account;
+    bank_name: string | null;
+    account_number: string | null;
+    currency: string;
+}
+
+export interface BankTransactionMatchedLine {
+    id: number;
+    debit: string;
+    credit: string;
+    description: string | null;
+    journal_entry?: { id: number; date: string; description: string };
+}
+
+export interface BankTransaction {
+    id: number;
+    bank_account_id: number;
+    date: string;
+    description: string;
+    amount: string;
+    matched_journal_line_id: number | null;
+    matched_journal_line?: BankTransactionMatchedLine | null;
+}
+
+export interface UnmatchedJournalLine {
+    id: number;
+    debit: string;
+    credit: string;
+    description: string | null;
+    journal_entry?: { id: number; date: string; description: string };
+}

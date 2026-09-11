@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\BankTransactionController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CostCenterController;
@@ -84,6 +86,13 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('payroll-runs', PayrollRunController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('payroll-runs/{payroll_run}/approve', [PayrollRunController::class, 'approve'])->name('payroll-runs.approve');
     Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'markPaid'])->name('payroll-runs.mark-paid');
+
+    Route::resource('bank-accounts', BankAccountController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+    Route::post('bank-accounts/{bank_account}/import', [BankAccountController::class, 'import'])->name('bank-accounts.import');
+
+    Route::post('bank-transactions/{bank_transaction}/match', [BankTransactionController::class, 'match'])->name('bank-transactions.match');
+    Route::post('bank-transactions/{bank_transaction}/unmatch', [BankTransactionController::class, 'unmatch'])->name('bank-transactions.unmatch');
+    Route::post('bank-transactions/{bank_transaction}/create-and-match', [BankTransactionController::class, 'createAndMatch'])->name('bank-transactions.create-and-match');
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');

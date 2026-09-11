@@ -50,6 +50,8 @@ class RolePermissionSeeder extends Seeder
         'payroll.view',
         'payroll.create',
         'payroll.manage',
+        'bank_accounts.view',
+        'bank_accounts.manage',
     ];
 
     /**
@@ -88,6 +90,8 @@ class RolePermissionSeeder extends Seeder
         'payroll.view',
         'payroll.create',
         'payroll.manage',
+        'bank_accounts.view',
+        'bank_accounts.manage',
     ];
 
     /**
@@ -110,6 +114,7 @@ class RolePermissionSeeder extends Seeder
         'fixed_assets.view',
         'employees.view',
         'payroll.view',
+        'bank_accounts.view',
     ];
 
     public function run(): void
