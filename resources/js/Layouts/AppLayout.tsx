@@ -1,6 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { Sidebar } from '@/Components/layout/Sidebar';
+import { Topbar } from '@/Components/layout/Topbar';
 
 interface FlashProps {
     success?: string | null;
@@ -14,6 +15,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '100vh', backgroundColor: 'var(--af-bg)' }}>
             <Sidebar />
             <main className="flex-grow-1 px-3 px-lg-4 py-3 py-lg-4" style={{ minWidth: 0 }}>
+                <Topbar />
                 {flash?.success && (
                     <div
                         className="mb-3 px-3 py-2"

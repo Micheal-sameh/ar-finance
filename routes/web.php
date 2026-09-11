@@ -15,7 +15,9 @@ use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JournalEntryController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\PayrollRunController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VendorController;
@@ -47,6 +49,9 @@ if (app()->environment('local')) {
 // every request, which doesn't fit a cookie-session Inertia app).
 Route::middleware(['auth'])->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
+
+    Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('logout', LogoutController::class)->name('logout');
 
     Route::get('accounts/options', [AccountController::class, 'options'])->name('accounts.options');
     Route::resource('accounts', AccountController::class)->except(['create', 'edit']);
