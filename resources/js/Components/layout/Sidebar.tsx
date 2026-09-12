@@ -38,7 +38,6 @@ export function Sidebar() {
                 responsive="lg"
                 placement="start"
                 className="af-sidebar"
-                style={{ width: '260px', flexShrink: 0 }}
             >
                 {/* Bootstrap's responsive offcanvas force-hides .offcanvas-header
                  * at the lg+ breakpoint (it's meant to blend into a navbar),

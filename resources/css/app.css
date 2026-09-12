@@ -44,6 +44,7 @@ body {
  * for the app sidebar, which should stay solid at every width. */
 .af-sidebar {
     background-color: var(--af-primary) !important;
+    width: var(--af-sidebar-expanded);
 }
 
 /* Once the offcanvas becomes a static in-flow panel at lg+, it collapses to
@@ -58,6 +59,12 @@ body {
     .af-sidebar {
         position: sticky;
         top: 0;
+        /* position: sticky always creates a new stacking context, so without
+         * an explicit z-index here this whole subtree — including the
+         * expanded panel's own z-index: 1030 below — would still stack by
+         * DOM order under `main`, which comes right after it as a flex
+         * sibling. */
+        z-index: 1030;
         align-self: flex-start;
         height: 100vh;
         width: var(--af-sidebar-collapsed);
@@ -74,6 +81,13 @@ body {
         height: 100%;
         overflow: hidden;
         z-index: 1030;
+        /* The panel — not its 72px-wide sticky parent — is what actually
+         * grows on hover, so the blue fill has to live here too or the
+         * expanded area (beyond the parent's own box) shows the page
+         * background behind it instead. Bootstrap's responsive offcanvas
+         * resets .offcanvas-body to transparent with !important at this
+         * same breakpoint, so this has to match it to win. */
+        background-color: var(--af-primary) !important;
         transition: width 0.18s ease;
     }
 
