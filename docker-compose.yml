@@ -1,0 +1,51 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: avarewase-finance/Dockerfile
+      args:
+        VITE_APP_NAME: ${APP_NAME}
+    image: avarewase-finance:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: central_mysql
+      REDIS_HOST: redis
+      CACHE_STORE: redis
+    ports:
+      - "127.0.0.1:6600:9000"
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+      - /var/www/html/node_modules
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - avarewase-finance
+      - central_net
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - avarewase-finance
+
+networks:
+  avarewase-finance:
+    driver: bridge
+  central_net:
+    external: true
+
+volumes:
+  redis-data:
