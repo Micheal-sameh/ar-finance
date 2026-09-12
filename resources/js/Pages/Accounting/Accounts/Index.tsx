@@ -54,6 +54,11 @@ function buildForest(accounts: Account[]): AccountNode[] {
     return roots;
 }
 
+/** Sum of a node's own balance plus every descendant's — shown in place of a collapsed parent's own (often zero) balance so nothing hidden goes unaccounted for. */
+function subtreeBalance(node: AccountNode): number {
+    return node.children.reduce((sum, child) => sum + subtreeBalance(child), node.balance ?? 0);
+}
+
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
     { value: 'asset', label: 'Asset' },
     { value: 'liability', label: 'Liability' },
@@ -109,7 +114,10 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                 </Table.Cell>
                 <Table.Cell style={{ textTransform: 'capitalize' }}>{node.normal_balance}</Table.Cell>
                 <Table.Cell className="text-end">
-                    <MoneyDisplay amount={node.balance ?? 0} currency={baseCurrency} />
+                    <MoneyDisplay
+                        amount={hasChildren && !isExpanded ? subtreeBalance(node) : node.balance ?? 0}
+                        currency={baseCurrency}
+                    />
                 </Table.Cell>
                 <Table.Cell>
                     <Badge variant={node.is_active ? 'success' : 'neutral'}>{node.is_active ? 'Active' : 'Inactive'}</Badge>
