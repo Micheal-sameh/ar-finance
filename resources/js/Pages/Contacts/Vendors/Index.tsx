@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default function VendorsIndex({ vendors, filters }: Props) {
+    const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Vendor | null>(null);
@@ -57,8 +59,8 @@ export default function VendorsIndex({ vendors, filters }: Props) {
         }
     }
 
-    function destroy(vendor: Vendor) {
-        if (confirm(`Delete vendor "${vendor.name}"?`)) {
+    async function destroy(vendor: Vendor) {
+        if (await confirm(`Delete vendor "${vendor.name}"?`, { variant: 'danger', confirmLabel: 'Delete' })) {
             router.delete(route('vendors.destroy', vendor.id));
         }
     }

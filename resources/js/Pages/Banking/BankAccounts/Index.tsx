@@ -5,6 +5,7 @@ import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function BankAccountsIndex({ bankAccounts, filters, currencyOptions }: Props) {
+    const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<BankAccount | null>(null);
@@ -73,8 +75,8 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
         }
     }
 
-    function destroy(bankAccount: BankAccount) {
-        if (confirm(`Delete bank account "${bankAccount.name}"?`)) {
+    async function destroy(bankAccount: BankAccount) {
+        if (await confirm(`Delete bank account "${bankAccount.name}"?`, { variant: 'danger', confirmLabel: 'Delete' })) {
             router.delete(route('bank-accounts.destroy', bankAccount.id));
         }
     }

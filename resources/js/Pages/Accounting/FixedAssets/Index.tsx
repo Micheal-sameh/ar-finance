@@ -5,6 +5,7 @@ import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
@@ -21,6 +22,7 @@ function netBookValue(asset: FixedAsset): number {
 }
 
 export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
+    const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
 
     function runSearch(e: FormEvent) {
@@ -28,8 +30,13 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
         router.get(route('fixed-assets.index'), { search }, { preserveState: true });
     }
 
-    function runDepreciation() {
-        if (confirm("Post this month's depreciation for every asset that hasn't already been posted?")) {
+    async function runDepreciation() {
+        if (
+            await confirm("Post this month's depreciation for every asset that hasn't already been posted?", {
+                variant: 'primary',
+                confirmLabel: 'Run Depreciation',
+            })
+        ) {
             router.post(route('fixed-assets.run-depreciation'));
         }
     }

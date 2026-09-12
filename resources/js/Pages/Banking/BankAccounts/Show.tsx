@@ -7,6 +7,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -23,6 +24,7 @@ function lineAmount(line: { debit: string; credit: string }): number {
 }
 
 export default function BankAccountsShow({ bankAccount, transactions, unmatchedLines }: Props) {
+    const confirm = useConfirm();
     const [activeRow, setActiveRow] = useState<number | null>(null);
     const [mode, setMode] = useState<'match' | 'create'>('match');
 
@@ -68,8 +70,8 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
         });
     }
 
-    function unmatch(transactionId: number) {
-        if (confirm('Unmatch this transaction?')) {
+    async function unmatch(transactionId: number) {
+        if (await confirm('Unmatch this transaction?', { variant: 'danger', confirmLabel: 'Unmatch' })) {
             router.post(route('bank-transactions.unmatch', transactionId));
         }
     }

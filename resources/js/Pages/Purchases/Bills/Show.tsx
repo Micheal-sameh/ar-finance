@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Bill, BillStatus } from '@/types/finance';
@@ -23,13 +24,14 @@ function lineTotal(line: Bill['lines'][number]): number {
 }
 
 export default function BillsShow({ bill }: Props) {
+    const confirm = useConfirm();
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const total = bill.lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
     const paymentForm = useForm({ payment_account_id: null as number | null });
 
-    function approve() {
-        if (confirm('Approve this bill? This posts the expense to the ledger.')) {
+    async function approve() {
+        if (await confirm('Approve this bill? This posts the expense to the ledger.', { variant: 'primary', confirmLabel: 'Approve' })) {
             router.post(route('bills.approve', bill.id));
         }
     }

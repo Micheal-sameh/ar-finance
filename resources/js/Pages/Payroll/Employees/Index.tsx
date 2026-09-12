@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function EmployeesIndex({ employees, filters }: Props) {
+    const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Employee | null>(null);
@@ -63,8 +65,8 @@ export default function EmployeesIndex({ employees, filters }: Props) {
         }
     }
 
-    function destroy(employee: Employee) {
-        if (confirm(`Delete employee "${employee.name}"?`)) {
+    async function destroy(employee: Employee) {
+        if (await confirm(`Delete employee "${employee.name}"?`, { variant: 'danger', confirmLabel: 'Delete' })) {
             router.delete(route('employees.destroy', employee.id));
         }
     }

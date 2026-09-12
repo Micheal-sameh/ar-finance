@@ -7,6 +7,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
@@ -43,6 +44,7 @@ function formatRate(value: number): string {
 }
 
 export default function RevaluationIndex({ preview, filters, canManage }: Props) {
+    const confirm = useConfirm();
     const [date, setDate] = useState(filters.date);
     const [fxGainLossAccountId, setFxGainLossAccountId] = useState<number | null>(null);
     const [running, setRunning] = useState(false);
@@ -52,12 +54,17 @@ export default function RevaluationIndex({ preview, filters, canManage }: Props)
         router.get(route('revaluation.index'), { date }, { preserveState: true });
     }
 
-    function runRevaluation() {
+    async function runRevaluation() {
         if (!fxGainLossAccountId) {
             return;
         }
 
-        if (!confirm(`Post unrealized FX gain/loss for ${preview.rows.length} invoice(s) as of ${date}?`)) {
+        if (
+            !(await confirm(`Post unrealized FX gain/loss for ${preview.rows.length} invoice(s) as of ${date}?`, {
+                variant: 'primary',
+                confirmLabel: 'Post',
+            }))
+        ) {
             return;
         }
 

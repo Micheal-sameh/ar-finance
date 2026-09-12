@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Expense } from '@/types/finance';
 import { expenseStatusVariant } from '@/utils/finance';
@@ -15,11 +16,12 @@ interface Props {
 }
 
 export default function ExpensesShow({ expense }: Props) {
+    const confirm = useConfirm();
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const paymentForm = useForm({ payment_account_id: null as number | null });
 
-    function approve() {
-        if (confirm('Approve this expense? This posts it to the ledger.')) {
+    async function approve() {
+        if (await confirm('Approve this expense? This posts it to the ledger.', { variant: 'primary', confirmLabel: 'Approve' })) {
             router.post(route('expenses.approve', expense.id));
         }
     }

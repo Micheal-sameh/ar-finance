@@ -7,6 +7,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
@@ -22,6 +23,7 @@ interface Props {
 }
 
 export default function CostCentersIndex({ costCenters, summary, filters }: Props) {
+    const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<CostCenter | null>(null);
@@ -67,8 +69,8 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
         }
     }
 
-    function destroy(costCenter: CostCenter) {
-        if (confirm(`Delete cost center "${costCenter.name}"?`)) {
+    async function destroy(costCenter: CostCenter) {
+        if (await confirm(`Delete cost center "${costCenter.name}"?`, { variant: 'danger', confirmLabel: 'Delete' })) {
             router.delete(route('cost-centers.destroy', costCenter.id));
         }
     }

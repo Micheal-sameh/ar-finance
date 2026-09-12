@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { PayrollRun, PayrollRunStatus } from '@/types/finance';
@@ -19,6 +20,7 @@ function statusVariant(status: PayrollRunStatus) {
 }
 
 export default function PayrollRunsShow({ payrollRun }: Props) {
+    const confirm = useConfirm();
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const paymentForm = useForm({ payment_account_id: null as number | null });
 
@@ -26,8 +28,13 @@ export default function PayrollRunsShow({ payrollRun }: Props) {
     const totalDeductions = payrollRun.payslips.reduce((sum, p) => sum + parseFloat(p.deductions), 0);
     const totalNet = payrollRun.payslips.reduce((sum, p) => sum + parseFloat(p.net_pay), 0);
 
-    function approve() {
-        if (confirm('Approve this payroll run? This posts payroll expense to the ledger.')) {
+    async function approve() {
+        if (
+            await confirm('Approve this payroll run? This posts payroll expense to the ledger.', {
+                variant: 'primary',
+                confirmLabel: 'Approve',
+            })
+        ) {
             router.post(route('payroll-runs.approve', payrollRun.id));
         }
     }

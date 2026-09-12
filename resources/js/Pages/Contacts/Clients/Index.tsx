@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export default function ClientsIndex({ clients, filters, currencyOptions }: Props) {
+    const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Client | null>(null);
@@ -68,8 +70,8 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
         }
     }
 
-    function destroy(client: Client) {
-        if (confirm(`Delete client "${client.name}"?`)) {
+    async function destroy(client: Client) {
+        if (await confirm(`Delete client "${client.name}"?`, { variant: 'danger', confirmLabel: 'Delete' })) {
             router.delete(route('clients.destroy', client.id));
         }
     }

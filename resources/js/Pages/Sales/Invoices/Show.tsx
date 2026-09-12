@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -21,6 +22,7 @@ function lineTotal(line: Invoice['lines'][number]): number {
 }
 
 export default function InvoicesShow({ invoice }: Props) {
+    const confirm = useConfirm();
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const total = invoice.lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
@@ -32,8 +34,13 @@ export default function InvoicesShow({ invoice }: Props) {
         fx_gain_loss_account_id: null as number | null,
     });
 
-    function send() {
-        if (confirm('Send this invoice? This posts revenue to the ledger and it can no longer be edited.')) {
+    async function send() {
+        if (
+            await confirm('Send this invoice? This posts revenue to the ledger and it can no longer be edited.', {
+                variant: 'primary',
+                confirmLabel: 'Send',
+            })
+        ) {
             router.post(route('invoices.send', invoice.id));
         }
     }
@@ -44,8 +51,8 @@ export default function InvoicesShow({ invoice }: Props) {
         });
     }
 
-    function voidInvoice() {
-        if (confirm('Void this draft invoice?')) {
+    async function voidInvoice() {
+        if (await confirm('Void this draft invoice?', { variant: 'danger', confirmLabel: 'Void' })) {
             router.post(route('invoices.void', invoice.id));
         }
     }

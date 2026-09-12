@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -28,6 +29,7 @@ function lineTotal(line: PurchaseOrder['lines'][number]): number {
 }
 
 export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
+    const confirm = useConfirm();
     const [showConvertForm, setShowConvertForm] = useState(false);
     const total = purchaseOrder.lines.reduce((sum, line) => sum + lineTotal(line), 0);
     const isOpen = purchaseOrder.status === 'draft' || purchaseOrder.status === 'sent';
@@ -43,8 +45,8 @@ export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
         router.post(route('purchase-orders.send', purchaseOrder.id));
     }
 
-    function cancelPo() {
-        if (confirm('Cancel this purchase order?')) {
+    async function cancelPo() {
+        if (await confirm('Cancel this purchase order?', { variant: 'danger', confirmLabel: 'Cancel PO' })) {
             router.post(route('purchase-orders.cancel', purchaseOrder.id));
         }
     }
