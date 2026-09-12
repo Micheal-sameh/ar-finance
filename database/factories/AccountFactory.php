@@ -18,7 +18,7 @@ class AccountFactory extends Factory
         $type = $this->faker->randomElement(AccountType::cases());
 
         return [
-            'code' => (string) $this->faker->unique()->numberBetween(1000, 9999),
+            'code' => $type->codePrefix().$this->faker->unique()->numberBetween(100, 999),
             'name' => $this->faker->words(2, true),
             'type' => $type,
             'normal_balance' => $type->defaultNormalBalance(),

@@ -37,4 +37,20 @@ enum AccountType: string
             self::Expense => 'Expense',
         };
     }
+
+    /**
+     * The chart-of-accounts numbering convention: the digit an account's
+     * code must start with for this type (1=Asset, 2=Liability, 3=Equity,
+     * 4=Revenue, 5=Expense).
+     */
+    public function codePrefix(): string
+    {
+        return match ($this) {
+            self::Asset => '1',
+            self::Liability => '2',
+            self::Equity => '3',
+            self::Revenue => '4',
+            self::Expense => '5',
+        };
+    }
 }
