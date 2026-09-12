@@ -14,22 +14,17 @@ DB_PORT="${DB_PORT:-3306}"
 DB_USERNAME="${DB_USERNAME:-root}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 
-# Only re-run composer install when composer.lock actually changed (e.g. a new
-# package was added on the host), since vendor/ persists across restarts in
-# its own volume and a full install on every boot would be wasted work.
-LOCK_HASH_FILE="vendor/.composer-lock-hash"
-CURRENT_LOCK_HASH=$(md5sum composer.lock 2>/dev/null | cut -d' ' -f1)
-
-if [ ! -f "$LOCK_HASH_FILE" ] || [ "$(cat "$LOCK_HASH_FILE" 2>/dev/null)" != "$CURRENT_LOCK_HASH" ]; then
-    echo "composer.lock changed, running composer install..."
-    composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-    echo "$CURRENT_LOCK_HASH" > "$LOCK_HASH_FILE"
-else
-    echo "composer.lock unchanged, skipping composer install."
-fi
+echo "Running composer install..."
+composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
 echo "Waiting for database at ${DB_HOST}:${DB_PORT}..."
+DB_WAIT_RETRIES=30
 until php -r "new PDO('mysql:host=${DB_HOST};port=${DB_PORT}', '${DB_USERNAME}', '${DB_PASSWORD}');" >/dev/null 2>&1; do
+    DB_WAIT_RETRIES=$((DB_WAIT_RETRIES - 1))
+    if [ "$DB_WAIT_RETRIES" -le 0 ]; then
+        echo "Database at ${DB_HOST}:${DB_PORT} did not become reachable in time." >&2
+        exit 1
+    fi
     sleep 2
 done
 echo "Database is up."
