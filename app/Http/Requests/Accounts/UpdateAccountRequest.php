@@ -5,6 +5,7 @@ namespace App\Http\Requests\Accounts;
 use App\DTOs\CreateAccountData;
 use App\Enums\AccountType;
 use App\Enums\NormalBalance;
+use App\Models\Account;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -37,7 +38,23 @@ class UpdateAccountRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', new Enum(AccountType::class)],
             'normal_balance' => ['nullable', new Enum(NormalBalance::class)],
-            'parent_id' => ['nullable', 'exists:accounts,id', Rule::notIn([$accountId])],
+            'parent_id' => [
+                'nullable',
+                'exists:accounts,id',
+                Rule::notIn([$accountId]),
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! $value) {
+                        return;
+                    }
+
+                    $type = AccountType::tryFrom((string) $this->input('type'));
+                    $parent = Account::find($value);
+
+                    if ($type && $parent && $parent->type !== $type) {
+                        $fail("The parent account must be a {$type->label()} account.");
+                    }
+                },
+            ],
             'is_active' => ['boolean'],
         ];
     }

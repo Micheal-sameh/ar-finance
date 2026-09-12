@@ -53,7 +53,7 @@ class AccountController extends Controller
 
     public function store(StoreAccountRequest $request): RedirectResponse
     {
-        $this->accounts->create($request->toDto());
+        $this->accounts->create($request->toDto(), $request->user()->id);
 
         return redirect()->route('accounts.index')->with('success', 'Account created.');
     }

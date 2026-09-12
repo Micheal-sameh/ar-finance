@@ -2,10 +2,12 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { ListTree, Pencil, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
+import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
@@ -17,6 +19,7 @@ import type { Account, AccountType, Paginated } from '@/types/finance';
 interface Props {
     accounts: Paginated<Account>;
     filters: { type?: string; is_active?: string; search?: string };
+    baseCurrency: string;
 }
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
@@ -27,6 +30,15 @@ const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
     { value: 'expense', label: 'Expense' },
 ];
 
+// Chart-of-accounts numbering convention: the code's first digit says its type.
+const TYPE_BY_CODE_PREFIX: Record<string, AccountType> = {
+    '1': 'asset',
+    '2': 'liability',
+    '3': 'equity',
+    '4': 'revenue',
+    '5': 'expense',
+};
+
 function typeBadgeVariant(type: AccountType) {
     return { asset: 'primary', liability: 'warning', equity: 'info', revenue: 'success', expense: 'danger' }[type] as
         | 'primary'
@@ -36,7 +48,8 @@ function typeBadgeVariant(type: AccountType) {
         | 'danger';
 }
 
-export default function AccountsIndex({ accounts, filters }: Props) {
+export default function AccountsIndex({ accounts, filters, baseCurrency }: Props) {
+    const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Account | null>(null);
@@ -46,7 +59,19 @@ export default function AccountsIndex({ accounts, filters }: Props) {
         name: '',
         type: 'asset' as AccountType,
         parent_id: null as number | null,
+        opening_balance: '' as number | string,
     });
+
+    function handleCodeChange(value: string) {
+        const inferredType = TYPE_BY_CODE_PREFIX[value.charAt(0)];
+
+        form.setData((data) => ({
+            ...data,
+            code: value,
+            type: inferredType ?? data.type,
+            parent_id: inferredType && inferredType !== data.type ? null : data.parent_id,
+        }));
+    }
 
     function openCreate() {
         setEditing(null);
@@ -62,6 +87,7 @@ export default function AccountsIndex({ accounts, filters }: Props) {
             name: account.name,
             type: account.type,
             parent_id: account.parent_id,
+            opening_balance: '',
         });
         form.clearErrors();
         setModalOpen(true);
@@ -77,8 +103,13 @@ export default function AccountsIndex({ accounts, filters }: Props) {
         }
     }
 
-    function destroy(account: Account) {
-        if (confirm(`Delete account ${account.code} — ${account.name}?`)) {
+    async function destroy(account: Account) {
+        if (
+            await confirm(`Delete account ${account.code} — ${account.name}?`, {
+                variant: 'danger',
+                confirmLabel: 'Delete',
+            })
+        ) {
             router.delete(route('accounts.destroy', account.id));
         }
     }
@@ -130,6 +161,7 @@ export default function AccountsIndex({ accounts, filters }: Props) {
                             <Table.HeadCell>Name</Table.HeadCell>
                             <Table.HeadCell>Type</Table.HeadCell>
                             <Table.HeadCell>Normal Balance</Table.HeadCell>
+                            <Table.HeadCell className="text-end">Balance</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
                             <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
                         </Table.Head>
@@ -150,6 +182,9 @@ export default function AccountsIndex({ accounts, filters }: Props) {
                                         <Badge variant={typeBadgeVariant(account.type)}>{account.type}</Badge>
                                     </Table.Cell>
                                     <Table.Cell style={{ textTransform: 'capitalize' }}>{account.normal_balance}</Table.Cell>
+                                    <Table.Cell className="text-end">
+                                        <MoneyDisplay amount={account.balance ?? 0} currency={baseCurrency} />
+                                    </Table.Cell>
                                     <Table.Cell>
                                         <Badge variant={account.is_active ? 'success' : 'neutral'}>
                                             {account.is_active ? 'Active' : 'Inactive'}
@@ -203,7 +238,7 @@ export default function AccountsIndex({ accounts, filters }: Props) {
                     <Input
                         label="Code"
                         value={form.data.code}
-                        onChange={(e) => form.setData('code', e.target.value)}
+                        onChange={(e) => handleCodeChange(e.target.value)}
                         error={form.errors.code}
                         placeholder="e.g. 1000"
                     />
@@ -217,7 +252,7 @@ export default function AccountsIndex({ accounts, filters }: Props) {
                     <Select
                         label="Type"
                         value={form.data.type}
-                        onChange={(e) => form.setData('type', e.target.value as AccountType)}
+                        onChange={(e) => form.setData((data) => ({ ...data, type: e.target.value as AccountType, parent_id: null }))}
                         error={form.errors.type}
                     >
                         {ACCOUNT_TYPES.map((t) => (
@@ -235,8 +270,20 @@ export default function AccountsIndex({ accounts, filters }: Props) {
                             onChange={(id) => form.setData('parent_id', id)}
                             error={form.errors.parent_id}
                             placeholder="No parent"
+                            filterType={form.data.type}
                         />
                     </div>
+                    {!editing && (
+                        <Input
+                            label="Opening balance (optional)"
+                            type="number"
+                            step="0.01"
+                            value={form.data.opening_balance}
+                            onChange={(e) => form.setData('opening_balance', e.target.value)}
+                            error={form.errors.opening_balance}
+                            placeholder="0.00"
+                        />
+                    )}
                 </form>
             </Modal>
         </AppLayout>

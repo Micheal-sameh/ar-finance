@@ -2,13 +2,14 @@ import { Combobox } from '@headlessui/react';
 import { Check, ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAccounts } from '@/hooks/useAccounts';
-import type { AccountOption } from '@/types/finance';
+import type { AccountOption, AccountType } from '@/types/finance';
 
 export interface AccountPickerProps {
     value: number | null;
     onChange: (accountId: number | null) => void;
     error?: string;
     placeholder?: string;
+    filterType?: AccountType;
 }
 
 /**
@@ -16,20 +17,22 @@ export interface AccountPickerProps {
  * one component reused everywhere an account is chosen (journal lines,
  * report filters, expense categorization, ...).
  */
-export function AccountPicker({ value, onChange, error, placeholder = 'Select account…' }: AccountPickerProps) {
+export function AccountPicker({ value, onChange, error, placeholder = 'Select account…', filterType }: AccountPickerProps) {
     const { accounts, loading } = useAccounts();
     const [query, setQuery] = useState('');
 
     const selected = accounts.find((a) => a.id === value) ?? null;
 
     const filtered = useMemo(() => {
-        if (query === '') return accounts;
+        const byType = filterType ? accounts.filter((a) => a.type === filterType) : accounts;
+
+        if (query === '') return byType;
         const q = query.toLowerCase();
 
-        return accounts.filter(
+        return byType.filter(
             (a) => a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q),
         );
-    }, [accounts, query]);
+    }, [accounts, filterType, query]);
 
     return (
         <Combobox value={selected} onChange={(account: AccountOption | null) => onChange(account?.id ?? null)}>

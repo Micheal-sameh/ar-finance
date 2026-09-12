@@ -14,6 +14,7 @@ final readonly class CreateAccountData
         public NormalBalance $normalBalance,
         public ?int $parentId = null,
         public bool $isActive = true,
+        public ?float $openingBalance = null,
     ) {
     }
 
@@ -30,6 +31,9 @@ final readonly class CreateAccountData
                 : $type->defaultNormalBalance(),
             parentId: isset($data['parent_id']) ? (int) $data['parent_id'] : null,
             isActive: (bool) ($data['is_active'] ?? true),
+            openingBalance: isset($data['opening_balance']) && $data['opening_balance'] !== ''
+                ? (float) $data['opening_balance']
+                : null,
         );
     }
 }
