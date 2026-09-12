@@ -7,6 +7,7 @@ use App\Http\Requests\BankTransactions\ImportBankTransactionsRequest;
 use App\Models\BankAccount;
 use App\Services\BankAccountService;
 use App\Services\BankReconciliationService;
+use App\Services\ExchangeRateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,6 +19,7 @@ class BankAccountController extends Controller
     public function __construct(
         private readonly BankAccountService $bankAccounts,
         private readonly BankReconciliationService $reconciliation,
+        private readonly ExchangeRateService $exchangeRates,
     ) {
     }
 
@@ -28,6 +30,7 @@ class BankAccountController extends Controller
         return Inertia::render('Banking/BankAccounts/Index', [
             'bankAccounts' => $this->bankAccounts->paginate($request->only(['search'])),
             'filters' => $request->only(['search']),
+            'currencyOptions' => $this->exchangeRates->currencyOptions(),
         ]);
     }
 

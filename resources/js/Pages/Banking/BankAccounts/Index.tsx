@@ -8,16 +8,23 @@ import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
+import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { BankAccount, Paginated } from '@/types/finance';
 
+interface CurrencyOption {
+    code: string;
+    name: string;
+}
+
 interface Props {
     bankAccounts: Paginated<BankAccount>;
     filters: { search?: string };
+    currencyOptions: CurrencyOption[];
 }
 
-export default function BankAccountsIndex({ bankAccounts, filters }: Props) {
+export default function BankAccountsIndex({ bankAccounts, filters, currencyOptions }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<BankAccount | null>(null);
@@ -164,7 +171,13 @@ export default function BankAccountsIndex({ bankAccounts, filters }: Props) {
                     </div>
                     <Input label="Bank name" value={form.data.bank_name} onChange={(e) => form.setData('bank_name', e.target.value)} error={form.errors.bank_name} />
                     <Input label="Account number" value={form.data.account_number} onChange={(e) => form.setData('account_number', e.target.value)} error={form.errors.account_number} />
-                    <Input label="Currency" value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value.toUpperCase())} error={form.errors.currency} maxLength={3} />
+                    <Select label="Currency" value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value)} error={form.errors.currency}>
+                        {currencyOptions.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                                {currency.code} — {currency.name}
+                            </option>
+                        ))}
+                    </Select>
                 </form>
             </Modal>
         </AppLayout>

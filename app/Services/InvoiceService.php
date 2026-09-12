@@ -157,9 +157,9 @@ class InvoiceService
             throw new RuntimeException("Invoice {$invoice->invoice_number} is not awaiting payment.");
         }
 
-        $settlementExchangeRate ??= (float) $invoice->exchange_rate;
+        $settlementExchangeRate ??= $invoice->bookedExchangeRate();
 
-        $bookedBase = round($invoice->total() * (float) $invoice->exchange_rate, 2);
+        $bookedBase = round($invoice->total() * $invoice->bookedExchangeRate(), 2);
         $settledBase = round($invoice->total() * $settlementExchangeRate, 2);
         $fxDiff = round($settledBase - $bookedBase, 2);
 

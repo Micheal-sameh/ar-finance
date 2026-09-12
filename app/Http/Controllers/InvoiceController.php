@@ -6,6 +6,7 @@ use App\Http\Requests\Invoices\RecordInvoicePaymentRequest;
 use App\Http\Requests\Invoices\StoreInvoiceRequest;
 use App\Models\Invoice;
 use App\Services\ClientService;
+use App\Services\ExchangeRateService;
 use App\Services\InvoiceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class InvoiceController extends Controller
     public function __construct(
         private readonly InvoiceService $invoices,
         private readonly ClientService $clients,
+        private readonly ExchangeRateService $exchangeRates,
     ) {
     }
 
@@ -37,6 +39,8 @@ class InvoiceController extends Controller
 
         return Inertia::render('Sales/Invoices/Create', [
             'clients' => $this->clients->all(),
+            'baseCurrency' => $this->exchangeRates->baseCurrency(),
+            'currencyOptions' => $this->exchangeRates->currencyOptions(),
         ]);
     }
 

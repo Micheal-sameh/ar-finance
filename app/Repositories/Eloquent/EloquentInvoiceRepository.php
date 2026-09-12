@@ -63,4 +63,20 @@ class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             ->whereDate('issue_date', '<=', $to)
             ->get();
     }
+
+    public function outstanding(): Collection
+    {
+        return Invoice::query()
+            ->with(['client', 'lines', 'receivableAccount'])
+            ->whereIn('status', ['sent', 'overdue'])
+            ->orderBy('issue_date')
+            ->get();
+    }
+
+    public function updateRevaluedRate(Invoice $invoice, float $rate): Invoice
+    {
+        $invoice->update(['revalued_exchange_rate' => $rate]);
+
+        return $invoice;
+    }
 }

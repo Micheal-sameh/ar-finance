@@ -10,11 +10,18 @@ import { Select } from '@/Components/ui/Select';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Client } from '@/types/finance';
 
-interface Props {
-    clients: Client[];
+interface CurrencyOption {
+    code: string;
+    name: string;
 }
 
-export default function InvoicesCreate({ clients }: Props) {
+interface Props {
+    clients: Client[];
+    baseCurrency: string;
+    currencyOptions: CurrencyOption[];
+}
+
+export default function InvoicesCreate({ clients, baseCurrency, currencyOptions }: Props) {
     const form = useForm<{
         client_id: number | '';
         invoice_number: string;
@@ -30,7 +37,7 @@ export default function InvoicesCreate({ clients }: Props) {
         invoice_number: '',
         issue_date: new Date().toISOString().slice(0, 10),
         due_date: new Date().toISOString().slice(0, 10),
-        currency: 'USD',
+        currency: baseCurrency,
         exchange_rate: '1',
         receivable_account_id: null,
         tax_payable_account_id: null,
@@ -38,7 +45,7 @@ export default function InvoicesCreate({ clients }: Props) {
     });
 
     const hasTax = form.data.lines.some((line) => parseFloat(line.tax_rate) > 0);
-    const isForeignCurrency = form.data.currency.trim().toUpperCase() !== 'USD';
+    const isForeignCurrency = form.data.currency.trim().toUpperCase() !== baseCurrency;
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -97,13 +104,18 @@ export default function InvoicesCreate({ clients }: Props) {
                             />
                         </div>
                         <div className="col-md-2">
-                            <Input
+                            <Select
                                 label="Currency"
                                 value={form.data.currency}
-                                onChange={(e) => form.setData('currency', e.target.value.toUpperCase())}
+                                onChange={(e) => form.setData('currency', e.target.value)}
                                 error={form.errors.currency}
-                                maxLength={3}
-                            />
+                            >
+                                {currencyOptions.map((currency) => (
+                                    <option key={currency.code} value={currency.code}>
+                                        {currency.code}
+                                    </option>
+                                ))}
+                            </Select>
                         </div>
                     </div>
 

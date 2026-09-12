@@ -25,6 +25,7 @@ class Invoice extends Model
         'status',
         'currency',
         'exchange_rate',
+        'revalued_exchange_rate',
         'receivable_account_id',
         'tax_payable_account_id',
         'paid_at',
@@ -35,6 +36,7 @@ class Invoice extends Model
         'due_date' => 'date',
         'status' => InvoiceStatus::class,
         'exchange_rate' => 'decimal:6',
+        'revalued_exchange_rate' => 'decimal:8',
         'paid_at' => 'datetime',
     ];
 
@@ -76,5 +78,17 @@ class Invoice extends Model
     public function total(): float
     {
         return round($this->subtotal() + $this->totalTax(), 2);
+    }
+
+    /**
+     * The exchange rate the receivable is currently booked at. Starts as
+     * exchange_rate (the rate at send() time) and moves to
+     * revalued_exchange_rate once a currency revaluation or a payment
+     * settlement re-measures it — both keep this in sync so neither one
+     * ever re-derives a gain/loss the other already recognized.
+     */
+    public function bookedExchangeRate(): float
+    {
+        return (float) ($this->revalued_exchange_rate ?? $this->exchange_rate);
     }
 }

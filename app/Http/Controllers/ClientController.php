@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Clients\SaveClientRequest;
 use App\Models\Client;
 use App\Services\ClientService;
+use App\Services\ExchangeRateService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,6 +16,7 @@ class ClientController extends Controller
 {
     public function __construct(
         private readonly ClientService $clients,
+        private readonly ExchangeRateService $exchangeRates,
     ) {
     }
 
@@ -25,6 +27,7 @@ class ClientController extends Controller
         return Inertia::render('Contacts/Clients/Index', [
             'clients' => $this->clients->paginate($request->only(['search'])),
             'filters' => $request->only(['search']),
+            'currencyOptions' => $this->exchangeRates->currencyOptions(),
         ]);
     }
 

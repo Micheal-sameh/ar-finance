@@ -6,10 +6,12 @@ use App\Http\Controllers\BankTransactionController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CostCenterController;
+use App\Http\Controllers\CurrencyRevaluationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevComponentsController;
 use App\Http\Controllers\DevLoginController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FixedAssetController;
 use App\Http\Controllers\InvoiceController;
@@ -101,6 +103,12 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('bank-transactions/{bank_transaction}/match', [BankTransactionController::class, 'match'])->name('bank-transactions.match');
     Route::post('bank-transactions/{bank_transaction}/unmatch', [BankTransactionController::class, 'unmatch'])->name('bank-transactions.unmatch');
     Route::post('bank-transactions/{bank_transaction}/create-and-match', [BankTransactionController::class, 'createAndMatch'])->name('bank-transactions.create-and-match');
+
+    Route::get('exchange-rates', [ExchangeRateController::class, 'index'])->name('exchange-rates.index');
+    Route::post('exchange-rates/sync', [ExchangeRateController::class, 'sync'])->name('exchange-rates.sync');
+
+    Route::get('revaluation', [CurrencyRevaluationController::class, 'index'])->name('revaluation.index');
+    Route::post('revaluation', [CurrencyRevaluationController::class, 'revalue'])->name('revaluation.revalue');
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');

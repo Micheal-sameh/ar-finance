@@ -21,4 +21,12 @@ interface ClientRepositoryInterface
     public function delete(Client $client): bool;
 
     public function hasInvoices(Client $client): bool;
+
+    /**
+     * Distinct 3-letter currency codes in use across clients, for the
+     * Exchange Rates page — which currencies actually need a rate.
+     *
+     * @return array<int, string>
+     */
+    public function distinctCurrencies(): array;
 }

@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Boxes, BookOpen, Building2, ClipboardList, FileText, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, Scale, ShieldCheck, TrendingUp, Truck, Users, Users2 } from 'lucide-react';
+import { ArrowLeftRight, Boxes, BookOpen, Building2, ClipboardList, FileText, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, TrendingUp, Truck, Users, Users2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -48,6 +48,7 @@ export const navConfig: NavConfigGroup[] = [
             { label: 'Journal Entries', routeName: 'journals.index', icon: BookOpen },
             { label: 'Cost Centers', routeName: 'cost-centers.index', icon: PiggyBank },
             { label: 'Fixed Assets', routeName: 'fixed-assets.index', icon: Boxes },
+            { label: 'Currency Revaluation', routeName: 'revaluation.index', icon: RefreshCw },
         ],
     },
     {

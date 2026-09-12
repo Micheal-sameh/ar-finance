@@ -54,4 +54,14 @@ class EloquentClientRepository implements ClientRepositoryInterface
     {
         return $client->invoices()->exists();
     }
+
+    public function distinctCurrencies(): array
+    {
+        return Client::query()
+            ->whereNotNull('currency')
+            ->distinct()
+            ->orderBy('currency')
+            ->pluck('currency')
+            ->all();
+    }
 }

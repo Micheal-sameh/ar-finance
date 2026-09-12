@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
 
         $tenant = Tenant::firstOrCreate(
             ['slug' => 'avarewase-demo'],
-            ['name' => 'Avarewase Demo Co.', 'base_currency' => 'USD'],
+            ['name' => 'Avarewase Demo Co.', 'base_currency' => 'EGP'],
         );
 
         $user = User::factory()->create([

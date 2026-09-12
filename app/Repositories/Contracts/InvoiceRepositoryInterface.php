@@ -26,4 +26,13 @@ interface InvoiceRepositoryInterface
      * the VAT return report (output VAT).
      */
     public function postedBetween(string $from, string $to): Collection;
+
+    /**
+     * Sent/overdue (i.e. posted but not yet paid or void) invoices, lines
+     * eager-loaded — the candidate set for currency revaluation, and
+     * usable later for AR aging.
+     */
+    public function outstanding(): Collection;
+
+    public function updateRevaluedRate(Invoice $invoice, float $rate): Invoice;
 }

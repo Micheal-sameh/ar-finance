@@ -7,16 +7,23 @@ import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
+import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Client, Paginated } from '@/types/finance';
 
+interface CurrencyOption {
+    code: string;
+    name: string;
+}
+
 interface Props {
     clients: Paginated<Client>;
     filters: { search?: string };
+    currencyOptions: CurrencyOption[];
 }
 
-export default function ClientsIndex({ clients, filters }: Props) {
+export default function ClientsIndex({ clients, filters, currencyOptions }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Client | null>(null);
@@ -157,7 +164,13 @@ export default function ClientsIndex({ clients, filters }: Props) {
                     <Input label="Phone" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} />
                     <Input label="Tax number" value={form.data.tax_number} onChange={(e) => form.setData('tax_number', e.target.value)} error={form.errors.tax_number} />
                     <Input label="Address" value={form.data.address} onChange={(e) => form.setData('address', e.target.value)} error={form.errors.address} />
-                    <Input label="Currency" value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value.toUpperCase())} error={form.errors.currency} maxLength={3} />
+                    <Select label="Currency" value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value)} error={form.errors.currency}>
+                        {currencyOptions.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                                {currency.code} — {currency.name}
+                            </option>
+                        ))}
+                    </Select>
                 </form>
             </Modal>
         </AppLayout>
