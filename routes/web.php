@@ -116,5 +116,6 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('profit-and-loss', [ReportController::class, 'profitAndLoss'])->name('profit-and-loss');
         Route::get('balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
         Route::get('vat-return', [ReportController::class, 'vatReturn'])->name('vat-return');
+        Route::get('aging', [ReportController::class, 'aging'])->name('aging');
     });
 });

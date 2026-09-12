@@ -55,4 +55,13 @@ class EloquentBillRepository implements BillRepositoryInterface
             ->whereDate('bill_date', '<=', $to)
             ->get();
     }
+
+    public function outstanding(): Collection
+    {
+        return Bill::query()
+            ->with(['vendor', 'lines'])
+            ->where('status', 'approved')
+            ->orderBy('due_date')
+            ->get();
+    }
 }

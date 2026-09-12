@@ -11,7 +11,7 @@ export interface BudgetBarProps {
  * now, and Fixed Assets/Payroll later wherever a budget-vs-actual figure
  * needs the same treatment.
  */
-export function BudgetBar({ budget, spent, currency = 'USD' }: BudgetBarProps) {
+export function BudgetBar({ budget, spent, currency = 'EGP' }: BudgetBarProps) {
     if (budget === null) {
         return (
             <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>

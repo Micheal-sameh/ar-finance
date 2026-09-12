@@ -22,7 +22,7 @@ const toneColor: Record<NonNullable<MoneyDisplayProps['tone']>, string> = {
  * suffix. `tone` lets callers dim a zero side of a debit/credit pair
  * without re-deriving the formatting logic per page.
  */
-export function MoneyDisplay({ amount, currency = 'USD', tone = 'neutral', className = '' }: MoneyDisplayProps) {
+export function MoneyDisplay({ amount, currency = 'EGP', tone = 'neutral', className = '' }: MoneyDisplayProps) {
     const numeric = typeof amount === 'string' ? parseFloat(amount) : amount;
     const isZero = numeric === 0;
 

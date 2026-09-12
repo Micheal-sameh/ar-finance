@@ -30,7 +30,7 @@ export function ProfitLossSection({
     totalLabel,
     total,
     secondaryTotal,
-    currency = 'USD',
+    currency = 'EGP',
     secondaryColumnLabel,
     emptyLabel = 'No activity in this period.',
 }: ProfitLossSectionProps) {

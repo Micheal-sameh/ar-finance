@@ -12,7 +12,7 @@ export interface BalanceCheckProps {
  * live journal-entry validation — one place that decides what "balanced"
  * means (within a cent, to absorb float rounding).
  */
-export function BalanceCheck({ totalDebit, totalCredit, currency = 'USD' }: BalanceCheckProps) {
+export function BalanceCheck({ totalDebit, totalCredit, currency = 'EGP' }: BalanceCheckProps) {
     const isBalanced = Math.abs(totalDebit - totalCredit) < 0.005;
 
     return (

@@ -22,7 +22,7 @@ final readonly class CreateClientData
             phone: $data['phone'] ?? null,
             taxNumber: $data['tax_number'] ?? null,
             address: $data['address'] ?? null,
-            currency: $data['currency'] ?? 'USD',
+            currency: $data['currency'] ?? 'EGP',
         );
     }
 }

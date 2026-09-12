@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Boxes, BookOpen, Building2, ClipboardList, FileText, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, TrendingUp, Truck, Users, Users2 } from 'lucide-react';
+import { ArrowLeftRight, Boxes, BookOpen, Building2, CircleDollarSign, ClipboardList, FileText, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, TrendingUp, Truck, Users, Users2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -59,6 +59,7 @@ export const navConfig: NavConfigGroup[] = [
             { label: 'Trial Balance', routeName: 'reports.trial-balance', icon: Scale },
             { label: 'General Ledger', routeName: 'reports.general-ledger', icon: BookOpen },
             { label: 'VAT Return', routeName: 'reports.vat-return', icon: Percent },
+            { label: 'AR/AP Aging', routeName: 'reports.aging', icon: CircleDollarSign },
         ],
     },
     {

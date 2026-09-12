@@ -24,4 +24,10 @@ interface BillRepositoryInterface
      * VAT return report (input VAT).
      */
     public function postedBetween(string $from, string $to): Collection;
+
+    /**
+     * Approved (i.e. posted but not yet paid) bills, vendor eager-loaded —
+     * the candidate set for AP aging.
+     */
+    public function outstanding(): Collection;
 }

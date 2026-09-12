@@ -87,4 +87,17 @@ class ReportController extends Controller
             'filters' => ['from' => $from, 'to' => $to],
         ]);
     }
+
+    public function aging(Request $request): Response
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $asOf = $request->string('as_of')->value() ?: now()->toDateString();
+
+        return Inertia::render('Accounting/Reports/Aging', [
+            'arReport' => $this->reports->arAging($asOf),
+            'apReport' => $this->reports->apAging($asOf),
+            'filters' => ['as_of' => $asOf],
+        ]);
+    }
 }

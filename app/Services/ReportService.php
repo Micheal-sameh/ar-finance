@@ -8,6 +8,8 @@ use App\Repositories\Contracts\BillRepositoryInterface;
 use App\Repositories\Contracts\CostCenterRepositoryInterface;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Repositories\Contracts\JournalRepositoryInterface;
+use Closure;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -407,6 +409,124 @@ class ReportService
             'purchases_subtotal' => $purchasesSubtotal,
             'input_vat' => $inputVat,
             'net_vat_payable' => round($outputVat - $inputVat, 2),
+        ];
+    }
+
+    /**
+     * How much each client owes, bucketed by how overdue it is — full
+     * amount only, no partial payments (invoices are full-payment-only
+     * today, see InvoiceService::recordPayment()). Amounts are in base
+     * currency at each invoice's *currently booked* rate ({@see
+     * Invoice::bookedExchangeRate()}), so a revalued invoice ages at its
+     * revalued value, not its original booking.
+     *
+     * Reads Invoice rows directly rather than scanning journal_lines —
+     * same reasoning as vatReturn(): aging buckets need each invoice's own
+     * due_date, which journal_lines don't carry.
+     *
+     * @return array{
+     *     as_of: string,
+     *     base_currency: string,
+     *     rows: array<int, array{id: int, name: string, current: float, days_1_30: float, days_31_60: float, days_61_90: float, days_90_plus: float, total: float}>,
+     *     totals: array{current: float, days_1_30: float, days_31_60: float, days_61_90: float, days_90_plus: float, total: float},
+     * }
+     */
+    public function arAging(string $asOf): array
+    {
+        return $this->buildAging(
+            $this->invoices->outstanding(),
+            $asOf,
+            fn ($invoice) => $invoice->client_id,
+            fn ($invoice) => $invoice->client->name,
+            fn ($invoice) => $invoice->due_date->toDateString(),
+            fn ($invoice) => round($invoice->total() * $invoice->bookedExchangeRate(), 2),
+        );
+    }
+
+    /**
+     * How much is owed to each vendor, bucketed the same way as
+     * arAging() — bills are base-currency only, so no rate conversion.
+     *
+     * @return array{
+     *     as_of: string,
+     *     base_currency: string,
+     *     rows: array<int, array{id: int, name: string, current: float, days_1_30: float, days_31_60: float, days_61_90: float, days_90_plus: float, total: float}>,
+     *     totals: array{current: float, days_1_30: float, days_31_60: float, days_61_90: float, days_90_plus: float, total: float},
+     * }
+     */
+    public function apAging(string $asOf): array
+    {
+        return $this->buildAging(
+            $this->bills->outstanding(),
+            $asOf,
+            fn ($bill) => $bill->vendor_id,
+            fn ($bill) => $bill->vendor->name,
+            fn ($bill) => $bill->due_date->toDateString(),
+            fn ($bill) => $bill->total(),
+        );
+    }
+
+    /**
+     * @param  Collection<int, mixed>  $records
+     */
+    private function buildAging(
+        Collection $records,
+        string $asOf,
+        Closure $groupId,
+        Closure $groupName,
+        Closure $dueDate,
+        Closure $amount,
+    ): array {
+        $bucketKeys = ['current', 'days_1_30', 'days_31_60', 'days_61_90', 'days_90_plus'];
+        $asOfDate = Carbon::parse($asOf);
+
+        $rows = $records
+            ->groupBy($groupId)
+            ->map(function ($group, $id) use ($groupName, $dueDate, $amount, $asOfDate, $bucketKeys) {
+                $buckets = array_fill_keys($bucketKeys, 0.0);
+
+                foreach ($group as $record) {
+                    // diffInDays from due date -> as-of date, signed: positive
+                    // means as-of is after the due date, i.e. overdue by that
+                    // many days; negative/zero means not yet due.
+                    $daysOverdue = Carbon::parse($dueDate($record))->diffInDays($asOfDate, false);
+                    $bucket = match (true) {
+                        $daysOverdue <= 0 => 'current',
+                        $daysOverdue <= 30 => 'days_1_30',
+                        $daysOverdue <= 60 => 'days_31_60',
+                        $daysOverdue <= 90 => 'days_61_90',
+                        default => 'days_90_plus',
+                    };
+                    $buckets[$bucket] += $amount($record);
+                }
+
+                foreach ($buckets as $key => $value) {
+                    $buckets[$key] = round($value, 2);
+                }
+
+                return [
+                    'id' => (int) $id,
+                    'name' => $groupName($group->first()),
+                    ...$buckets,
+                    'total' => round(array_sum($buckets), 2),
+                ];
+            })
+            ->sortByDesc('total')
+            ->values()
+            ->all();
+
+        $totals = array_fill_keys([...$bucketKeys, 'total'], 0.0);
+        foreach ($rows as $row) {
+            foreach ($totals as $key => $value) {
+                $totals[$key] = round($value + $row[$key], 2);
+            }
+        }
+
+        return [
+            'as_of' => $asOf,
+            'base_currency' => strtoupper(auth()->user()->tenant->base_currency ?? 'EGP'),
+            'rows' => $rows,
+            'totals' => $totals,
         ];
     }
 }

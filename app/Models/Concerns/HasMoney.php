@@ -11,7 +11,7 @@ trait HasMoney
     public function formattedAmount(string $column): string
     {
         $amount = (float) ($this->{$column} ?? 0);
-        $currency = $this->currency ?? $this->tenant?->base_currency ?? 'USD';
+        $currency = $this->currency ?? $this->tenant?->base_currency ?? 'EGP';
 
         return number_format($amount, 2).' '.$currency;
     }

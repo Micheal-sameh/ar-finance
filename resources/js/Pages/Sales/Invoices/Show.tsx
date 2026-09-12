@@ -24,7 +24,7 @@ export default function InvoicesShow({ invoice }: Props) {
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const total = invoice.lines.reduce((sum, line) => sum + lineTotal(line), 0);
 
-    const isForeignCurrency = invoice.currency.trim().toUpperCase() !== 'USD';
+    const isForeignCurrency = invoice.currency.trim().toUpperCase() !== 'EGP';
 
     const paymentForm = useForm({
         payment_account_id: null as number | null,

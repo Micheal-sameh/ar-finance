@@ -27,7 +27,7 @@ final readonly class CreateInvoiceData
             invoiceNumber: $data['invoice_number'],
             issueDate: $data['issue_date'],
             dueDate: $data['due_date'],
-            currency: $data['currency'] ?? 'USD',
+            currency: $data['currency'] ?? 'EGP',
             exchangeRate: (float) ($data['exchange_rate'] ?? 1),
             receivableAccountId: (int) $data['receivable_account_id'],
             taxPayableAccountId: isset($data['tax_payable_account_id']) ? (int) $data['tax_payable_account_id'] : null,

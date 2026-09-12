@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('account_id')->constrained();
             $table->string('bank_name')->nullable();
             $table->string('account_number')->nullable();
-            $table->string('currency', 3)->default('USD');
+            $table->string('currency', 3)->default('EGP');
             $table->timestamps();
 
             $table->index('tenant_id');

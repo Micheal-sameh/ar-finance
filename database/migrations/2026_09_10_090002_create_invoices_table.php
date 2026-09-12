@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('issue_date');
             $table->date('due_date');
             $table->string('status', 20)->default('draft');
-            $table->string('currency', 3)->default('USD');
+            $table->string('currency', 3)->default('EGP');
             $table->decimal('exchange_rate', 12, 6)->default(1);
             // The AR control account this invoice's balance posts to —
             // explicit rather than inferred, same philosophy as manual

@@ -36,7 +36,7 @@ export interface LineItemEditorProps {
  * computed total. The untaxed mode is Purchase Order lines (no tax
  * concept there); showTax=true is Bill lines (Input VAT).
  */
-export function LineItemEditor({ lines, onChange, accountLabel = 'Account', currency = 'USD', showTax = false, errors = {} }: LineItemEditorProps) {
+export function LineItemEditor({ lines, onChange, accountLabel = 'Account', currency = 'EGP', showTax = false, errors = {} }: LineItemEditorProps) {
     function updateLine(index: number, patch: Partial<LineItemInput>) {
         onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
     }

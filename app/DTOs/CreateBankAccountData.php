@@ -20,7 +20,7 @@ final readonly class CreateBankAccountData
             accountId: (int) $data['account_id'],
             bankName: $data['bank_name'] ?? null,
             accountNumber: $data['account_number'] ?? null,
-            currency: $data['currency'] ?? 'USD',
+            currency: $data['currency'] ?? 'EGP',
         );
     }
 }

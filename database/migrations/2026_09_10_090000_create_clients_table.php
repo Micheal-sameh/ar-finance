@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('tax_number')->nullable();
             $table->string('address')->nullable();
-            $table->string('currency', 3)->default('USD');
+            $table->string('currency', 3)->default('EGP');
             $table->timestamps();
 
             $table->index('tenant_id');

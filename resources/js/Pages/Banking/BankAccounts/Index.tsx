@@ -40,7 +40,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
         account_id: null,
         bank_name: '',
         account_number: '',
-        currency: 'USD',
+        currency: 'EGP',
     });
 
     function openCreate() {

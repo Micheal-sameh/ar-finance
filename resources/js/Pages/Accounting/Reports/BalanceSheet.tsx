@@ -75,7 +75,7 @@ export default function BalanceSheet({ report, filters }: Props) {
                     style={{ borderTop: '2px solid var(--af-navy)', fontSize: '16px', fontWeight: 700 }}
                 >
                     <span>Liabilities + Equity</span>
-                    <span>{(report.total_liabilities + report.total_equity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
+                    <span>{(report.total_liabilities + report.total_equity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP</span>
                 </div>
             </Card>
         </AppLayout>

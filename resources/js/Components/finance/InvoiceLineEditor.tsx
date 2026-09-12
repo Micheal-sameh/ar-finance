@@ -36,7 +36,7 @@ export interface InvoiceLineEditorProps {
  * into the revenue-account credit at posting time (see InvoiceService) —
  * shown here so the user sees the tax-inclusive total they're invoicing.
  */
-export function InvoiceLineEditor({ lines, onChange, currency = 'USD', errors = {} }: InvoiceLineEditorProps) {
+export function InvoiceLineEditor({ lines, onChange, currency = 'EGP', errors = {} }: InvoiceLineEditorProps) {
     function updateLine(index: number, patch: Partial<InvoiceLineInput>) {
         onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
     }

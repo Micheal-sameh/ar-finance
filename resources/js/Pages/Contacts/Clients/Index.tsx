@@ -34,7 +34,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
         phone: '',
         tax_number: '',
         address: '',
-        currency: 'USD',
+        currency: 'EGP',
     });
 
     function openCreate() {
