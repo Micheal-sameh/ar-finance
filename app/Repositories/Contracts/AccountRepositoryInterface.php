@@ -15,6 +15,12 @@ interface AccountRepositoryInterface
      */
     public function all(): Collection;
 
+    /**
+     * Every account (active or not) matching the given filters, unpaginated
+     * and ordered by code — used to render the Chart of Accounts as a tree.
+     */
+    public function filtered(array $filters = []): Collection;
+
     public function find(int $id): ?Account;
 
     public function findByCode(string $code): ?Account;

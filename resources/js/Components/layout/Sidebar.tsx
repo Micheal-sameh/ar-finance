@@ -51,10 +51,24 @@ export function Sidebar() {
 
                 <Offcanvas.Body className="d-flex flex-column" style={{ padding: '20px 12px' }} onClick={() => setShow(false)}>
                     <div
-                        className="af-sidebar-brand px-2 mb-4 d-none d-lg-block"
+                        className="af-sidebar-brand px-2 mb-4 d-none d-lg-flex align-items-center"
                         style={{ color: '#fff', fontWeight: 700, fontSize: '16px', letterSpacing: '-0.01em' }}
                     >
-                        {brand}
+                        <span
+                            className="d-flex align-items-center justify-content-center"
+                            style={{
+                                flexShrink: 0,
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '6px',
+                                backgroundColor: 'var(--af-gold)',
+                                color: '#fff',
+                                fontSize: '13px',
+                            }}
+                        >
+                            A
+                        </span>
+                        <span className="af-label">{brand}</span>
                     </div>
 
                     <div className="af-sidebar-nav">

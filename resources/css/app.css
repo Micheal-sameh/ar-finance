@@ -19,6 +19,9 @@
     --af-radius-sm: 8px;
     --af-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 3px 0 rgb(15 23 42 / 0.08);
 
+    --af-sidebar-collapsed: 72px;
+    --af-sidebar-expanded: 260px;
+
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 }
@@ -43,26 +46,40 @@ body {
     background-color: var(--af-primary) !important;
 }
 
-/* Once the offcanvas becomes a static in-flow panel at lg+, pin it to the
- * viewport instead of scrolling away with the main content (which shares
- * the same flex row). The brand header stays fixed at the top of that
- * pinned box — only the nav list underneath it scrolls — so scrolling is
- * confined to .af-sidebar-nav rather than the whole sidebar. */
+/* Once the offcanvas becomes a static in-flow panel at lg+, it collapses to
+ * an icon rail that only reserves --af-sidebar-collapsed in the flex row
+ * (so main content never reflows) while the actual panel — an absolutely
+ * positioned child that's free to overflow that reserved box — expands to
+ * --af-sidebar-expanded on hover and overlays the content underneath it.
+ * The brand header stays fixed at the top of that panel — only the nav
+ * list underneath it scrolls — so scrolling is confined to
+ * .af-sidebar-nav rather than the whole sidebar. */
 @media (min-width: 992px) {
     .af-sidebar {
         position: sticky;
         top: 0;
         align-self: flex-start;
         height: 100vh;
-        display: flex;
-        flex-direction: column;
+        width: var(--af-sidebar-collapsed);
+        flex-shrink: 0;
     }
 
     .af-sidebar .offcanvas-body {
+        position: absolute;
+        top: 0;
+        left: 0;
         display: flex;
         flex-direction: column;
-        flex: 1 1 auto;
-        min-height: 0;
+        width: var(--af-sidebar-collapsed);
+        height: 100%;
+        overflow: hidden;
+        z-index: 1030;
+        transition: width 0.18s ease;
+    }
+
+    .af-sidebar:hover .offcanvas-body {
+        width: var(--af-sidebar-expanded);
+        box-shadow: 4px 0 16px rgb(15 23 42 / 0.18);
     }
 
     .af-sidebar-brand {
@@ -79,5 +96,28 @@ body {
 
     .af-sidebar-nav::-webkit-scrollbar {
         display: none; /* Chrome, Safari, Chromium Edge */
+    }
+
+    /* Labels fade/collapse away in the icon rail and reappear once the
+     * panel expands on hover; a fixed target width (rather than auto) is
+     * what makes the width transition animate instead of snapping. */
+    .af-label {
+        display: inline-block;
+        width: 0;
+        margin-left: 0;
+        opacity: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        transition: width 0.18s ease, opacity 0.12s ease, margin-left 0.18s ease;
+    }
+
+    .af-sidebar:hover .af-label {
+        width: 160px;
+        margin-left: 8px;
+        opacity: 1;
+    }
+
+    .af-nav-icon {
+        flex-shrink: 0;
     }
 }

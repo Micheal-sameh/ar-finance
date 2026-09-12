@@ -12,7 +12,8 @@ export function NavItem({ label, href, icon: Icon, active = false }: NavItemProp
     return (
         <Link
             href={href}
-            className="d-flex align-items-center gap-2 text-decoration-none"
+            title={label}
+            className="d-flex align-items-center text-decoration-none"
             style={{
                 padding: '8px 12px',
                 borderRadius: 'var(--af-radius-sm)',
@@ -21,8 +22,10 @@ export function NavItem({ label, href, icon: Icon, active = false }: NavItemProp
                 backgroundColor: active ? 'rgba(255,255,255,0.18)' : 'transparent',
             }}
         >
-            <Icon size={16} />
-            <span>{label}</span>
+            <Icon size={16} className="af-nav-icon" />
+            <span className="af-label" style={{ marginLeft: '8px' }}>
+                {label}
+            </span>
         </Link>
     );
 }

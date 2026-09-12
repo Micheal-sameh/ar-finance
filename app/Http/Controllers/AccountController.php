@@ -30,8 +30,8 @@ class AccountController extends Controller
         $this->authorize('viewAny', Account::class);
 
         $balances = $this->reports->accountBalances();
-        $accounts = $this->accounts->paginate($request->only(['type', 'is_active', 'search']))
-            ->through(fn (Account $account) => [
+        $accounts = $this->accounts->filtered($request->only(['type', 'is_active', 'search']))
+            ->map(fn (Account $account) => [
                 ...$account->toArray(),
                 'balance' => $balances[$account->id] ?? 0.0,
             ]);

@@ -35,6 +35,22 @@ class EloquentAccountRepository implements AccountRepositoryInterface
             ->get();
     }
 
+    public function filtered(array $filters = []): Collection
+    {
+        return Account::query()
+            ->with('parent')
+            ->when($filters['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
+            ->when($filters['is_active'] ?? null, fn ($query, $active) => $query->where('is_active', $active))
+            ->when($filters['search'] ?? null, function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('code')
+            ->get();
+    }
+
     public function find(int $id): ?Account
     {
         return Account::query()->with(['parent', 'children'])->find($id);

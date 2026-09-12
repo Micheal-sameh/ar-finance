@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ListTree, Pencil, Plus, Trash2 } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { ChevronDown, ChevronRight, ListTree, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Fragment, FormEvent, useMemo, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
@@ -14,12 +14,44 @@ import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
-import type { Account, AccountType, Paginated } from '@/types/finance';
+import type { Account, AccountType } from '@/types/finance';
 
 interface Props {
-    accounts: Paginated<Account>;
+    accounts: Account[];
     filters: { type?: string; is_active?: string; search?: string };
     baseCurrency: string;
+}
+
+interface AccountNode extends Account {
+    children: AccountNode[];
+}
+
+/**
+ * Nests the flat account list into per-type forests using parent_id. Since
+ * a child's type is always validated to match its parent's, every node in
+ * a root's subtree shares that root's type.
+ */
+function buildForest(accounts: Account[]): AccountNode[] {
+    const byId = new Map<number, AccountNode>();
+    accounts.forEach((account) => byId.set(account.id, { ...account, children: [] }));
+
+    const roots: AccountNode[] = [];
+    byId.forEach((node) => {
+        const parent = node.parent_id ? byId.get(node.parent_id) : undefined;
+        if (parent) {
+            parent.children.push(node);
+        } else {
+            roots.push(node);
+        }
+    });
+
+    const sortByCode = (nodes: AccountNode[]) => {
+        nodes.sort((a, b) => a.code.localeCompare(b.code));
+        nodes.forEach((node) => sortByCode(node.children));
+    };
+    sortByCode(roots);
+
+    return roots;
 }
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
@@ -39,6 +71,90 @@ const TYPE_BY_CODE_PREFIX: Record<string, AccountType> = {
     '5': 'expense',
 };
 
+interface AccountTreeRowsProps {
+    node: AccountNode;
+    depth: number;
+    collapsed: Set<number>;
+    onToggle: (id: number) => void;
+    onEdit: (account: Account) => void;
+    onDelete: (account: Account) => void;
+    baseCurrency: string;
+}
+
+function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, baseCurrency }: AccountTreeRowsProps) {
+    const hasChildren = node.children.length > 0;
+    const isExpanded = !collapsed.has(node.id);
+
+    return (
+        <>
+            <Table.Row>
+                <Table.Cell className="ps-3">{node.code}</Table.Cell>
+                <Table.Cell>
+                    <div className="d-flex align-items-center gap-1" style={{ paddingLeft: depth * 20 }}>
+                        {hasChildren ? (
+                            <button
+                                type="button"
+                                className="btn btn-sm p-0 d-flex align-items-center justify-content-center"
+                                style={{ color: 'var(--af-label)', width: '18px', height: '18px' }}
+                                onClick={() => onToggle(node.id)}
+                                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                            >
+                                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </button>
+                        ) : (
+                            <span style={{ width: '18px', display: 'inline-block' }} />
+                        )}
+                        <span>{node.name}</span>
+                    </div>
+                </Table.Cell>
+                <Table.Cell style={{ textTransform: 'capitalize' }}>{node.normal_balance}</Table.Cell>
+                <Table.Cell className="text-end">
+                    <MoneyDisplay amount={node.balance ?? 0} currency={baseCurrency} />
+                </Table.Cell>
+                <Table.Cell>
+                    <Badge variant={node.is_active ? 'success' : 'neutral'}>{node.is_active ? 'Active' : 'Inactive'}</Badge>
+                </Table.Cell>
+                <Table.Cell className="text-end pe-3">
+                    <div className="d-flex justify-content-end gap-1">
+                        <button
+                            type="button"
+                            className="btn btn-sm p-1"
+                            style={{ color: 'var(--af-label)' }}
+                            onClick={() => onEdit(node)}
+                            aria-label="Edit"
+                        >
+                            <Pencil size={15} />
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-sm p-1"
+                            style={{ color: 'var(--af-danger)' }}
+                            onClick={() => onDelete(node)}
+                            aria-label="Delete"
+                        >
+                            <Trash2 size={15} />
+                        </button>
+                    </div>
+                </Table.Cell>
+            </Table.Row>
+            {hasChildren &&
+                isExpanded &&
+                node.children.map((child) => (
+                    <AccountTreeRows
+                        key={child.id}
+                        node={child}
+                        depth={depth + 1}
+                        collapsed={collapsed}
+                        onToggle={onToggle}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        baseCurrency={baseCurrency}
+                    />
+                ))}
+        </>
+    );
+}
+
 function typeBadgeVariant(type: AccountType) {
     return { asset: 'primary', liability: 'warning', equity: 'info', revenue: 'success', expense: 'danger' }[type] as
         | 'primary'
@@ -53,6 +169,21 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Account | null>(null);
+    const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+
+    const forest = useMemo(() => buildForest(accounts), [accounts]);
+
+    function toggle(id: number) {
+        setCollapsed((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    }
 
     const form = useForm({
         code: '',
@@ -147,7 +278,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                     </form>
                 </div>
 
-                {accounts.data.length === 0 ? (
+                {accounts.length === 0 ? (
                     <EmptyState
                         icon={<ListTree size={20} />}
                         title="No accounts yet"
@@ -159,61 +290,42 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Code</Table.HeadCell>
                             <Table.HeadCell>Name</Table.HeadCell>
-                            <Table.HeadCell>Type</Table.HeadCell>
                             <Table.HeadCell>Normal Balance</Table.HeadCell>
                             <Table.HeadCell className="text-end">Balance</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
                             <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
                         </Table.Head>
                         <tbody>
-                            {accounts.data.map((account) => (
-                                <Table.Row key={account.id}>
-                                    <Table.Cell className="ps-3">{account.code}</Table.Cell>
-                                    <Table.Cell>
-                                        {account.name}
-                                        {account.parent && (
-                                            <span style={{ color: 'var(--af-label)', fontSize: '12px' }}>
-                                                {' '}
-                                                &middot; under {account.parent.name}
-                                            </span>
-                                        )}
-                                    </Table.Cell>
-                                    <Table.Cell>
-                                        <Badge variant={typeBadgeVariant(account.type)}>{account.type}</Badge>
-                                    </Table.Cell>
-                                    <Table.Cell style={{ textTransform: 'capitalize' }}>{account.normal_balance}</Table.Cell>
-                                    <Table.Cell className="text-end">
-                                        <MoneyDisplay amount={account.balance ?? 0} currency={baseCurrency} />
-                                    </Table.Cell>
-                                    <Table.Cell>
-                                        <Badge variant={account.is_active ? 'success' : 'neutral'}>
-                                            {account.is_active ? 'Active' : 'Inactive'}
-                                        </Badge>
-                                    </Table.Cell>
-                                    <Table.Cell className="text-end pe-3">
-                                        <div className="d-flex justify-content-end gap-1">
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm p-1"
-                                                style={{ color: 'var(--af-label)' }}
-                                                onClick={() => openEdit(account)}
-                                                aria-label="Edit"
+                            {ACCOUNT_TYPES.map(({ value, label }) => {
+                                const roots = forest.filter((node) => node.type === value);
+                                if (roots.length === 0) return null;
+
+                                return (
+                                    <Fragment key={value}>
+                                        <tr>
+                                            <td
+                                                colSpan={6}
+                                                className="px-3 py-2"
+                                                style={{ backgroundColor: 'var(--af-surface-alt, rgba(0,0,0,0.02))', borderBottom: '1px solid var(--af-border)' }}
                                             >
-                                                <Pencil size={15} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm p-1"
-                                                style={{ color: 'var(--af-danger)' }}
-                                                onClick={() => destroy(account)}
-                                                aria-label="Delete"
-                                            >
-                                                <Trash2 size={15} />
-                                            </button>
-                                        </div>
-                                    </Table.Cell>
-                                </Table.Row>
-                            ))}
+                                                <Badge variant={typeBadgeVariant(value)}>{label}</Badge>
+                                            </td>
+                                        </tr>
+                                        {roots.map((node) => (
+                                            <AccountTreeRows
+                                                key={node.id}
+                                                node={node}
+                                                depth={0}
+                                                collapsed={collapsed}
+                                                onToggle={toggle}
+                                                onEdit={openEdit}
+                                                onDelete={destroy}
+                                                baseCurrency={baseCurrency}
+                                            />
+                                        ))}
+                                    </Fragment>
+                                );
+                            })}
                         </tbody>
                     </Table>
                 )}

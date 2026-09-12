@@ -95,4 +95,34 @@ class AccountManagementTest extends TestCase
         $this->assertSame(0, $cash->journalLines()->count());
         $this->assertDatabaseMissing('accounts', ['code' => '3900']);
     }
+
+    public function test_accounts_index_returns_the_full_unpaginated_list_for_the_tree_view(): void
+    {
+        $parent = Account::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1000',
+            'name' => 'Assets',
+            'type' => AccountType::Asset,
+            'normal_balance' => 'debit',
+        ]);
+
+        $child = Account::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1010',
+            'name' => 'Cash',
+            'type' => AccountType::Asset,
+            'normal_balance' => 'debit',
+            'parent_id' => $parent->id,
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('accounts.index'));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('Accounting/Accounts/Index')
+            ->has('accounts', 2)
+            ->where('accounts.0.id', $parent->id)
+            ->where('accounts.1.parent_id', $parent->id)
+            ->where('accounts.1.id', $child->id)
+        );
+    }
 }

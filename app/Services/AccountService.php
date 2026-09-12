@@ -36,6 +36,11 @@ class AccountService
         return $this->accounts->all();
     }
 
+    public function filtered(array $filters = []): Collection
+    {
+        return $this->accounts->filtered($filters);
+    }
+
     public function find(int $id): ?Account
     {
         return $this->accounts->find($id);

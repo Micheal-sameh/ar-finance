@@ -9,7 +9,7 @@ export function NavGroup({ label, children }: NavGroupProps) {
     return (
         <div className="mb-3">
             <div
-                className="px-2 mb-1"
+                className="af-label px-2 mb-1"
                 style={{
                     fontSize: '11px',
                     textTransform: 'uppercase',
