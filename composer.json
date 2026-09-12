@@ -7,7 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "avarewase/sso-client": "@dev",
+        "avarewase/sso-client": "^1.6",
         "inertiajs/inertia-laravel": "^3.3",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
@@ -88,9 +88,10 @@
     },
     "minimum-stability": "stable",
     "prefer-stable": true,
-    "repositories": [{
-        "name": "avarewase-sso-client",
-        "type": "path",
-        "url": "../avarewase-sso-client"
-    }]
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Micheal-sameh/ar-sso-handler.git"
+        }
+    ]
 }

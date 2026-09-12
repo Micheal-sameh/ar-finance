@@ -1,8 +1,8 @@
 services:
   app:
     build:
-      context: ..
-      dockerfile: avarewase-finance/Dockerfile
+      context: .
+      dockerfile: Dockerfile
       args:
         VITE_APP_NAME: ${APP_NAME}
     image: avarewase-finance:latest
