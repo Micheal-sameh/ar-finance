@@ -23,8 +23,12 @@ export function Topbar() {
         <div
             className="d-flex align-items-center justify-content-end"
             style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 5,
                 padding: '10px 0',
                 marginBottom: '16px',
+                backgroundColor: 'var(--af-bg)',
                 borderBottom: '1px solid var(--af-border)',
             }}
         >

@@ -44,14 +44,40 @@ body {
 }
 
 /* Once the offcanvas becomes a static in-flow panel at lg+, pin it to the
- * viewport and let it scroll on its own instead of scrolling together with
- * the main content (which shares the same flex row). */
+ * viewport instead of scrolling away with the main content (which shares
+ * the same flex row). The brand header stays fixed at the top of that
+ * pinned box — only the nav list underneath it scrolls — so scrolling is
+ * confined to .af-sidebar-nav rather than the whole sidebar. */
 @media (min-width: 992px) {
     .af-sidebar {
         position: sticky;
         top: 0;
         align-self: flex-start;
         height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .af-sidebar .offcanvas-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .af-sidebar-brand {
+        flex-shrink: 0;
+    }
+
+    .af-sidebar-nav {
+        flex: 1 1 auto;
+        min-height: 0;
         overflow-y: auto;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* legacy Edge/IE */
+    }
+
+    .af-sidebar-nav::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Chromium Edge */
     }
 }
