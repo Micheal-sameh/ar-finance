@@ -47,4 +47,10 @@ fi
 
 php artisan optimize:clear
 
+# The commands above run as root, so any file they create under storage/
+# (logs, cache, session files) comes out root-owned — even though the image
+# chowns storage/ to www-data at build time. Re-assert it here so the
+# php-fpm workers (running as www-data) can actually write to it.
+chown -R www-data:www-data storage bootstrap/cache
+
 exec "$@"
