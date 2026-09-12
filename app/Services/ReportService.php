@@ -75,6 +75,31 @@ class ReportService
     }
 
     /**
+     * Cumulative balance (as of now, all-time) for every account with any
+     * posted activity, in the account's own normal-balance direction —
+     * powers the "Balance" column on the Chart of Accounts list. An
+     * account with no posted lines simply won't have a key here; callers
+     * should default to 0.
+     *
+     * @return array<int, float> account_id => balance
+     */
+    public function accountBalances(): array
+    {
+        return $this->journals->postedLinesWithAccounts(null, null)
+            ->groupBy('account_id')
+            ->map(function ($lines) {
+                $account = $lines->first()->account;
+                $debit = (float) $lines->sum('debit');
+                $credit = (float) $lines->sum('credit');
+
+                return $account->normal_balance->value === 'debit'
+                    ? round($debit - $credit, 2)
+                    : round($credit - $debit, 2);
+            })
+            ->all();
+    }
+
+    /**
      * Running balance for a single account, in date/entry order.
      *
      * @return array{

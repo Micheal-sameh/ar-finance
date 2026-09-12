@@ -11,6 +11,8 @@ export interface Account {
     parent_id: number | null;
     is_active: boolean;
     parent?: Account | null;
+    /** Cumulative balance in the account's own normal-balance direction — only present on the Chart of Accounts list. */
+    balance?: number;
 }
 
 /** Lightweight shape returned by /accounts/options for pickers. */

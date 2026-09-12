@@ -8,6 +8,8 @@ use App\Http\Requests\Accounts\UpdateAccountRequest;
 use App\Http\Resources\AccountOptionResource;
 use App\Models\Account;
 use App\Services\AccountService;
+use App\Services\ExchangeRateService;
+use App\Services\ReportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -18,6 +20,8 @@ class AccountController extends Controller
 {
     public function __construct(
         private readonly AccountService $accounts,
+        private readonly ReportService $reports,
+        private readonly ExchangeRateService $exchangeRates,
     ) {
     }
 
@@ -25,9 +29,17 @@ class AccountController extends Controller
     {
         $this->authorize('viewAny', Account::class);
 
+        $balances = $this->reports->accountBalances();
+        $accounts = $this->accounts->paginate($request->only(['type', 'is_active', 'search']))
+            ->through(fn (Account $account) => [
+                ...$account->toArray(),
+                'balance' => $balances[$account->id] ?? 0.0,
+            ]);
+
         return Inertia::render('Accounting/Accounts/Index', [
-            'accounts' => $this->accounts->paginate($request->only(['type', 'is_active', 'search'])),
+            'accounts' => $accounts,
             'filters' => $request->only(['type', 'is_active', 'search']),
+            'baseCurrency' => $this->exchangeRates->baseCurrency(),
         ]);
     }
 
