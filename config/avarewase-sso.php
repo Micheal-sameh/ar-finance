@@ -88,7 +88,7 @@ return [
         'middleware' => ['web'],
         'login_name' => 'avarewase.login',
         'callback_name' => 'avarewase.callback',
-        'redirect_after_login' => '/home',
+        'redirect_after_login' => '/',
     ],
 
     /*
