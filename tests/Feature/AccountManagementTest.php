@@ -62,6 +62,71 @@ class AccountManagementTest extends TestCase
         $this->assertDatabaseMissing('accounts', ['code' => '1000']);
     }
 
+    public function test_child_account_code_must_nest_under_its_parents_code(): void
+    {
+        $parent = Account::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1100',
+            'name' => 'Current Assets',
+            'type' => AccountType::Asset,
+            'normal_balance' => 'debit',
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1200',
+            'name' => 'Cash',
+            'type' => AccountType::Asset->value,
+            'parent_id' => $parent->id,
+        ]);
+
+        $response->assertSessionHasErrors('code');
+        $this->assertDatabaseMissing('accounts', ['code' => '1200']);
+    }
+
+    public function test_child_account_code_skipping_a_numbering_level_is_rejected(): void
+    {
+        $parent = Account::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1100',
+            'name' => 'Current Assets',
+            'type' => AccountType::Asset,
+            'normal_balance' => 'debit',
+        ]);
+
+        // 1101 varies the units digit while 1100 only has the tens digit
+        // free — that's a leaf two levels down, not a direct child.
+        $response = $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1101',
+            'name' => 'Petty Cash',
+            'type' => AccountType::Asset->value,
+            'parent_id' => $parent->id,
+        ]);
+
+        $response->assertSessionHasErrors('code');
+        $this->assertDatabaseMissing('accounts', ['code' => '1101']);
+    }
+
+    public function test_child_account_code_nesting_under_its_parent_is_accepted(): void
+    {
+        $parent = Account::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1100',
+            'name' => 'Current Assets',
+            'type' => AccountType::Asset,
+            'normal_balance' => 'debit',
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1110',
+            'name' => 'Cash',
+            'type' => AccountType::Asset->value,
+            'parent_id' => $parent->id,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('accounts', ['code' => '1110', 'parent_id' => $parent->id]);
+    }
+
     public function test_creating_an_account_with_an_opening_balance_posts_a_balanced_journal_entry(): void
     {
         $response = $this->actingAs($this->user)->post(route('accounts.store'), [
