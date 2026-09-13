@@ -2,16 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\RedirectResponse;
+use App\Services\DashboardService;
+use App\Services\ExchangeRateService;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    /**
-     * The real KPI dashboard lands in a later phase; for now route
-     * straight to the Chart of Accounts, the first real screen.
-     */
-    public function __invoke(): RedirectResponse
+    public function __construct(
+        private readonly DashboardService $dashboard,
+        private readonly ExchangeRateService $exchangeRates,
+    ) {
+    }
+
+    public function __invoke(): Response
     {
-        return redirect()->route('accounts.index');
+        return Inertia::render('Dashboard/Index', [
+            'summary' => $this->dashboard->summary(),
+            'baseCurrency' => $this->exchangeRates->baseCurrency(),
+        ]);
     }
 }
