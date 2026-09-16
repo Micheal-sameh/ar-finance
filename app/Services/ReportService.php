@@ -21,6 +21,16 @@ use Illuminate\Support\Collection;
  */
 class ReportService
 {
+    /**
+     * These two equity accounts are never posted to directly — there's no
+     * period-close step in this system (see balanceSheet()'s docblock).
+     * Their balances are always derived instead: 3100 is this year's
+     * revenue-minus-expenses so far, 3200 is every prior year's, combined.
+     */
+    private const NET_INCOME_CODE = '3100';
+
+    private const RETAINED_EARNINGS_CODE = '3200';
+
     public function __construct(
         private readonly JournalRepositoryInterface $journals,
         private readonly CostCenterRepositoryInterface $costCenters,
@@ -81,11 +91,17 @@ class ReportService
      * account with no posted lines simply won't have a key here; callers
      * should default to 0.
      *
+     * Bounded to today: a journal entry can be dated in the future (e.g. a
+     * month-end depreciation/payroll run posted ahead of time), and this
+     * must exclude those the same way 3100/3200 do below — otherwise
+     * Revenue/Expense totals here would include activity Net Income
+     * hasn't counted yet, and the two would stop reconciling.
+     *
      * @return array<int, float> account_id => balance
      */
     public function accountBalances(): array
     {
-        return $this->journals->postedLinesWithAccounts(null, null)
+        $balances = $this->journals->postedLinesWithAccounts(null, now()->toDateString())
             ->groupBy('account_id')
             ->map(function ($lines) {
                 $account = $lines->first()->account;
@@ -97,6 +113,114 @@ class ReportService
                     : round($credit - $debit, 2);
             })
             ->all();
+
+        $split = $this->netIncomeSplitAsOf(now()->toDateString());
+
+        if ($netIncomeAccount = Account::where('code', self::NET_INCOME_CODE)->first()) {
+            $balances[$netIncomeAccount->id] = $split['current'];
+        }
+
+        if ($retainedEarningsAccount = Account::where('code', self::RETAINED_EARNINGS_CODE)->first()) {
+            $balances[$retainedEarningsAccount->id] = $split['prior'];
+        }
+
+        return $balances;
+    }
+
+    /**
+     * Splits all-time net income as of $asOf into "this year so far" and
+     * "every prior year, combined" — the two halves that 3100/3200 (and
+     * the balance-sheet fallback row) show.
+     *
+     * @return array{current: float, prior: float}
+     */
+    private function netIncomeSplitAsOf(string $asOf): array
+    {
+        $yearStart = Carbon::parse($asOf)->startOfYear()->toDateString();
+        $total = $this->netIncomeBetween(null, $asOf);
+        $current = $this->netIncomeBetween($yearStart, $asOf);
+
+        return [
+            'current' => $current,
+            'prior' => round($total - $current, 2),
+        ];
+    }
+
+    /**
+     * Revenue-minus-expenses across all posted activity in a date range.
+     * $from/$to are inclusive; null on either side means unbounded.
+     */
+    private function netIncomeBetween(?string $from, ?string $to): float
+    {
+        $lines = $this->journals->postedLinesWithAccounts($from, $to);
+
+        $revenue = (float) $lines->filter(fn ($line) => $line->account->type === AccountType::Revenue)
+            ->sum(fn ($line) => (float) $line->credit - (float) $line->debit);
+        $expense = (float) $lines->filter(fn ($line) => $line->account->type === AccountType::Expense)
+            ->sum(fn ($line) => (float) $line->debit - (float) $line->credit);
+
+        return round($revenue - $expense, 2);
+    }
+
+    /**
+     * Folds net-income-to-date into the balance sheet's equity rows so
+     * assets always equal liabilities plus equity. Shown split across the
+     * real 3100 (Net Income)/3200 (Retained Earnings) accounts when the
+     * tenant has them (any existing posted-line rows for those codes are
+     * replaced, since they'd otherwise double-count); falls back to one
+     * synthetic row otherwise.
+     *
+     * @param  array<int, array{account_id: int, code: string, name: string, balance: float}>  $equity
+     * @return array<int, array{account_id: int, code: string, name: string, balance: float}>
+     */
+    private function withNetIncomeToDate(array $equity, string $asOf): array
+    {
+        $netIncomeAccount = Account::where('code', self::NET_INCOME_CODE)->first();
+        $retainedEarningsAccount = Account::where('code', self::RETAINED_EARNINGS_CODE)->first();
+
+        if (! $netIncomeAccount && ! $retainedEarningsAccount) {
+            $retainedEarnings = $this->netIncomeBetween(null, $asOf);
+
+            if ($retainedEarnings !== 0.0) {
+                $equity[] = [
+                    'account_id' => 0,
+                    'code' => '',
+                    'name' => 'Retained Earnings (current period)',
+                    'balance' => $retainedEarnings,
+                ];
+            }
+
+            return $equity;
+        }
+
+        $split = $this->netIncomeSplitAsOf($asOf);
+
+        $equity = array_values(array_filter(
+            $equity,
+            fn ($row) => ! in_array($row['code'], [self::NET_INCOME_CODE, self::RETAINED_EARNINGS_CODE], true),
+        ));
+
+        if ($netIncomeAccount) {
+            $equity[] = [
+                'account_id' => $netIncomeAccount->id,
+                'code' => $netIncomeAccount->code,
+                'name' => $netIncomeAccount->name,
+                'balance' => $split['current'],
+            ];
+        }
+
+        if ($retainedEarningsAccount) {
+            $equity[] = [
+                'account_id' => $retainedEarningsAccount->id,
+                'code' => $retainedEarningsAccount->code,
+                'name' => $retainedEarningsAccount->name,
+                'balance' => $split['prior'],
+            ];
+        }
+
+        usort($equity, fn ($a, $b) => $a['code'] <=> $b['code']);
+
+        return $equity;
     }
 
     /**
@@ -195,11 +319,14 @@ class ReportService
     }
 
     /**
-     * Assets = Liabilities + Equity as of a date. Equity includes a
-     * computed "Retained Earnings (current period)" row — this system
-     * has no period-close step that sweeps net income into an equity
-     * account, so it's derived here instead, from all posted revenue and
-     * expense activity up to $asOf.
+     * Assets = Liabilities + Equity as of a date, always — this system has
+     * no period-close step that sweeps net income into an equity account,
+     * so the net-income-to-date figure is derived here from posted revenue
+     * and expense activity instead, and folded into equity. When the
+     * tenant has the standard 3100/3200 accounts (see
+     * ChartOfAccountsSeeder), it's shown split across them, current year
+     * vs. prior; otherwise it falls back to a single synthetic row so the
+     * equation still balances.
      *
      * @return array{
      *     as_of: string,
@@ -222,20 +349,7 @@ class ReportService
         $liabilities = $byType->get(AccountType::Liability->value, collect())->values()->all();
         $equity = $byType->get(AccountType::Equity->value, collect())->values()->all();
 
-        $totalRevenue = (float) $lines->filter(fn ($line) => $line->account->type === AccountType::Revenue)
-            ->sum(fn ($line) => (float) $line->credit - (float) $line->debit);
-        $totalExpense = (float) $lines->filter(fn ($line) => $line->account->type === AccountType::Expense)
-            ->sum(fn ($line) => (float) $line->debit - (float) $line->credit);
-        $retainedEarnings = round($totalRevenue - $totalExpense, 2);
-
-        if ($retainedEarnings !== 0.0) {
-            $equity[] = [
-                'account_id' => 0,
-                'code' => '',
-                'name' => 'Retained Earnings (current period)',
-                'balance' => $retainedEarnings,
-            ];
-        }
+        $equity = $this->withNetIncomeToDate($equity, $asOf);
 
         $totalAssets = round(array_sum(array_column($assets, 'balance')), 2);
         $totalLiabilities = round(array_sum(array_column($liabilities, 'balance')), 2);
@@ -287,9 +401,15 @@ class ReportService
 
     /**
      * Groups posted lines (already filtered to a date range by the
-     * caller) by account type, summing each account's balance in its own
-     * normal-balance direction — a cumulative running balance, for
-     * balance-sheet accounts.
+     * caller) by account type, summing each account's balance in its
+     * *type's* normal-balance direction — deliberately not the account's
+     * own normal_balance, so a contra account (e.g. Accumulated
+     * Depreciation: type Asset, but credit-normal) comes out negative and
+     * correctly reduces its type's total instead of inflating it. Other
+     * reports (trial balance, general ledger) still use the account's own
+     * normal_balance, since a ledger card should show that account's
+     * natural balance positive — only this balance-sheet total needs
+     * type-uniform signing for Assets = Liabilities + Equity to hold.
      *
      * @return Collection<string, Collection<int, array{account_id: int, code: string, name: string, balance: float}>>
      */
@@ -303,8 +423,7 @@ class ReportService
             ->map(function ($typeLines) {
                 return $typeLines->groupBy('account_id')->map(function ($accountLines) {
                     $account = $accountLines->first()->account;
-                    $isDebitNormal = $account->normal_balance->value === 'debit';
-                    $net = $isDebitNormal
+                    $net = $account->type->isDebitNormal()
                         ? (float) $accountLines->sum('debit') - (float) $accountLines->sum('credit')
                         : (float) $accountLines->sum('credit') - (float) $accountLines->sum('debit');
 

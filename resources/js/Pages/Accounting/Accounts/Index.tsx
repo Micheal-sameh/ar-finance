@@ -54,9 +54,30 @@ function buildForest(accounts: Account[]): AccountNode[] {
     return roots;
 }
 
+// Each type's own normal-balance direction — matches AccountType::defaultNormalBalance() on the backend.
+const TYPE_DEFAULT_NORMAL_BALANCE: Record<AccountType, 'debit' | 'credit'> = {
+    asset: 'debit',
+    liability: 'credit',
+    equity: 'credit',
+    revenue: 'credit',
+    expense: 'debit',
+};
+
+/**
+ * A node's own balance, sign-corrected to its type's normal-balance
+ * direction rather than its own — so a contra account (e.g. Accumulated
+ * Depreciation: type asset, but credit-normal) contributes negatively
+ * instead of inflating the total. Without this, summing it in with
+ * regular debit-normal assets would overstate a collapsed parent's total.
+ */
+function typeSignedBalance(node: AccountNode): number {
+    const own = node.balance ?? 0;
+    return node.normal_balance === TYPE_DEFAULT_NORMAL_BALANCE[node.type] ? own : -own;
+}
+
 /** Sum of a node's own balance plus every descendant's — shown in place of a collapsed parent's own (often zero) balance so nothing hidden goes unaccounted for. */
 function subtreeBalance(node: AccountNode): number {
-    return node.children.reduce((sum, child) => sum + subtreeBalance(child), node.balance ?? 0);
+    return node.children.reduce((sum, child) => sum + subtreeBalance(child), typeSignedBalance(node));
 }
 
 const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
@@ -133,15 +154,17 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                         >
                             <Pencil size={15} />
                         </button>
-                        <button
-                            type="button"
-                            className="btn btn-sm p-1"
-                            style={{ color: 'var(--af-danger)' }}
-                            onClick={() => onDelete(node)}
-                            aria-label="Delete"
-                        >
-                            <Trash2 size={15} />
-                        </button>
+                        {node.is_deletable && (
+                            <button
+                                type="button"
+                                className="btn btn-sm p-1"
+                                style={{ color: 'var(--af-danger)' }}
+                                onClick={() => onDelete(node)}
+                                aria-label="Delete"
+                            >
+                                <Trash2 size={15} />
+                            </button>
+                        )}
                     </div>
                 </Table.Cell>
             </Table.Row>

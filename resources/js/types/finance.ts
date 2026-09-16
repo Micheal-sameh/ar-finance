@@ -10,6 +10,7 @@ export interface Account {
     normal_balance: NormalBalance;
     parent_id: number | null;
     is_active: boolean;
+    is_deletable: boolean;
     parent?: Account | null;
     /** Cumulative balance in the account's own normal-balance direction — only present on the Chart of Accounts list. */
     balance?: number;

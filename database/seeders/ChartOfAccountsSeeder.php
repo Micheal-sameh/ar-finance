@@ -54,6 +54,7 @@ class ChartOfAccountsSeeder extends Seeder
                     'normal_balance' => $account['type']->defaultNormalBalance(),
                     'parent_id' => $account['parent'] ? $idsByCode[$account['parent']] : null,
                     'is_active' => true,
+                    'is_deletable' => false,
                 ],
             )->id;
         }

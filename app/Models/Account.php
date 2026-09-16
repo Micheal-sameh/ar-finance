@@ -25,12 +25,14 @@ class Account extends Model
         'normal_balance',
         'parent_id',
         'is_active',
+        'is_deletable',
     ];
 
     protected $casts = [
         'type' => AccountType::class,
         'normal_balance' => NormalBalance::class,
         'is_active' => 'boolean',
+        'is_deletable' => 'boolean',
     ];
 
     public function parent(): BelongsTo

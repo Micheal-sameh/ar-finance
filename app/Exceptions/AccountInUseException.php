@@ -15,4 +15,9 @@ class AccountInUseException extends RuntimeException
     {
         return new self("Account {$code} cannot be deleted: it has child accounts.");
     }
+
+    public static function notDeletable(string $code): self
+    {
+        return new self("Account {$code} cannot be deleted: it is part of the standard chart of accounts.");
+    }
 }

@@ -106,6 +106,7 @@ class AccountService
                 'normal_balance' => AccountType::Equity->defaultNormalBalance(),
                 'parent_id' => null,
                 'is_active' => true,
+                'is_deletable' => false,
             ]);
     }
 
@@ -126,6 +127,10 @@ class AccountService
      */
     public function delete(Account $account): void
     {
+        if (! $account->is_deletable) {
+            throw AccountInUseException::notDeletable($account->code);
+        }
+
         if ($this->accounts->hasJournalLines($account)) {
             throw AccountInUseException::hasJournalLines($account->code);
         }
