@@ -62,6 +62,46 @@ class AccountManagementTest extends TestCase
         $this->assertDatabaseMissing('accounts', ['code' => '1000']);
     }
 
+    public function test_account_name_must_be_unique_within_its_type(): void
+    {
+        Account::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1000',
+            'name' => 'Cash',
+            'type' => AccountType::Asset,
+            'normal_balance' => 'debit',
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1200',
+            'name' => 'Cash',
+            'type' => AccountType::Asset->value,
+        ]);
+
+        $response->assertSessionHasErrors('name');
+        $this->assertSame(1, Account::where('name', 'Cash')->count());
+    }
+
+    public function test_account_name_may_repeat_across_different_types(): void
+    {
+        Account::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1000',
+            'name' => 'Reserves',
+            'type' => AccountType::Asset,
+            'normal_balance' => 'debit',
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '3000',
+            'name' => 'Reserves',
+            'type' => AccountType::Equity->value,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertSame(2, Account::where('name', 'Reserves')->count());
+    }
+
     public function test_child_account_code_must_nest_under_its_parents_code(): void
     {
         $parent = Account::create([

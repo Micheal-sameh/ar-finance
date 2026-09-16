@@ -46,5 +46,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $devUser->syncRoles(['Super Admin']);
+
+        $this->callWith(ChartOfAccountsSeeder::class, ['tenantId' => $tenant->id]);
     }
 }
