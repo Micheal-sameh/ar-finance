@@ -40,7 +40,10 @@ RUN npm run build
 ########################################
 FROM php:8.3-fpm-alpine AS runtime
 
-RUN apk add --no-cache \
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
+
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk add \
         bash \
         curl \
         git \
@@ -52,16 +55,7 @@ RUN apk add --no-cache \
         libjpeg-turbo \
         freetype \
         supervisor \
-    && apk add --no-cache --virtual .build-deps \
-        $PHPIZE_DEPS \
-        icu-dev \
-        libzip-dev \
-        oniguruma-dev \
-        libpng-dev \
-        libjpeg-turbo-dev \
-        freetype-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" \
+    && install-php-extensions \
         pdo_mysql \
         mbstring \
         bcmath \
@@ -71,9 +65,7 @@ RUN apk add --no-cache \
         exif \
         pcntl \
         opcache \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && apk del .build-deps
+        redis
 
 COPY --from=vendor /usr/bin/composer /usr/bin/composer
 
