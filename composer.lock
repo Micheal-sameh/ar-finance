@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "avarewase/sso-client",
-            "version": "v1.6.0",
+            "version": "v1.6.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Micheal-sameh/ar-sso-handler.git",
-                "reference": "6e2fb038856c206fd5a4b22a1a5499e02e297318"
+                "reference": "c29f99f9e538da68b867e648d515c43d5b0542ff"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Micheal-sameh/ar-sso-handler/zipball/6e2fb038856c206fd5a4b22a1a5499e02e297318",
-                "reference": "6e2fb038856c206fd5a4b22a1a5499e02e297318",
+                "url": "https://api.github.com/repos/Micheal-sameh/ar-sso-handler/zipball/c29f99f9e538da68b867e648d515c43d5b0542ff",
+                "reference": "c29f99f9e538da68b867e648d515c43d5b0542ff",
                 "shasum": ""
             },
             "require": {
@@ -33,6 +33,7 @@
                 "spatie/laravel-medialibrary": "^10.0|^11.0"
             },
             "suggest": {
+                "doctrine/dbal": "Required on Laravel 10 to run the published migration that makes users.email nullable.",
                 "spatie/laravel-medialibrary": "Store the SSO profile picture in the user's `avatar` media collection instead of only the avarewase_avatar URL column."
             },
             "type": "library",
@@ -68,10 +69,10 @@
                 "sso"
             ],
             "support": {
-                "source": "https://github.com/Micheal-sameh/ar-sso-handler/tree/v1.6.0",
+                "source": "https://github.com/Micheal-sameh/ar-sso-handler/tree/v1.6.1",
                 "issues": "https://github.com/Micheal-sameh/ar-sso-handler/issues"
             },
-            "time": "2026-09-01T19:23:11+00:00"
+            "time": "2026-09-17T08:05:02+00:00"
         },
         {
             "name": "brick/math",
