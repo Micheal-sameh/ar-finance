@@ -123,4 +123,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | System User
+    |--------------------------------------------------------------------------
+    |
+    | User id attributed as "created_by" on journal entries posted by
+    | unattended console commands (e.g. the monthly depreciation run),
+    | where there is no authenticated user to attribute them to.
+    |
+    */
+
+    'system_user_id' => env('SYSTEM_USER_ID', 1),
+
 ];

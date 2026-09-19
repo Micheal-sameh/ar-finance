@@ -74,8 +74,14 @@ class FixedAssetService
      * @throws DepreciationAlreadyPostedException
      * @throws RuntimeException
      */
-    public function postDepreciation(FixedAsset $fixedAsset, ?string $month = null): JournalEntry
+    public function postDepreciation(FixedAsset $fixedAsset, ?string $month = null, ?int $createdBy = null): JournalEntry
     {
+        $createdBy ??= auth()->id() ?? config('app.system_user_id');
+
+        if ($createdBy === null) {
+            throw new RuntimeException('Cannot post depreciation: no authenticated user and no SYSTEM_USER_ID configured.');
+        }
+
         $month ??= now()->format('Y-m');
         $periodStart = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
         $periodEnd = $periodStart->copy()->endOfMonth();
@@ -90,14 +96,14 @@ class FixedAssetService
 
         $amount = min($fixedAsset->monthlyDepreciation(), $fixedAsset->remainingDepreciable());
 
-        return DB::transaction(function () use ($fixedAsset, $periodEnd, $month, $amount) {
+        return DB::transaction(function () use ($fixedAsset, $periodEnd, $month, $amount, $createdBy) {
             $entry = $this->journals->postJournalEntry(new CreateJournalEntryData(
                 date: $periodEnd->toDateString(),
                 description: "Depreciation for \"{$fixedAsset->name}\" — {$month}",
                 reference: null,
                 sourceType: JournalSourceType::Depreciation,
                 sourceId: $fixedAsset->id,
-                createdBy: auth()->id(),
+                createdBy: $createdBy,
                 lines: [
                     new JournalLineData(accountId: $fixedAsset->depreciation_account_id, debit: $amount, credit: 0),
                     new JournalLineData(accountId: $fixedAsset->accumulated_depreciation_account_id, debit: 0, credit: $amount),
@@ -116,11 +122,11 @@ class FixedAssetService
      *
      * @return array<int, array{asset: FixedAsset, posted: bool, amount: float, message: ?string}>
      */
-    public function runMonthlyDepreciationForAll(?string $month = null): array
+    public function runMonthlyDepreciationForAll(?string $month = null, ?int $createdBy = null): array
     {
-        return $this->all()->map(function (FixedAsset $asset) use ($month) {
+        return $this->all()->map(function (FixedAsset $asset) use ($month, $createdBy) {
             try {
-                $this->postDepreciation($asset, $month);
+                $this->postDepreciation($asset, $month, $createdBy);
 
                 return ['asset' => $asset, 'posted' => true, 'amount' => $asset->monthlyDepreciation(), 'message' => null];
             } catch (RuntimeException $e) {
