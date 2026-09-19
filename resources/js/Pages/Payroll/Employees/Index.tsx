@@ -48,7 +48,7 @@ export default function EmployeesIndex({ employees, filters }: Props) {
             email: employee.email ?? '',
             job_title: employee.job_title ?? '',
             salary: employee.salary,
-            hire_date: employee.hire_date,
+            hire_date: employee.hire_date.slice(0, 10),
             is_active: employee.is_active,
         });
         form.clearErrors();

@@ -11,6 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { FixedAsset, Paginated } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     fixedAssets: Paginated<FixedAsset>;
@@ -94,7 +95,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
                             {fixedAssets.data.map((asset) => (
                                 <Table.Row key={asset.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('fixed-assets.show', asset.id))}>
                                     <Table.Cell className="ps-3">{asset.name}</Table.Cell>
-                                    <Table.Cell>{asset.purchase_date}</Table.Cell>
+                                    <Table.Cell>{formatDate(asset.purchase_date)}</Table.Cell>
                                     <Table.Cell className="text-end">
                                         <MoneyDisplay amount={asset.cost} />
                                     </Table.Cell>

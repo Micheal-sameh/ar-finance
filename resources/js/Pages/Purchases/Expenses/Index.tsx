@@ -11,7 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Expense, Paginated } from '@/types/finance';
-import { expenseStatusVariant } from '@/utils/finance';
+import { expenseStatusVariant, formatDate } from '@/utils/finance';
 
 interface Props {
     expenses: Paginated<Expense>;
@@ -74,7 +74,7 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
                         <tbody>
                             {expenses.data.map((expense) => (
                                 <Table.Row key={expense.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('expenses.show', expense.id))}>
-                                    <Table.Cell className="ps-3">{expense.date}</Table.Cell>
+                                    <Table.Cell className="ps-3">{formatDate(expense.date)}</Table.Cell>
                                     <Table.Cell>{expense.description}</Table.Cell>
                                     <Table.Cell>{expense.account?.name ?? '—'}</Table.Cell>
                                     <Table.Cell>{expense.vendor?.name ?? '—'}</Table.Cell>

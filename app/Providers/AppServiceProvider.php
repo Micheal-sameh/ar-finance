@@ -5,11 +5,13 @@ namespace App\Providers;
 use App\Listeners\AssignDefaultsToNewAvarewaseUsers;
 use App\Services\ExchangeRates\ExchangeRateProviderInterface;
 use App\Services\ExchangeRates\FreeCurrencyApiProvider;
+use App\Support\Carbon;
 use App\Support\ResilientVite;
 use Avarewase\SsoClient\Events\AvarewaseUserAuthenticated;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Vite;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +28,8 @@ class AppServiceProvider extends ServiceProvider
         }
         $this->app->singleton(Vite::class, ResilientVite::class);
         $this->app->bind(ExchangeRateProviderInterface::class, FreeCurrencyApiProvider::class);
+
+        Date::use(Carbon::class);
     }
 
     /**

@@ -12,6 +12,7 @@ import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { BankAccount, BankTransaction, UnmatchedJournalLine } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     bankAccount: BankAccount;
@@ -148,7 +149,7 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                         {transactions.map((transaction) => (
                             <Fragment key={transaction.id}>
                                 <Table.Row>
-                                    <Table.Cell className="ps-3">{transaction.date}</Table.Cell>
+                                    <Table.Cell className="ps-3">{formatDate(transaction.date)}</Table.Cell>
                                     <Table.Cell>{transaction.description}</Table.Cell>
                                     <Table.Cell className="text-end">
                                         <MoneyDisplay amount={transaction.amount} currency={bankAccount.currency} />

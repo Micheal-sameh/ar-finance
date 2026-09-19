@@ -11,6 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { JournalEntry, Paginated } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     entries: Paginated<JournalEntry>;
@@ -80,7 +81,7 @@ export default function JournalsIndex({ entries, filters }: Props) {
                         <tbody>
                             {entries.data.map((entry) => (
                                 <Table.Row key={entry.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('journals.show', entry.id))}>
-                                    <Table.Cell className="ps-3">{entry.date}</Table.Cell>
+                                    <Table.Cell className="ps-3">{formatDate(entry.date)}</Table.Cell>
                                     <Table.Cell>{entry.description}</Table.Cell>
                                     <Table.Cell>{entry.reference ?? '—'}</Table.Cell>
                                     <Table.Cell>

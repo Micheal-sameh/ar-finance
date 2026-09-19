@@ -7,6 +7,7 @@ import { Card } from '@/Components/ui/Card';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { DepreciationScheduleRow, FixedAsset } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     fixedAsset: FixedAsset;
@@ -27,7 +28,7 @@ export default function FixedAssetsShow({ fixedAsset, schedule }: Props) {
 
             <PageHeader
                 title={fixedAsset.name}
-                subtitle={`Purchased ${fixedAsset.purchase_date} · ${fixedAsset.useful_life_years}-year straight-line`}
+                subtitle={`Purchased ${formatDate(fixedAsset.purchase_date)} · ${fixedAsset.useful_life_years}-year straight-line`}
                 action={
                     fullyDepreciated ? (
                         <Badge variant="neutral">Fully depreciated</Badge>

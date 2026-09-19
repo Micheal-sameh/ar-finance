@@ -10,6 +10,7 @@ import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { PayrollRun, PayrollRunStatus } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     payrollRun: PayrollRun;
@@ -47,11 +48,11 @@ export default function PayrollRunsShow({ payrollRun }: Props) {
 
     return (
         <AppLayout>
-            <Head title={`Payroll ${payrollRun.period_start} – ${payrollRun.period_end}`} />
+            <Head title={`Payroll ${formatDate(payrollRun.period_start)} – ${formatDate(payrollRun.period_end)}`} />
 
             <PageHeader
-                title={`Payroll: ${payrollRun.period_start} – ${payrollRun.period_end}`}
-                subtitle={`Pay date ${payrollRun.pay_date}`}
+                title={`Payroll: ${formatDate(payrollRun.period_start)} – ${formatDate(payrollRun.period_end)}`}
+                subtitle={`Pay date ${formatDate(payrollRun.pay_date)}`}
                 action={
                     <div className="d-flex align-items-center gap-2">
                         <Badge variant={statusVariant(payrollRun.status)}>{payrollRun.status}</Badge>

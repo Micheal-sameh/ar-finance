@@ -11,7 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Invoice } from '@/types/finance';
-import { invoiceStatusVariant } from '@/utils/finance';
+import { formatDate, formatDateTime, invoiceStatusVariant } from '@/utils/finance';
 
 interface Props {
     invoice: Invoice;
@@ -137,11 +137,11 @@ export default function InvoicesShow({ invoice }: Props) {
                 <div className="row g-3 p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Issue date</div>
-                        <div>{invoice.issue_date}</div>
+                        <div>{formatDate(invoice.issue_date)}</div>
                     </div>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Due date</div>
-                        <div>{invoice.due_date}</div>
+                        <div>{formatDate(invoice.due_date)}</div>
                     </div>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Receivable account</div>
@@ -149,7 +149,7 @@ export default function InvoicesShow({ invoice }: Props) {
                     </div>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Paid at</div>
-                        <div>{invoice.paid_at ?? '—'}</div>
+                        <div>{formatDateTime(invoice.paid_at)}</div>
                     </div>
                 </div>
 

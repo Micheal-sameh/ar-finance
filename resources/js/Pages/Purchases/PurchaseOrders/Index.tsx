@@ -11,6 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Paginated, PurchaseOrder, PurchaseOrderStatus } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     purchaseOrders: Paginated<PurchaseOrder>;
@@ -86,7 +87,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters }: Props) 
                                 <Table.Row key={po.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('purchase-orders.show', po.id))}>
                                     <Table.Cell className="ps-3">{po.po_number}</Table.Cell>
                                     <Table.Cell>{po.vendor?.name ?? '—'}</Table.Cell>
-                                    <Table.Cell>{po.order_date}</Table.Cell>
+                                    <Table.Cell>{formatDate(po.order_date)}</Table.Cell>
                                     <Table.Cell>
                                         <Badge variant={statusVariant(po.status)}>{po.status}</Badge>
                                     </Table.Cell>

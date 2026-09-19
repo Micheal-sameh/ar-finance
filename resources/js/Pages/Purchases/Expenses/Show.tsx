@@ -9,7 +9,7 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Expense } from '@/types/finance';
-import { expenseStatusVariant } from '@/utils/finance';
+import { expenseStatusVariant, formatDate, formatDateTime } from '@/utils/finance';
 
 interface Props {
     expense: Expense;
@@ -38,7 +38,7 @@ export default function ExpensesShow({ expense }: Props) {
 
             <PageHeader
                 title={expense.description}
-                subtitle={`${expense.date}${expense.vendor ? ` · ${expense.vendor.name}` : ''}`}
+                subtitle={`${formatDate(expense.date)}${expense.vendor ? ` · ${expense.vendor.name}` : ''}`}
                 action={
                     <div className="d-flex align-items-center gap-2">
                         <Badge variant={expenseStatusVariant(expense.status)}>{expense.status}</Badge>
@@ -90,7 +90,7 @@ export default function ExpensesShow({ expense }: Props) {
                     </div>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Paid at</div>
-                        <div>{expense.paid_at ?? '—'}</div>
+                        <div>{formatDateTime(expense.paid_at)}</div>
                     </div>
                 </div>
             </Card>

@@ -10,6 +10,7 @@ import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Bill, BillStatus } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     bill: Bill;
@@ -86,11 +87,11 @@ export default function BillsShow({ bill }: Props) {
                 <div className="row g-3 p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Bill date</div>
-                        <div>{bill.bill_date}</div>
+                        <div>{formatDate(bill.bill_date)}</div>
                     </div>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Due date</div>
-                        <div>{bill.due_date}</div>
+                        <div>{formatDate(bill.due_date)}</div>
                     </div>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Payable account</div>

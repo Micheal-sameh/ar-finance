@@ -9,6 +9,7 @@ import { EmptyState } from '@/Components/ui/EmptyState';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Paginated, PayrollRun, PayrollRunStatus } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     payrollRuns: Paginated<PayrollRun>;
@@ -62,8 +63,8 @@ export default function PayrollRunsIndex({ payrollRuns }: Props) {
                         <tbody>
                             {payrollRuns.data.map((run) => (
                                 <Table.Row key={run.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('payroll-runs.show', run.id))}>
-                                    <Table.Cell className="ps-3">{run.period_start} – {run.period_end}</Table.Cell>
-                                    <Table.Cell>{run.pay_date}</Table.Cell>
+                                    <Table.Cell className="ps-3">{formatDate(run.period_start)} – {formatDate(run.period_end)}</Table.Cell>
+                                    <Table.Cell>{formatDate(run.pay_date)}</Table.Cell>
                                     <Table.Cell>{run.payslips.length}</Table.Cell>
                                     <Table.Cell>
                                         <Badge variant={statusVariant(run.status)}>{run.status}</Badge>

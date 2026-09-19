@@ -11,6 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { PurchaseOrder, PurchaseOrderStatus } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     purchaseOrder: PurchaseOrder;
@@ -140,11 +141,11 @@ export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
                 <div className="row g-3 p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
                     <div className="col-md-4">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Order date</div>
-                        <div>{purchaseOrder.order_date}</div>
+                        <div>{formatDate(purchaseOrder.order_date)}</div>
                     </div>
                     <div className="col-md-4">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Expected date</div>
-                        <div>{purchaseOrder.expected_date ?? '—'}</div>
+                        <div>{formatDate(purchaseOrder.expected_date)}</div>
                     </div>
                 </div>
 

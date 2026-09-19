@@ -11,6 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Account, GeneralLedgerReport } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     account: Account | null;
@@ -86,7 +87,7 @@ export default function GeneralLedger({ account, ledger, filters }: Props) {
                                 ) : (
                                     ledger.lines.map((line, i) => (
                                         <Table.Row key={i}>
-                                            <Table.Cell className="ps-3">{line.date}</Table.Cell>
+                                            <Table.Cell className="ps-3">{formatDate(line.date)}</Table.Cell>
                                             <Table.Cell>{line.description}</Table.Cell>
                                             <Table.Cell>{line.reference ?? '—'}</Table.Cell>
                                             <Table.Cell className="text-end">

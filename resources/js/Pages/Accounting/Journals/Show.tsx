@@ -6,6 +6,7 @@ import { Card } from '@/Components/ui/Card';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { JournalEntry } from '@/types/finance';
+import { formatDate, formatDateTime } from '@/utils/finance';
 
 interface Props {
     entry: JournalEntry;
@@ -29,7 +30,7 @@ export default function JournalsShow({ entry }: Props) {
                 <div className="row g-3 p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Date</div>
-                        <div>{entry.date}</div>
+                        <div>{formatDate(entry.date)}</div>
                     </div>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Reference</div>
@@ -41,7 +42,7 @@ export default function JournalsShow({ entry }: Props) {
                     </div>
                     <div className="col-md-3">
                         <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Posted at</div>
-                        <div>{entry.posted_at ?? '—'}</div>
+                        <div>{formatDateTime(entry.posted_at)}</div>
                     </div>
                 </div>
 

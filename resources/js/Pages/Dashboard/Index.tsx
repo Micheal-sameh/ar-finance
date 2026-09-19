@@ -8,6 +8,7 @@ import { EmptyState } from '@/Components/ui/EmptyState';
 import { StatCard } from '@/Components/ui/StatCard';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
+import { formatDate } from '@/utils/finance';
 
 interface TrendPoint {
     month: string;
@@ -183,7 +184,7 @@ export default function DashboardIndex({ summary, baseCurrency }: Props) {
                                             style={{ cursor: 'pointer' }}
                                             onClick={() => router.get(route('journals.show', entry.id))}
                                         >
-                                            <Table.Cell className="ps-3">{entry.date}</Table.Cell>
+                                            <Table.Cell className="ps-3">{formatDate(entry.date)}</Table.Cell>
                                             <Table.Cell>{entry.description}</Table.Cell>
                                             <Table.Cell>
                                                 <Badge variant="neutral">{entry.source_label}</Badge>

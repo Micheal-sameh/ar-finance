@@ -11,6 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Bill, BillStatus, Paginated } from '@/types/finance';
+import { formatDate } from '@/utils/finance';
 
 interface Props {
     bills: Paginated<Bill>;
@@ -82,7 +83,7 @@ export default function BillsIndex({ bills, filters }: Props) {
                                 <Table.Row key={bill.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('bills.show', bill.id))}>
                                     <Table.Cell className="ps-3">{bill.bill_number}</Table.Cell>
                                     <Table.Cell>{bill.vendor?.name ?? '—'}</Table.Cell>
-                                    <Table.Cell>{bill.due_date}</Table.Cell>
+                                    <Table.Cell>{formatDate(bill.due_date)}</Table.Cell>
                                     <Table.Cell>
                                         <Badge variant={statusVariant(bill.status)}>{bill.status}</Badge>
                                     </Table.Cell>

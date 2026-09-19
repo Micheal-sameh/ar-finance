@@ -11,7 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Invoice, Paginated } from '@/types/finance';
-import { invoiceStatusVariant } from '@/utils/finance';
+import { formatDate, invoiceStatusVariant } from '@/utils/finance';
 
 interface Props {
     invoices: Paginated<Invoice>;
@@ -86,8 +86,8 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
                                 <Table.Row key={invoice.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('invoices.show', invoice.id))}>
                                     <Table.Cell className="ps-3">{invoice.invoice_number}</Table.Cell>
                                     <Table.Cell>{invoice.client?.name ?? '—'}</Table.Cell>
-                                    <Table.Cell>{invoice.issue_date}</Table.Cell>
-                                    <Table.Cell>{invoice.due_date}</Table.Cell>
+                                    <Table.Cell>{formatDate(invoice.issue_date)}</Table.Cell>
+                                    <Table.Cell>{formatDate(invoice.due_date)}</Table.Cell>
                                     <Table.Cell>
                                         <Badge variant={invoiceStatusVariant(invoice.status)}>{invoice.status}</Badge>
                                     </Table.Cell>
