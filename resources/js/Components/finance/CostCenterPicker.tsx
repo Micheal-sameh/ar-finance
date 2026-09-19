@@ -20,7 +20,7 @@ export function CostCenterPicker({ value, onChange, ...rest }: CostCenterPickerP
             onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
             {...rest}
         >
-            <option value="">{loading ? 'Loading…' : 'No cost center'}</option>
+            <option value="">{loading ? 'Loading…' : 'No center'}</option>
             {costCenters.map((center) => (
                 <option key={center.id} value={center.id}>
                     {center.name}

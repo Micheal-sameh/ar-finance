@@ -46,7 +46,7 @@ export const navConfig: NavConfigGroup[] = [
         items: [
             { label: 'Chart of Accounts', routeName: 'accounts.index', icon: ListTree },
             { label: 'Journal Entries', routeName: 'journals.index', icon: BookOpen },
-            { label: 'Cost Centers', routeName: 'cost-centers.index', icon: PiggyBank },
+            { label: 'P&C Centers', routeName: 'cost-centers.index', icon: PiggyBank },
             { label: 'Fixed Assets', routeName: 'fixed-assets.index', icon: Boxes },
             { label: 'Currency Revaluation', routeName: 'revaluation.index', icon: RefreshCw },
         ],

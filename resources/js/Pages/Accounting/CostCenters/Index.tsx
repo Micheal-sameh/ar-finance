@@ -70,7 +70,7 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
     }
 
     async function destroy(costCenter: CostCenter) {
-        if (await confirm(`Delete cost center "${costCenter.name}"?`, { variant: 'danger', confirmLabel: 'Delete' })) {
+        if (await confirm(`Delete center "${costCenter.name}"?`, { variant: 'danger', confirmLabel: 'Delete' })) {
             router.delete(route('cost-centers.destroy', costCenter.id));
         }
     }
@@ -84,14 +84,14 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
 
     return (
         <AppLayout>
-            <Head title="Cost Centers" />
+            <Head title="P&C Centers" />
 
             <PageHeader
-                title="Cost Centers"
+                title="P&C Centers"
                 subtitle={`Budget vs actual, ${filters.from} to ${filters.to}.`}
                 action={
                     <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                        New Cost Center
+                        New Center
                     </Button>
                 }
             />
@@ -109,9 +109,9 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
                 {costCenters.data.length === 0 ? (
                     <EmptyState
                         icon={<PiggyBank size={20} />}
-                        title="No cost centers yet"
+                        title="No centers yet"
                         description="Create a cost or profit center to start tagging expenses and journal lines."
-                        action={<Button onClick={openCreate}>New Cost Center</Button>}
+                        action={<Button onClick={openCreate}>New Center</Button>}
                     />
                 ) : (
                     <Table>
@@ -170,14 +170,14 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
             <Modal
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
-                title={editing ? 'Edit Cost Center' : 'New Cost Center'}
+                title={editing ? 'Edit Center' : 'New Center'}
                 footer={
                     <>
                         <Button variant="outline" onClick={() => setModalOpen(false)}>
                             Cancel
                         </Button>
                         <Button onClick={submit} loading={form.processing}>
-                            {editing ? 'Save changes' : 'Create cost center'}
+                            {editing ? 'Save changes' : 'Create center'}
                         </Button>
                     </>
                 }
