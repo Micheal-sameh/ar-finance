@@ -10,6 +10,7 @@ export interface AccountPickerProps {
     error?: string;
     placeholder?: string;
     filterType?: AccountType;
+    dropUp?: boolean;
 }
 
 /**
@@ -17,7 +18,7 @@ export interface AccountPickerProps {
  * one component reused everywhere an account is chosen (journal lines,
  * report filters, expense categorization, ...).
  */
-export function AccountPicker({ value, onChange, error, placeholder = 'Select account…', filterType }: AccountPickerProps) {
+export function AccountPicker({ value, onChange, error, placeholder = 'Select account…', filterType, dropUp = false }: AccountPickerProps) {
     const { accounts, loading } = useAccounts();
     const [query, setQuery] = useState('');
 
@@ -58,7 +59,7 @@ export function AccountPicker({ value, onChange, error, placeholder = 'Select ac
                 </div>
 
                 <Combobox.Options
-                    className="position-absolute w-100 mt-1 py-1"
+                    className={`position-absolute w-100 py-1 ${dropUp ? 'mb-1' : 'mt-1'}`}
                     style={{
                         zIndex: 20,
                         maxHeight: '260px',
@@ -67,6 +68,7 @@ export function AccountPicker({ value, onChange, error, placeholder = 'Select ac
                         border: '1px solid var(--af-border)',
                         borderRadius: 'var(--af-radius-sm)',
                         boxShadow: '0 10px 15px -3px rgb(15 23 42 / 0.1)',
+                        ...(dropUp ? { bottom: '100%' } : { top: '100%' }),
                     }}
                 >
                     {filtered.length === 0 && (

@@ -120,6 +120,8 @@ export default function FixedAssetsCreate() {
                                 onChange={(id) => form.setData('asset_account_id', id)}
                                 error={form.errors.asset_account_id}
                                 placeholder="e.g. Office Equipment"
+                                filterType="asset"
+                                dropUp
                             />
                         </div>
                         <div className="col-md-4">
@@ -131,6 +133,8 @@ export default function FixedAssetsCreate() {
                                 onChange={(id) => form.setData('depreciation_account_id', id)}
                                 error={form.errors.depreciation_account_id}
                                 placeholder="e.g. Depreciation Expense"
+                                filterType="expense"
+                                dropUp
                             />
                         </div>
                         <div className="col-md-4">
@@ -142,6 +146,8 @@ export default function FixedAssetsCreate() {
                                 onChange={(id) => form.setData('accumulated_depreciation_account_id', id)}
                                 error={form.errors.accumulated_depreciation_account_id}
                                 placeholder="e.g. Accumulated Depreciation"
+                                filterType="asset"
+                                dropUp
                             />
                         </div>
                     </div>
