@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\AccountImportException;
 use App\Exceptions\AccountInUseException;
+use App\Http\Requests\Accounts\ImportAccountsRequest;
 use App\Http\Requests\Accounts\StoreAccountRequest;
 use App\Http\Requests\Accounts\UpdateAccountRequest;
 use App\Http\Resources\AccountOptionResource;
@@ -22,8 +24,7 @@ class AccountController extends Controller
         private readonly AccountService $accounts,
         private readonly ReportService $reports,
         private readonly ExchangeRateService $exchangeRates,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -75,6 +76,17 @@ class AccountController extends Controller
         $this->accounts->update($account, $request->toDto());
 
         return redirect()->route('accounts.index')->with('success', 'Account updated.');
+    }
+
+    public function import(ImportAccountsRequest $request): RedirectResponse
+    {
+        try {
+            $count = $this->accounts->import($request->rows(), $request->user()->id);
+        } catch (AccountImportException $e) {
+            return back()->withErrors(['file' => implode("\n", $e->rowErrors())]);
+        }
+
+        return redirect()->route('accounts.index')->with('success', "Imported {$count} account(s).");
     }
 
     public function destroy(Account $account): RedirectResponse

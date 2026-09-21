@@ -59,6 +59,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::resource('users', UserController::class)->only(['index', 'update']);
 
     Route::get('accounts/options', [AccountController::class, 'options'])->name('accounts.options');
+    Route::post('accounts/import', [AccountController::class, 'import'])->name('accounts.import');
     Route::resource('accounts', AccountController::class)->except(['create', 'edit']);
 
     Route::resource('journals', JournalEntryController::class)->only(['index', 'create', 'store', 'show']);

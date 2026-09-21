@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ChevronDown, ChevronRight, ListTree, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, ListTree, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { Fragment, FormEvent, useMemo, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
@@ -201,6 +201,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Account | null>(null);
     const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+    const [importOpen, setImportOpen] = useState(false);
 
     const forest = useMemo(() => buildForest(accounts), [accounts]);
 
@@ -223,6 +224,8 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
         parent_id: null as number | null,
         opening_balance: '' as number | string,
     });
+
+    const importForm = useForm<{ file: File | null }>({ file: null });
 
     function handleCodeChange(value: string) {
         const inferredType = TYPE_BY_CODE_PREFIX[value.charAt(0)];
@@ -281,6 +284,20 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
         router.get(route('accounts.index'), { ...filters, search }, { preserveState: true });
     }
 
+    function openImport() {
+        importForm.reset();
+        importForm.clearErrors();
+        setImportOpen(true);
+    }
+
+    function submitImport(e: FormEvent) {
+        e.preventDefault();
+        importForm.post(route('accounts.import'), {
+            forceFormData: true,
+            onSuccess: () => setImportOpen(false),
+        });
+    }
+
     return (
         <AppLayout>
             <Head title="Chart of Accounts" />
@@ -289,9 +306,14 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                 title="Chart of Accounts"
                 subtitle="Every posting account in the ledger, grouped by type."
                 action={
-                    <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                        New Account
-                    </Button>
+                    <div className="d-flex gap-2">
+                        <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={openImport}>
+                            Import from Excel
+                        </Button>
+                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                            New Account
+                        </Button>
+                    </div>
                 }
             />
 
@@ -427,6 +449,55 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                             placeholder="0.00"
                         />
                     )}
+                </form>
+            </Modal>
+
+            <Modal
+                open={importOpen}
+                onClose={() => setImportOpen(false)}
+                title="Import from Excel"
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setImportOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={submitImport} loading={importForm.processing} disabled={!importForm.data.file}>
+                            Import
+                        </Button>
+                    </>
+                }
+            >
+                <form onSubmit={submitImport} className="d-flex flex-column gap-3">
+                    <div>
+                        <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                            Spreadsheet (.xlsx, .xls, or .csv)
+                        </label>
+                        <input
+                            type="file"
+                            accept=".xlsx,.xls,.csv"
+                            className="form-control"
+                            style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
+                            onChange={(e) => importForm.setData('file', e.target.files?.[0] ?? null)}
+                        />
+                    </div>
+                    {importForm.errors.file && (
+                        <div
+                            style={{
+                                color: 'var(--af-danger)',
+                                fontSize: '12px',
+                                whiteSpace: 'pre-line',
+                                maxHeight: '220px',
+                                overflowY: 'auto',
+                            }}
+                        >
+                            {importForm.errors.file}
+                        </div>
+                    )}
+                    <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>
+                        Columns: <strong>code</strong>, <strong>name</strong>, <strong>type</strong> (asset, liability, equity,
+                        revenue, expense), and optionally normal_balance, parent_code, is_active, opening_balance. One row per
+                        account, with a header row. A parent account's code must already exist or appear earlier in the file.
+                    </div>
                 </form>
             </Modal>
         </AppLayout>

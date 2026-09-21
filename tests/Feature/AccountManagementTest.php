@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class AccountManagementTest extends TestCase
@@ -229,5 +230,72 @@ class AccountManagementTest extends TestCase
             ->where('accounts.1.parent_id', $parent->id)
             ->where('accounts.1.id', $child->id)
         );
+    }
+
+    private function csvFile(string $contents, string $name = 'accounts.csv'): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent($name, $contents);
+    }
+
+    public function test_importing_accounts_from_a_csv_file_creates_them_with_a_parent_defined_earlier_in_the_file(): void
+    {
+        $csv = "code,name,type,parent_code\n"
+            ."1000,Assets,asset,\n"
+            ."1100,Current Assets,asset,1000\n"
+            ."1110,Cash,asset,1100\n";
+
+        $response = $this->actingAs($this->user)->post(route('accounts.import'), [
+            'file' => $this->csvFile($csv),
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+
+        $assets = Account::where('code', '1000')->firstOrFail();
+        $current = Account::where('code', '1100')->firstOrFail();
+        $cash = Account::where('code', '1110')->firstOrFail();
+
+        $this->assertNull($assets->parent_id);
+        $this->assertSame($assets->id, $current->parent_id);
+        $this->assertSame($current->id, $cash->parent_id);
+    }
+
+    public function test_importing_accounts_posts_opening_balances(): void
+    {
+        $csv = "code,name,type,opening_balance\n"
+            ."1000,Cash,asset,500\n";
+
+        $this->actingAs($this->user)->post(route('accounts.import'), [
+            'file' => $this->csvFile($csv),
+        ])->assertSessionHasNoErrors();
+
+        $cash = Account::where('code', '1000')->firstOrFail();
+        $equity = Account::where('code', '3900')->firstOrFail();
+
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $cash->id, 'debit' => 500, 'credit' => 0]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $equity->id, 'debit' => 0, 'credit' => 500]);
+    }
+
+    public function test_importing_accounts_with_an_invalid_row_creates_nothing(): void
+    {
+        $csv = "code,name,type\n"
+            ."1000,Cash,asset\n"
+            ."2000,Bad Prefix,asset\n"; // wrong prefix for asset type
+
+        $response = $this->actingAs($this->user)->post(route('accounts.import'), [
+            'file' => $this->csvFile($csv),
+        ]);
+
+        $response->assertSessionHasErrors('file');
+        $this->assertDatabaseMissing('accounts', ['code' => '1000']);
+        $this->assertDatabaseMissing('accounts', ['code' => '2000']);
+    }
+
+    public function test_importing_accounts_requires_a_file(): void
+    {
+        $response = $this->actingAs($this->user)->post(route('accounts.import'), []);
+
+        $response->assertSessionHasErrors('file');
+        $this->assertSame(0, Account::count());
     }
 }
