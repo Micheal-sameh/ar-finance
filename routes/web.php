@@ -60,6 +60,7 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::get('accounts/options', [AccountController::class, 'options'])->name('accounts.options');
     Route::post('accounts/import', [AccountController::class, 'import'])->name('accounts.import');
+    Route::get('accounts/import-template', [AccountController::class, 'importTemplate'])->name('accounts.import-template');
     Route::resource('accounts', AccountController::class)->except(['create', 'edit']);
 
     Route::resource('journals', JournalEntryController::class)->only(['index', 'create', 'store', 'show']);

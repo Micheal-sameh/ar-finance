@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ChevronDown, ChevronRight, ListTree, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, ListTree, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { Fragment, FormEvent, useMemo, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
@@ -468,6 +468,14 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                 }
             >
                 <form onSubmit={submitImport} className="d-flex flex-column gap-3">
+                    <a
+                        href={route('accounts.import-template')}
+                        className="d-inline-flex align-items-center gap-1 align-self-start"
+                        style={{ fontSize: '13px', color: 'var(--af-primary)' }}
+                    >
+                        <Download size={14} />
+                        Download template
+                    </a>
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
                             Spreadsheet (.xlsx, .xls, or .csv)

@@ -217,6 +217,15 @@ class AccountManagementTest extends TestCase
         return UploadedFile::fake()->createWithContent($name, $contents);
     }
 
+    public function test_import_template_downloads_an_xlsx_workbook(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('accounts.import-template'));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('content-disposition', 'attachment; filename=accounts-import-template.xlsx');
+    }
+
     public function test_importing_accounts_from_a_csv_file_creates_them_with_a_parent_defined_earlier_in_the_file(): void
     {
         $csv = "code,name,type,parent_code\n"
