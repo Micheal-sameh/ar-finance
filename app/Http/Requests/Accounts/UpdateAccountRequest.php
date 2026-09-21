@@ -32,14 +32,6 @@ class UpdateAccountRequest extends FormRequest
 
                     if ($type && ! str_starts_with((string) $value, $type->codePrefix())) {
                         $fail("The account code must start with {$type->codePrefix()} for {$type->label()} accounts.");
-
-                        return;
-                    }
-
-                    $parent = $this->input('parent_id') ? Account::find($this->input('parent_id')) : null;
-
-                    if ($parent && ! Account::codeNestsUnder((string) $value, $parent->code)) {
-                        $fail("The account code must be a direct child of {$parent->code} — {$parent->name}: same length as the parent code, varying only the next digit, with every digit after it zero.");
                     }
                 },
             ],

@@ -236,8 +236,6 @@ class AccountService
                 $errors[] = "parent code {$row['parent_code']} was not found (it must exist already or appear earlier in the file).";
             } elseif ($parentType !== $row['type']) {
                 $errors[] = "the parent account must be a {$row['type']->label()} account.";
-            } elseif (! Account::codeNestsUnder($row['code'], $row['parent_code'])) {
-                $errors[] = "the account code must be a direct child of {$row['parent_code']}: same length as the parent code, varying only the next digit, with every digit after it zero.";
             }
         }
 

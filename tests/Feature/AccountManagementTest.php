@@ -103,7 +103,7 @@ class AccountManagementTest extends TestCase
         $this->assertSame(2, Account::where('name', 'Reserves')->count());
     }
 
-    public function test_child_account_code_must_nest_under_its_parents_code(): void
+    public function test_child_account_code_is_not_required_to_nest_under_its_parents_code(): void
     {
         $parent = Account::create([
             'tenant_id' => $this->tenant->id,
@@ -113,6 +113,9 @@ class AccountManagementTest extends TestCase
             'normal_balance' => 'debit',
         ]);
 
+        // Codes 1200 and 1101 don't follow the parent's numbering convention
+        // (same length, one digit varied, trailing zeros), but a parent's
+        // own type is all that's still enforced — the code shape is free.
         $response = $this->actingAs($this->user)->post(route('accounts.store'), [
             'code' => '1200',
             'name' => 'Cash',
@@ -120,31 +123,8 @@ class AccountManagementTest extends TestCase
             'parent_id' => $parent->id,
         ]);
 
-        $response->assertSessionHasErrors('code');
-        $this->assertDatabaseMissing('accounts', ['code' => '1200']);
-    }
-
-    public function test_child_account_code_skipping_a_numbering_level_is_rejected(): void
-    {
-        $parent = Account::create([
-            'tenant_id' => $this->tenant->id,
-            'code' => '1100',
-            'name' => 'Current Assets',
-            'type' => AccountType::Asset,
-            'normal_balance' => 'debit',
-        ]);
-
-        // 1101 varies the units digit while 1100 only has the tens digit
-        // free — that's a leaf two levels down, not a direct child.
-        $response = $this->actingAs($this->user)->post(route('accounts.store'), [
-            'code' => '1101',
-            'name' => 'Petty Cash',
-            'type' => AccountType::Asset->value,
-            'parent_id' => $parent->id,
-        ]);
-
-        $response->assertSessionHasErrors('code');
-        $this->assertDatabaseMissing('accounts', ['code' => '1101']);
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('accounts', ['code' => '1200', 'parent_id' => $parent->id]);
     }
 
     public function test_child_account_code_nesting_under_its_parent_is_accepted(): void
