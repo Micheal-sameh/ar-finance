@@ -264,7 +264,12 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
         if (editing) {
             form.put(route('accounts.update', editing.id), { onSuccess: () => setModalOpen(false) });
         } else {
-            form.post(route('accounts.store'), { onSuccess: () => setModalOpen(false) });
+            form.post(route('accounts.store'), {
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                },
+            });
         }
     }
 
