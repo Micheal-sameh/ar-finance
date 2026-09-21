@@ -39,6 +39,7 @@ class InvoiceService
     {
         return $this->invoices->create(
             attributes: [
+                'tenant_id' => auth()->user()->tenant_id,
                 'client_id' => $data->clientId,
                 'invoice_number' => $data->invoiceNumber,
                 'issue_date' => $data->issueDate,

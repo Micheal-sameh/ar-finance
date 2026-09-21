@@ -42,6 +42,7 @@ class FixedAssetService
     public function create(CreateFixedAssetData $data): FixedAsset
     {
         return $this->fixedAssets->create([
+            'tenant_id' => auth()->user()->tenant_id,
             'name' => $data->name,
             'purchase_date' => $data->purchaseDate,
             'cost' => $data->cost,

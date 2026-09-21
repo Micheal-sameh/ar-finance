@@ -29,6 +29,7 @@ class CostCenterService
     public function create(CreateCostCenterData $data): CostCenter
     {
         return $this->costCenters->create([
+            'tenant_id' => auth()->user()->tenant_id,
             'name' => $data->name,
             'type' => $data->type,
             'budget' => $data->budget,

@@ -48,6 +48,7 @@ class BillService
     {
         return $this->bills->create(
             attributes: [
+                'tenant_id' => auth()->user()->tenant_id,
                 'vendor_id' => $data->vendorId,
                 'purchase_order_id' => $data->purchaseOrderId,
                 'bill_number' => $data->billNumber,

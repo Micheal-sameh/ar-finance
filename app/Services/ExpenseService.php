@@ -41,6 +41,7 @@ class ExpenseService
     public function create(CreateExpenseData $data): Expense
     {
         return $this->expenses->create([
+            'tenant_id' => auth()->user()->tenant_id,
             'description' => $data->description,
             'account_id' => $data->accountId,
             'amount' => $data->amount,

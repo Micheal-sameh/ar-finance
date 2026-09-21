@@ -29,6 +29,7 @@ class VendorService
     public function create(CreateVendorData $data): Vendor
     {
         return $this->vendors->create([
+            'tenant_id' => auth()->user()->tenant_id,
             'name' => $data->name,
             'email' => $data->email,
             'tax_number' => $data->taxNumber,

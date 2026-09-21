@@ -29,6 +29,7 @@ class EmployeeService
     public function create(CreateEmployeeData $data): Employee
     {
         return $this->employees->create([
+            'tenant_id' => auth()->user()->tenant_id,
             'name' => $data->name,
             'email' => $data->email,
             'job_title' => $data->jobTitle,

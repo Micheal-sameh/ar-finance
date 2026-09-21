@@ -36,6 +36,7 @@ class JournalService
         return DB::transaction(function () use ($data) {
             $entry = $this->journals->create(
                 attributes: [
+                    'tenant_id' => auth()->user()->tenant_id,
                     'date' => $data->date,
                     'description' => $data->description,
                     'reference' => $data->reference,

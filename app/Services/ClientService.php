@@ -29,6 +29,7 @@ class ClientService
     public function create(CreateClientData $data): Client
     {
         return $this->clients->create([
+            'tenant_id' => auth()->user()->tenant_id,
             'name' => $data->name,
             'email' => $data->email,
             'phone' => $data->phone,

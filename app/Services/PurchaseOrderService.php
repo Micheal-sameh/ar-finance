@@ -37,6 +37,7 @@ class PurchaseOrderService
     {
         return $this->purchaseOrders->create(
             attributes: [
+                'tenant_id' => auth()->user()->tenant_id,
                 'vendor_id' => $data->vendorId,
                 'po_number' => $data->poNumber,
                 'order_date' => $data->orderDate,

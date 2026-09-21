@@ -34,6 +34,7 @@ class BankAccountService
     public function create(CreateBankAccountData $data): BankAccount
     {
         return $this->bankAccounts->create([
+            'tenant_id' => auth()->user()->tenant_id,
             'name' => $data->name,
             'account_id' => $data->accountId,
             'bank_name' => $data->bankName,

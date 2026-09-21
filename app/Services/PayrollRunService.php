@@ -43,6 +43,7 @@ class PayrollRunService
     {
         return $this->payrollRuns->create(
             attributes: [
+                'tenant_id' => auth()->user()->tenant_id,
                 'period_start' => $data->periodStart,
                 'period_end' => $data->periodEnd,
                 'pay_date' => $data->payDate,

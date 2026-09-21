@@ -51,6 +51,7 @@ class AccountService
     public function create(CreateAccountData $data, int $createdBy): Account
     {
         $account = $this->accounts->create([
+            'tenant_id' => auth()->user()->tenant_id,
             'code' => $data->code,
             'name' => $data->name,
             'type' => $data->type,
@@ -102,6 +103,7 @@ class AccountService
     {
         return $this->accounts->findByCode(self::OPENING_BALANCE_EQUITY_CODE)
             ?? $this->accounts->create([
+                'tenant_id' => auth()->user()->tenant_id,
                 'code' => self::OPENING_BALANCE_EQUITY_CODE,
                 'name' => 'Opening Balance Equity',
                 'type' => AccountType::Equity,
