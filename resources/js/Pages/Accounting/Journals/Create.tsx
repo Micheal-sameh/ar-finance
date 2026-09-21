@@ -34,7 +34,8 @@ export default function JournalsCreate() {
                 debit: line.debit || '0',
                 credit: line.credit || '0',
             })),
-        })).post(route('journals.store'));
+        }));
+        form.post(route('journals.store'));
     }
 
     return (
