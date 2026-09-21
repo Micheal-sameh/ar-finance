@@ -55,7 +55,12 @@ export default function VendorsIndex({ vendors, filters }: Props) {
         if (editing) {
             form.put(route('vendors.update', editing.id), { onSuccess: () => setModalOpen(false) });
         } else {
-            form.post(route('vendors.store'), { onSuccess: () => setModalOpen(false) });
+            form.post(route('vendors.store'), {
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                },
+            });
         }
     }
 

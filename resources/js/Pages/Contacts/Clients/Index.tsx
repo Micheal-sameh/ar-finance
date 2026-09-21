@@ -66,7 +66,12 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
         if (editing) {
             form.put(route('clients.update', editing.id), { onSuccess: () => setModalOpen(false) });
         } else {
-            form.post(route('clients.store'), { onSuccess: () => setModalOpen(false) });
+            form.post(route('clients.store'), {
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                },
+            });
         }
     }
 

@@ -61,7 +61,12 @@ export default function EmployeesIndex({ employees, filters }: Props) {
         if (editing) {
             form.put(route('employees.update', editing.id), { onSuccess: () => setModalOpen(false) });
         } else {
-            form.post(route('employees.store'), { onSuccess: () => setModalOpen(false) });
+            form.post(route('employees.store'), {
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                },
+            });
         }
     }
 

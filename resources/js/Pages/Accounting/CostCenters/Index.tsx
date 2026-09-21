@@ -65,7 +65,12 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
         if (editing) {
             form.put(route('cost-centers.update', editing.id), { onSuccess: () => setModalOpen(false) });
         } else {
-            form.post(route('cost-centers.store'), { onSuccess: () => setModalOpen(false) });
+            form.post(route('cost-centers.store'), {
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                },
+            });
         }
     }
 

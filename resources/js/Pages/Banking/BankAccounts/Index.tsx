@@ -71,7 +71,12 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
         if (editing) {
             form.put(route('bank-accounts.update', editing.id), { onSuccess: () => setModalOpen(false) });
         } else {
-            form.post(route('bank-accounts.store'), { onSuccess: () => setModalOpen(false) });
+            form.post(route('bank-accounts.store'), {
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                },
+            });
         }
     }
 
