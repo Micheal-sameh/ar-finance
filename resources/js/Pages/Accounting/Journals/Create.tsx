@@ -27,7 +27,14 @@ export default function JournalsCreate() {
 
     function submit(e: FormEvent) {
         e.preventDefault();
-        form.post(route('journals.store'));
+        form.transform((data) => ({
+            ...data,
+            lines: data.lines.map((line) => ({
+                ...line,
+                debit: line.debit || '0',
+                credit: line.credit || '0',
+            })),
+        })).post(route('journals.store'));
     }
 
     return (
