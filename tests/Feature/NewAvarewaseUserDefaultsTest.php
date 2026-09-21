@@ -41,6 +41,8 @@ class NewAvarewaseUserDefaultsTest extends TestCase
 
     public function test_a_first_time_avarewase_login_gets_viewer_role_and_suspended_status(): void
     {
+        $tenant = Tenant::create(['name' => 'Test Co', 'slug' => 'test-co', 'base_currency' => 'EGP']);
+
         $userInfo = $this->userInfo('sub-1', 'new-person@example.com');
 
         /** @var User $user */
@@ -52,6 +54,7 @@ class NewAvarewaseUserDefaultsTest extends TestCase
 
         $this->assertSame('suspended', $user->status->value);
         $this->assertSame(['Viewer'], $user->getRoleNames()->all());
+        $this->assertSame($tenant->id, $user->tenant_id);
     }
 
     public function test_a_returning_users_role_and_status_are_left_untouched(): void
