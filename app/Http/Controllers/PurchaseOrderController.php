@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\PurchaseOrders\ConvertToBillRequest;
 use App\Http\Requests\PurchaseOrders\StorePurchaseOrderRequest;
 use App\Models\PurchaseOrder;
@@ -12,14 +13,16 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PurchaseOrderController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly PurchaseOrderService $purchaseOrders,
         private readonly VendorService $vendors,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -29,6 +32,23 @@ class PurchaseOrderController extends Controller
             'purchaseOrders' => $this->purchaseOrders->paginate($request->only(['status', 'search'])),
             'filters' => $request->only(['status', 'search']),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', PurchaseOrder::class);
+
+        $purchaseOrders = $this->purchaseOrders->paginate($request->only(['status', 'search']), $this->exportMaxRows());
+
+        $rows = collect($purchaseOrders->items())->map(fn (PurchaseOrder $purchaseOrder) => [
+            $purchaseOrder->po_number,
+            $purchaseOrder->vendor?->name,
+            $purchaseOrder->order_date->toDateString(),
+            $purchaseOrder->status->value,
+            (float) $purchaseOrder->lines->sum(fn ($line) => $line->quantity * $line->unit_price),
+        ]);
+
+        return $this->exportXlsx('purchase-orders.xlsx', ['PO Number', 'Vendor', 'Order Date', 'Status', 'Total'], $rows);
     }
 
     public function create(): Response

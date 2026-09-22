@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Bills\MarkBillPaidRequest;
 use App\Http\Requests\Bills\StoreBillRequest;
 use App\Models\Bill;
@@ -12,14 +13,16 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BillController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly BillService $bills,
         private readonly VendorService $vendors,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -29,6 +32,23 @@ class BillController extends Controller
             'bills' => $this->bills->paginate($request->only(['status', 'search'])),
             'filters' => $request->only(['status', 'search']),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Bill::class);
+
+        $bills = $this->bills->paginate($request->only(['status', 'search']), $this->exportMaxRows());
+
+        $rows = collect($bills->items())->map(fn (Bill $bill) => [
+            $bill->bill_number,
+            $bill->vendor?->name,
+            $bill->due_date->toDateString(),
+            $bill->status->value,
+            (float) $bill->lines->sum(fn ($line) => $line->quantity * $line->unit_price),
+        ]);
+
+        return $this->exportXlsx('bills.xlsx', ['Bill Number', 'Vendor', 'Due Date', 'Status', 'Total'], $rows);
     }
 
     public function create(): Response

@@ -5,6 +5,7 @@ import { ProfitLossSection } from '@/Components/finance/ProfitLossSection';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { ProfitAndLossReport } from '@/types/finance';
@@ -42,7 +43,11 @@ export default function ProfitAndLoss({ report, filters }: Props) {
         <AppLayout>
             <Head title="Profit & Loss" />
 
-            <PageHeader title="Profit & Loss" subtitle="Revenue and expenses, computed from posted journal lines." />
+            <PageHeader
+                title="Profit & Loss"
+                subtitle="Revenue and expenses, computed from posted journal lines."
+                action={<ExportButton href={route('reports.profit-and-loss.export', filters)} />}
+            />
 
             <Card>
                 <form onSubmit={applyFilter} className="d-flex flex-wrap align-items-end gap-2 mb-4">

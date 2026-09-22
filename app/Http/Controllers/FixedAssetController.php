@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\FixedAssets\RunDepreciationRequest;
 use App\Http\Requests\FixedAssets\StoreFixedAssetRequest;
 use App\Models\FixedAsset;
@@ -11,13 +12,15 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FixedAssetController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly FixedAssetService $fixedAssets,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -27,6 +30,23 @@ class FixedAssetController extends Controller
             'fixedAssets' => $this->fixedAssets->paginate($request->only(['search'])),
             'filters' => $request->only(['search']),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', FixedAsset::class);
+
+        $fixedAssets = $this->fixedAssets->paginate($request->only(['search']), $this->exportMaxRows());
+
+        $rows = collect($fixedAssets->items())->map(fn (FixedAsset $asset) => [
+            $asset->name,
+            $asset->purchase_date->toDateString(),
+            (float) $asset->cost,
+            (float) $asset->accumulated_depreciation,
+            (float) $asset->cost - (float) $asset->accumulated_depreciation,
+        ]);
+
+        return $this->exportXlsx('fixed-assets.xlsx', ['Name', 'Purchase Date', 'Cost', 'Accumulated Depreciation', 'Net Book Value'], $rows);
     }
 
     public function create(): Response

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\PayrollRuns\MarkPayrollPaidRequest;
 use App\Http\Requests\PayrollRuns\StorePayrollRunRequest;
 use App\Models\PayrollRun;
@@ -12,14 +13,16 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PayrollRunController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly PayrollRunService $payrollRuns,
         private readonly EmployeeService $employees,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -29,6 +32,23 @@ class PayrollRunController extends Controller
             'payrollRuns' => $this->payrollRuns->paginate($request->only(['status'])),
             'filters' => $request->only(['status']),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', PayrollRun::class);
+
+        $payrollRuns = $this->payrollRuns->paginate($request->only(['status']), $this->exportMaxRows());
+
+        $rows = collect($payrollRuns->items())->map(fn (PayrollRun $run) => [
+            $run->period_start->toDateString().' – '.$run->period_end->toDateString(),
+            $run->pay_date->toDateString(),
+            $run->payslips->count(),
+            $run->status->value,
+            (float) $run->payslips->sum('net_pay'),
+        ]);
+
+        return $this->exportXlsx('payroll-runs.xlsx', ['Period', 'Pay Date', 'Employees', 'Status', 'Net Pay'], $rows);
     }
 
     public function create(): Response

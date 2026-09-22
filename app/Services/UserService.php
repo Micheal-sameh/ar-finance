@@ -11,12 +11,11 @@ class UserService
 {
     public function __construct(
         private readonly UserRepositoryInterface $users,
-    ) {
-    }
+    ) {}
 
-    public function paginate(array $filters = []): LengthAwarePaginator
+    public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
-        return $this->users->paginate($filters);
+        return $this->users->paginate($filters, $perPage);
     }
 
     public function update(User $user, UserStatus $status, string $role): User

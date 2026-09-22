@@ -7,6 +7,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -42,9 +43,12 @@ export default function BillsIndex({ bills, filters }: Props) {
                 title="Bills"
                 subtitle="Vendor bills — approving posts spend to the ledger."
                 action={
-                    <Link href={route('bills.create')}>
-                        <Button leadingIcon={<Plus size={16} />}>New Bill</Button>
-                    </Link>
+                    <div className="d-flex gap-2">
+                        <ExportButton href={route('bills.export', filters)} />
+                        <Link href={route('bills.create')}>
+                            <Button leadingIcon={<Plus size={16} />}>New Bill</Button>
+                        </Link>
+                    </div>
                 }
             />
 

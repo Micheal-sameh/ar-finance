@@ -9,6 +9,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -95,9 +96,12 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
                 title="P&C Centers"
                 subtitle={`Budget vs actual, ${filters.from} to ${filters.to}.`}
                 action={
-                    <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                        New Center
-                    </Button>
+                    <div className="d-flex gap-2">
+                        <ExportButton href={route('cost-centers.export', filters)} />
+                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                            New Center
+                        </Button>
+                    </div>
                 }
             />
 

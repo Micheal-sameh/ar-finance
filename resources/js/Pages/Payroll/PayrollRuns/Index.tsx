@@ -6,6 +6,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Paginated, PayrollRun, PayrollRunStatus } from '@/types/finance';
@@ -24,7 +25,7 @@ function totalNet(run: PayrollRun): number {
     return run.payslips.reduce((sum, p) => sum + parseFloat(p.net_pay), 0);
 }
 
-export default function PayrollRunsIndex({ payrollRuns }: Props) {
+export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
     return (
         <AppLayout>
             <Head title="Payroll Runs" />
@@ -33,9 +34,12 @@ export default function PayrollRunsIndex({ payrollRuns }: Props) {
                 title="Payroll Runs"
                 subtitle="Approving posts Payroll Expense against Salaries Payable."
                 action={
-                    <Link href={route('payroll-runs.create')}>
-                        <Button leadingIcon={<Plus size={16} />}>New Payroll Run</Button>
-                    </Link>
+                    <div className="d-flex gap-2">
+                        <ExportButton href={route('payroll-runs.export', filters)} />
+                        <Link href={route('payroll-runs.create')}>
+                            <Button leadingIcon={<Plus size={16} />}>New Payroll Run</Button>
+                        </Link>
+                    </div>
                 }
             />
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\BankAccounts\SaveBankAccountRequest;
 use App\Http\Requests\BankTransactions\ImportBankTransactionsRequest;
 use App\Models\BankAccount;
@@ -13,15 +14,17 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class BankAccountController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly BankAccountService $bankAccounts,
         private readonly BankReconciliationService $reconciliation,
         private readonly ExchangeRateService $exchangeRates,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -32,6 +35,21 @@ class BankAccountController extends Controller
             'filters' => $request->only(['search']),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', BankAccount::class);
+
+        $bankAccounts = $this->bankAccounts->paginate($request->only(['search']), $this->exportMaxRows());
+
+        $rows = collect($bankAccounts->items())->map(fn (BankAccount $bankAccount) => [
+            $bankAccount->name,
+            $bankAccount->account ? "{$bankAccount->account->code} · {$bankAccount->account->name}" : null,
+            $bankAccount->bank_name,
+        ]);
+
+        return $this->exportXlsx('bank-accounts.xlsx', ['Name', 'GL Account', 'Bank'], $rows);
     }
 
     public function show(BankAccount $bankAccount): Response

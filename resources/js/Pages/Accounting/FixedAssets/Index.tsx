@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -51,6 +52,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
                 subtitle="Depreciation register — straight-line, posted monthly."
                 action={
                     <div className="d-flex gap-2">
+                        <ExportButton href={route('fixed-assets.export', filters)} />
                         <Button variant="outline" leadingIcon={<Zap size={16} />} onClick={runDepreciation}>
                             Run This Month's Depreciation
                         </Button>

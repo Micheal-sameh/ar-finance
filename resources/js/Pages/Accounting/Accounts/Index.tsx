@@ -9,6 +9,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -312,6 +313,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                 subtitle="Every posting account in the ledger, grouped by type."
                 action={
                     <div className="d-flex gap-2">
+                        <ExportButton href={route('accounts.export', filters)} />
                         <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={openImport}>
                             Import from Excel
                         </Button>

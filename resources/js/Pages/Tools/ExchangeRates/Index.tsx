@@ -6,6 +6,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -78,6 +79,7 @@ export default function ExchangeRatesIndex({ report, canManage }: Props) {
             <PageHeader
                 title="Exchange Rates"
                 subtitle={`All rates quoted as ${report.base_currency} per 1 unit of foreign currency — the same convention the Central Bank of Egypt uses for its own buy/sell quotes.`}
+                action={<ExportButton href={route('exchange-rates.export', { date: report.requested_date })} />}
             />
 
             <Card>

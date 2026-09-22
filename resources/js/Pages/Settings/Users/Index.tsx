@@ -6,6 +6,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -58,7 +59,11 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
         <AppLayout>
             <Head title="Users" />
 
-            <PageHeader title="Users" subtitle="Everyone with access to this tenant." />
+            <PageHeader
+                title="Users"
+                subtitle="Everyone with access to this tenant."
+                action={<ExportButton href={route('users.export', filters)} />}
+            />
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>

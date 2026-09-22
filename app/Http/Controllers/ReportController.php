@@ -2,20 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Models\Account;
 use App\Services\AccountService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly ReportService $reports,
         private readonly AccountService $accounts,
-    ) {
-    }
+    ) {}
 
     public function trialBalance(Request $request): Response
     {
@@ -61,6 +64,34 @@ class ReportController extends Controller
             'report' => $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo),
             'filters' => ['from' => $from, 'to' => $to, 'compare_from' => $compareFrom, 'compare_to' => $compareTo],
         ]);
+    }
+
+    public function profitAndLossExport(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $from = $request->string('from')->value() ?: now()->startOfMonth()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
+        $compareFrom = $request->string('compare_from')->value() ?: null;
+        $compareTo = $request->string('compare_to')->value() ?: null;
+
+        $report = $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo);
+
+        $rows = collect();
+
+        foreach ($report['revenue'] as $row) {
+            $rows->push(['Revenue', $row['code'], $row['name'], $row['current'], $row['prior']]);
+        }
+        $rows->push(['Revenue', '', 'Total Revenue', $report['total_revenue']['current'], $report['total_revenue']['prior']]);
+
+        foreach ($report['expenses'] as $row) {
+            $rows->push(['Expense', $row['code'], $row['name'], $row['current'], $row['prior']]);
+        }
+        $rows->push(['Expense', '', 'Total Expenses', $report['total_expenses']['current'], $report['total_expenses']['prior']]);
+
+        $rows->push(['', '', 'Net Profit', $report['net_profit']['current'], $report['net_profit']['prior']]);
+
+        return $this->exportXlsx('profit-and-loss.xlsx', ['Section', 'Code', 'Account', 'Amount', 'Prior Period'], $rows);
     }
 
     public function balanceSheet(Request $request): Response

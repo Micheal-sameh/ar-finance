@@ -7,6 +7,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -38,9 +39,12 @@ export default function JournalsIndex({ entries, filters }: Props) {
                 title="Journal Entries"
                 subtitle="Every posted transaction in the general ledger."
                 action={
-                    <Link href={route('journals.create')}>
-                        <Button leadingIcon={<Plus size={16} />}>New Entry</Button>
-                    </Link>
+                    <div className="d-flex gap-2">
+                        <ExportButton href={route('journals.export', filters)} />
+                        <Link href={route('journals.create')}>
+                            <Button leadingIcon={<Plus size={16} />}>New Entry</Button>
+                        </Link>
+                    </div>
                 }
             />
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\UnbalancedJournalEntryException;
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Journals\StoreJournalEntryRequest;
 use App\Models\JournalEntry;
 use App\Services\JournalService;
@@ -10,13 +11,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class JournalEntryController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly JournalService $journals,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -26,6 +29,23 @@ class JournalEntryController extends Controller
             'entries' => $this->journals->paginate($request->only(['source_type', 'from', 'to', 'search'])),
             'filters' => $request->only(['source_type', 'from', 'to', 'search']),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', JournalEntry::class);
+
+        $entries = $this->journals->paginate($request->only(['source_type', 'from', 'to', 'search']), $this->exportMaxRows());
+
+        $rows = collect($entries->items())->map(fn (JournalEntry $entry) => [
+            $entry->date->toDateString(),
+            $entry->description,
+            $entry->reference,
+            $entry->source_type->value,
+            (float) $entry->lines->sum('debit'),
+        ]);
+
+        return $this->exportXlsx('journal-entries.xlsx', ['Date', 'Description', 'Reference', 'Source', 'Amount'], $rows);
     }
 
     public function create(): Response

@@ -7,6 +7,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -34,9 +35,12 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
                 title="Expenses"
                 subtitle="Spend recorded against the business."
                 action={
-                    <Link href={route('expenses.create')}>
-                        <Button leadingIcon={<Plus size={16} />}>New Expense</Button>
-                    </Link>
+                    <div className="d-flex gap-2">
+                        <ExportButton href={route('expenses.export', filters)} />
+                        <Link href={route('expenses.create')}>
+                            <Button leadingIcon={<Plus size={16} />}>New Expense</Button>
+                        </Link>
+                    </div>
                 }
             />
 

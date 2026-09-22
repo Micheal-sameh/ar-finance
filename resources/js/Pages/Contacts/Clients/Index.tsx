@@ -6,6 +6,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -94,9 +95,12 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
                 title="Clients"
                 subtitle="Everyone you invoice."
                 action={
-                    <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                        New Client
-                    </Button>
+                    <div className="d-flex gap-2">
+                        <ExportButton href={route('clients.export', filters)} />
+                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                            New Client
+                        </Button>
+                    </div>
                 }
             />
 

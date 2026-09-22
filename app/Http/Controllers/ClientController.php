@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Clients\SaveClientRequest;
 use App\Models\Client;
 use App\Services\ClientService;
@@ -11,14 +12,16 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClientController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly ClientService $clients,
         private readonly ExchangeRateService $exchangeRates,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -29,6 +32,22 @@ class ClientController extends Controller
             'filters' => $request->only(['search']),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Client::class);
+
+        $clients = $this->clients->paginate($request->only(['search']), $this->exportMaxRows());
+
+        $rows = collect($clients->items())->map(fn (Client $client) => [
+            $client->name,
+            $client->email,
+            $client->phone,
+            $client->currency,
+        ]);
+
+        return $this->exportXlsx('clients.xlsx', ['Name', 'Email', 'Phone', 'Currency'], $rows);
     }
 
     public function store(SaveClientRequest $request): RedirectResponse

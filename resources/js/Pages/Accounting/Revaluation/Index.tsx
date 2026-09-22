@@ -9,6 +9,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -83,6 +84,7 @@ export default function RevaluationIndex({ preview, filters, canManage }: Props)
             <PageHeader
                 title="Currency Revaluation"
                 subtitle="Re-measures outstanding foreign-currency receivables against today's exchange rate and posts the unrealized gain or loss to the ledger. Bank accounts aren't included — those are kept correct through reconciliation, not revaluation."
+                action={<ExportButton href={route('revaluation.export', filters)} />}
             />
 
             <Card>

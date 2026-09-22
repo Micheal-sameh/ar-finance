@@ -6,6 +6,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Table } from '@/Components/ui/Table';
@@ -83,9 +84,12 @@ export default function VendorsIndex({ vendors, filters }: Props) {
                 title="Vendors"
                 subtitle="Everyone you record expenses against."
                 action={
-                    <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                        New Vendor
-                    </Button>
+                    <div className="d-flex gap-2">
+                        <ExportButton href={route('vendors.export', filters)} />
+                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                            New Vendor
+                        </Button>
+                    </div>
                 }
             />
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Vendors\SaveVendorRequest;
 use App\Models\Vendor;
 use App\Services\VendorService;
@@ -10,13 +11,15 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VendorController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly VendorService $vendors,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -26,6 +29,21 @@ class VendorController extends Controller
             'vendors' => $this->vendors->paginate($request->only(['search'])),
             'filters' => $request->only(['search']),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Vendor::class);
+
+        $vendors = $this->vendors->paginate($request->only(['search']), $this->exportMaxRows());
+
+        $rows = collect($vendors->items())->map(fn (Vendor $vendor) => [
+            $vendor->name,
+            $vendor->email,
+            $vendor->payment_terms,
+        ]);
+
+        return $this->exportXlsx('vendors.xlsx', ['Name', 'Email', 'Payment Terms'], $rows);
     }
 
     public function store(SaveVendorRequest $request): RedirectResponse

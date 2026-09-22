@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\AccountImportException;
 use App\Exceptions\AccountInUseException;
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Accounts\ImportAccountsRequest;
 use App\Http\Requests\Accounts\StoreAccountRequest;
 use App\Http\Requests\Accounts\UpdateAccountRequest;
@@ -23,6 +24,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AccountController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly AccountService $accounts,
         private readonly ReportService $reports,
@@ -79,6 +82,25 @@ class AccountController extends Controller
         $this->accounts->update($account, $request->toDto());
 
         return redirect()->route('accounts.index')->with('success', 'Account updated.');
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $balances = $this->reports->accountBalances();
+        $accounts = $this->accounts->filtered($request->only(['type', 'is_active', 'search']));
+
+        $rows = $accounts->map(fn (Account $account) => [
+            $account->code,
+            $account->name,
+            $account->type->value,
+            $account->normal_balance->value,
+            $balances[$account->id] ?? 0.0,
+            $account->is_active ? 'Active' : 'Inactive',
+        ]);
+
+        return $this->exportXlsx('accounts.xlsx', ['Code', 'Name', 'Type', 'Normal Balance', 'Balance', 'Status'], $rows);
     }
 
     /**

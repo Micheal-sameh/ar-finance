@@ -56,49 +56,63 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('logout', LogoutController::class)->name('logout');
 
+    Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::resource('users', UserController::class)->only(['index', 'update']);
 
     Route::get('accounts/options', [AccountController::class, 'options'])->name('accounts.options');
     Route::post('accounts/import', [AccountController::class, 'import'])->name('accounts.import');
     Route::get('accounts/import-template', [AccountController::class, 'importTemplate'])->name('accounts.import-template');
+    Route::get('accounts/export', [AccountController::class, 'export'])->name('accounts.export');
     Route::resource('accounts', AccountController::class)->except(['create', 'edit']);
 
+    Route::get('journals/export', [JournalEntryController::class, 'export'])->name('journals.export');
     Route::resource('journals', JournalEntryController::class)->only(['index', 'create', 'store', 'show']);
 
     Route::get('cost-centers/options', [CostCenterController::class, 'options'])->name('cost-centers.options');
+    Route::get('cost-centers/export', [CostCenterController::class, 'export'])->name('cost-centers.export');
     Route::resource('cost-centers', CostCenterController::class)->only(['index', 'store', 'update', 'destroy']);
 
+    Route::get('clients/export', [ClientController::class, 'export'])->name('clients.export');
     Route::resource('clients', ClientController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::get('vendors/export', [VendorController::class, 'export'])->name('vendors.export');
     Route::resource('vendors', VendorController::class)->only(['index', 'store', 'update', 'destroy']);
 
+    Route::get('invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.record-payment');
     Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
 
+    Route::get('expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
     Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('expenses/{expense}/approve', [ExpenseController::class, 'approve'])->name('expenses.approve');
     Route::post('expenses/{expense}/pay', [ExpenseController::class, 'markPaid'])->name('expenses.mark-paid');
 
+    Route::get('purchase-orders/export', [PurchaseOrderController::class, 'export'])->name('purchase-orders.export');
     Route::resource('purchase-orders', PurchaseOrderController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('purchase-orders/{purchase_order}/send', [PurchaseOrderController::class, 'send'])->name('purchase-orders.send');
     Route::post('purchase-orders/{purchase_order}/cancel', [PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
     Route::post('purchase-orders/{purchase_order}/convert-to-bill', [PurchaseOrderController::class, 'convertToBill'])->name('purchase-orders.convert-to-bill');
 
+    Route::get('bills/export', [BillController::class, 'export'])->name('bills.export');
     Route::resource('bills', BillController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
     Route::post('bills/{bill}/pay', [BillController::class, 'markPaid'])->name('bills.mark-paid');
 
+    Route::get('fixed-assets/export', [FixedAssetController::class, 'export'])->name('fixed-assets.export');
     Route::resource('fixed-assets', FixedAssetController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('fixed-assets/{fixed_asset}/post-depreciation', [FixedAssetController::class, 'postDepreciation'])->name('fixed-assets.post-depreciation');
     Route::post('fixed-assets/run-depreciation', [FixedAssetController::class, 'runAll'])->name('fixed-assets.run-depreciation');
 
+    Route::get('employees/export', [EmployeeController::class, 'export'])->name('employees.export');
     Route::resource('employees', EmployeeController::class)->only(['index', 'store', 'update', 'destroy']);
 
+    Route::get('payroll-runs/export', [PayrollRunController::class, 'export'])->name('payroll-runs.export');
     Route::resource('payroll-runs', PayrollRunController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('payroll-runs/{payroll_run}/approve', [PayrollRunController::class, 'approve'])->name('payroll-runs.approve');
     Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'markPaid'])->name('payroll-runs.mark-paid');
 
+    Route::get('bank-accounts/export', [BankAccountController::class, 'export'])->name('bank-accounts.export');
     Route::resource('bank-accounts', BankAccountController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
     Route::post('bank-accounts/{bank_account}/import', [BankAccountController::class, 'import'])->name('bank-accounts.import');
 
@@ -107,15 +121,18 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('bank-transactions/{bank_transaction}/create-and-match', [BankTransactionController::class, 'createAndMatch'])->name('bank-transactions.create-and-match');
 
     Route::get('exchange-rates', [ExchangeRateController::class, 'index'])->name('exchange-rates.index');
+    Route::get('exchange-rates/export', [ExchangeRateController::class, 'export'])->name('exchange-rates.export');
     Route::post('exchange-rates/sync', [ExchangeRateController::class, 'sync'])->name('exchange-rates.sync');
 
     Route::get('revaluation', [CurrencyRevaluationController::class, 'index'])->name('revaluation.index');
+    Route::get('revaluation/export', [CurrencyRevaluationController::class, 'export'])->name('revaluation.export');
     Route::post('revaluation', [CurrencyRevaluationController::class, 'revalue'])->name('revaluation.revalue');
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
         Route::get('general-ledger', [ReportController::class, 'generalLedger'])->name('general-ledger');
         Route::get('profit-and-loss', [ReportController::class, 'profitAndLoss'])->name('profit-and-loss');
+        Route::get('profit-and-loss/export', [ReportController::class, 'profitAndLossExport'])->name('profit-and-loss.export');
         Route::get('balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
         Route::get('vat-return', [ReportController::class, 'vatReturn'])->name('vat-return');
         Route::get('aging', [ReportController::class, 'aging'])->name('aging');

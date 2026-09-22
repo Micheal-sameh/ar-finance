@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CostCenterInUseException;
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\CostCenters\SaveCostCenterRequest;
 use App\Http\Resources\CostCenterOptionResource;
 use App\Models\CostCenter;
@@ -13,14 +14,16 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CostCenterController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly CostCenterService $costCenters,
         private readonly ReportService $reports,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -34,6 +37,23 @@ class CostCenterController extends Controller
             'summary' => $this->reports->costCenterSummary($from, $to),
             'filters' => array_merge($request->only(['type', 'search']), ['from' => $from, 'to' => $to]),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', CostCenter::class);
+
+        $costCenters = $this->costCenters->paginate($request->only(['type', 'search']), $this->exportMaxRows());
+
+        $rows = collect($costCenters->items())->map(fn (CostCenter $costCenter) => [
+            $costCenter->name,
+            $costCenter->type->value,
+            $costCenter->parent?->name,
+            (float) $costCenter->budget,
+            $costCenter->is_active ? 'Active' : 'Inactive',
+        ]);
+
+        return $this->exportXlsx('cost-centers.xlsx', ['Name', 'Type', 'Parent', 'Budget', 'Status'], $rows);
     }
 
     public function options(): AnonymousResourceCollection

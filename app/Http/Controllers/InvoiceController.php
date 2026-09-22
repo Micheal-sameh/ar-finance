@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Invoices\RecordInvoicePaymentRequest;
 use App\Http\Requests\Invoices\StoreInvoiceRequest;
 use App\Models\Invoice;
@@ -13,15 +14,17 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InvoiceController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly InvoiceService $invoices,
         private readonly ClientService $clients,
         private readonly ExchangeRateService $exchangeRates,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -31,6 +34,25 @@ class InvoiceController extends Controller
             'invoices' => $this->invoices->paginate($request->only(['status', 'search'])),
             'filters' => $request->only(['status', 'search']),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        $invoices = $this->invoices->paginate($request->only(['status', 'search']), $this->exportMaxRows());
+
+        $rows = collect($invoices->items())->map(fn (Invoice $invoice) => [
+            $invoice->invoice_number,
+            $invoice->client?->name,
+            $invoice->issue_date->toDateString(),
+            $invoice->due_date->toDateString(),
+            $invoice->status->value,
+            (float) $invoice->lines->sum(fn ($line) => $line->quantity * $line->unit_price * (1 + $line->tax_rate / 100)),
+            $invoice->currency,
+        ]);
+
+        return $this->exportXlsx('invoices.xlsx', ['Number', 'Client', 'Issue Date', 'Due Date', 'Status', 'Total', 'Currency'], $rows);
     }
 
     public function create(): Response

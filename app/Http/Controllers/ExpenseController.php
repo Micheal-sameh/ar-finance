@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Expenses\MarkExpensePaidRequest;
 use App\Http\Requests\Expenses\StoreExpenseRequest;
 use App\Models\Expense;
@@ -12,14 +13,16 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExpenseController extends Controller
 {
+    use ExportsExcel;
+
     public function __construct(
         private readonly ExpenseService $expenses,
         private readonly VendorService $vendors,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -29,6 +32,24 @@ class ExpenseController extends Controller
             'expenses' => $this->expenses->paginate($request->only(['status', 'search'])),
             'filters' => $request->only(['status', 'search']),
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Expense::class);
+
+        $expenses = $this->expenses->paginate($request->only(['status', 'search']), $this->exportMaxRows());
+
+        $rows = collect($expenses->items())->map(fn (Expense $expense) => [
+            $expense->date->toDateString(),
+            $expense->description,
+            $expense->account?->name,
+            $expense->vendor?->name,
+            $expense->status->value,
+            (float) $expense->amount,
+        ]);
+
+        return $this->exportXlsx('expenses.xlsx', ['Date', 'Description', 'Category', 'Vendor', 'Status', 'Amount'], $rows);
     }
 
     public function create(): Response
