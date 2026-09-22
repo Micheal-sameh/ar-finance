@@ -46,6 +46,7 @@ class UpdateAccountRequest extends FormRequest
             ],
             'type' => ['required', new Enum(AccountType::class)],
             'normal_balance' => ['nullable', new Enum(NormalBalance::class)],
+            'currency' => ['nullable', 'string', 'size:3'],
             'parent_id' => [
                 'nullable',
                 'exists:accounts,id',
@@ -69,6 +70,9 @@ class UpdateAccountRequest extends FormRequest
 
     public function toDto(): CreateAccountData
     {
-        return CreateAccountData::fromArray($this->validated());
+        return CreateAccountData::fromArray([
+            ...$this->validated(),
+            'currency' => $this->validated('currency') ?? $this->route('account')->currency,
+        ]);
     }
 }

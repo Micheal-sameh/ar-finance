@@ -43,6 +43,7 @@ class StoreAccountRequest extends FormRequest
             ],
             'type' => ['required', new Enum(AccountType::class)],
             'normal_balance' => ['nullable', new Enum(NormalBalance::class)],
+            'currency' => ['nullable', 'string', 'size:3'],
             'parent_id' => [
                 'nullable',
                 'exists:accounts,id',

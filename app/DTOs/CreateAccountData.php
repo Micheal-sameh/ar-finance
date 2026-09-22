@@ -12,11 +12,11 @@ final readonly class CreateAccountData
         public string $name,
         public AccountType $type,
         public NormalBalance $normalBalance,
+        public string $currency,
         public ?int $parentId = null,
         public bool $isActive = true,
         public ?float $openingBalance = null,
-    ) {
-    }
+    ) {}
 
     public static function fromArray(array $data): self
     {
@@ -29,6 +29,7 @@ final readonly class CreateAccountData
             normalBalance: isset($data['normal_balance'])
                 ? NormalBalance::from($data['normal_balance'])
                 : $type->defaultNormalBalance(),
+            currency: strtoupper($data['currency'] ?? 'EGP'),
             parentId: isset($data['parent_id']) ? (int) $data['parent_id'] : null,
             isActive: (bool) ($data['is_active'] ?? true),
             openingBalance: isset($data['opening_balance']) && $data['opening_balance'] !== ''

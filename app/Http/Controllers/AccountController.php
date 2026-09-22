@@ -47,6 +47,7 @@ class AccountController extends Controller
             'accounts' => $accounts,
             'filters' => $request->only(['type', 'is_active', 'search']),
             'baseCurrency' => $this->exchangeRates->baseCurrency(),
+            'currencyOptions' => $this->exchangeRates->currencyOptions(),
         ]);
     }
 
@@ -96,11 +97,12 @@ class AccountController extends Controller
             $account->name,
             $account->type->value,
             $account->normal_balance->value,
+            $account->currency,
             $balances[$account->id] ?? 0.0,
             $account->is_active ? 'Active' : 'Inactive',
         ]);
 
-        return $this->exportXlsx('accounts.xlsx', ['Code', 'Name', 'Type', 'Normal Balance', 'Balance', 'Status'], $rows);
+        return $this->exportXlsx('accounts.xlsx', ['Code', 'Name', 'Type', 'Normal Balance', 'Currency', 'Balance', 'Status'], $rows);
     }
 
     /**

@@ -56,6 +56,7 @@ class AccountService
             'name' => $data->name,
             'type' => $data->type,
             'normal_balance' => $data->normalBalance,
+            'currency' => $data->currency,
             'parent_id' => $data->parentId,
             'is_active' => $data->isActive,
         ]);
@@ -108,6 +109,7 @@ class AccountService
                 'name' => 'Opening Balance Equity',
                 'type' => AccountType::Equity,
                 'normal_balance' => AccountType::Equity->defaultNormalBalance(),
+                'currency' => 'EGP',
                 'parent_id' => null,
                 'is_active' => true,
                 'is_deletable' => false,
@@ -121,6 +123,7 @@ class AccountService
             'name' => $data->name,
             'type' => $data->type,
             'normal_balance' => $data->normalBalance,
+            'currency' => $data->currency,
             'parent_id' => $data->parentId,
             'is_active' => $data->isActive,
         ]);

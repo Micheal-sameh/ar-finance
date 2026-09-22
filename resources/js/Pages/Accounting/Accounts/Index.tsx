@@ -17,10 +17,16 @@ import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Account, AccountType } from '@/types/finance';
 
+interface CurrencyOption {
+    code: string;
+    name: string;
+}
+
 interface Props {
     accounts: Account[];
     filters: { type?: string; is_active?: string; search?: string };
     baseCurrency: string;
+    currencyOptions: CurrencyOption[];
 }
 
 interface AccountNode extends Account {
@@ -135,6 +141,7 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                     </div>
                 </Table.Cell>
                 <Table.Cell style={{ textTransform: 'capitalize' }}>{node.normal_balance}</Table.Cell>
+                <Table.Cell>{node.currency}</Table.Cell>
                 <Table.Cell className="text-end">
                     <MoneyDisplay
                         amount={hasChildren && !isExpanded ? subtreeBalance(node) : node.balance ?? 0}
@@ -196,7 +203,7 @@ function typeBadgeVariant(type: AccountType) {
         | 'danger';
 }
 
-export default function AccountsIndex({ accounts, filters, baseCurrency }: Props) {
+export default function AccountsIndex({ accounts, filters, baseCurrency, currencyOptions }: Props) {
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
@@ -222,6 +229,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
         code: '',
         name: '',
         type: 'asset' as AccountType,
+        currency: baseCurrency,
         parent_id: null as number | null,
         opening_balance: '' as number | string,
     });
@@ -252,6 +260,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
             code: account.code,
             name: account.name,
             type: account.type,
+            currency: account.currency,
             parent_id: account.parent_id,
             opening_balance: '',
         });
@@ -387,6 +396,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                             <Table.HeadCell className="ps-3">Code</Table.HeadCell>
                             <Table.HeadCell>Name</Table.HeadCell>
                             <Table.HeadCell>Normal Balance</Table.HeadCell>
+                            <Table.HeadCell>Currency</Table.HeadCell>
                             <Table.HeadCell className="text-end">Balance</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
                             <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
@@ -400,7 +410,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                                     <Fragment key={value}>
                                         <tr>
                                             <td
-                                                colSpan={6}
+                                                colSpan={7}
                                                 className="px-3 py-2"
                                                 style={{ backgroundColor: 'var(--af-surface-alt, rgba(0,0,0,0.02))', borderBottom: '1px solid var(--af-border)' }}
                                             >
@@ -466,6 +476,18 @@ export default function AccountsIndex({ accounts, filters, baseCurrency }: Props
                         {ACCOUNT_TYPES.map((t) => (
                             <option key={t.value} value={t.value}>
                                 {t.label}
+                            </option>
+                        ))}
+                    </Select>
+                    <Select
+                        label="Currency"
+                        value={form.data.currency}
+                        onChange={(e) => form.setData('currency', e.target.value)}
+                        error={form.errors.currency}
+                    >
+                        {currencyOptions.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                                {currency.code} — {currency.name}
                             </option>
                         ))}
                     </Select>

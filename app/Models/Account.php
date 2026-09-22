@@ -23,6 +23,7 @@ class Account extends Model
         'name',
         'type',
         'normal_balance',
+        'currency',
         'parent_id',
         'is_active',
         'is_deletable',

@@ -8,6 +8,7 @@ export interface Account {
     name: string;
     type: AccountType;
     normal_balance: NormalBalance;
+    currency: string;
     parent_id: number | null;
     is_active: boolean;
     is_deletable: boolean;
