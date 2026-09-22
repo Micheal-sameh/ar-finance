@@ -6,6 +6,7 @@ use App\Exceptions\UnbalancedJournalEntryException;
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Journals\StoreJournalEntryRequest;
 use App\Models\JournalEntry;
+use App\Models\User;
 use App\Services\JournalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,8 +27,12 @@ class JournalEntryController extends Controller
         $this->authorize('viewAny', JournalEntry::class);
 
         return Inertia::render('Accounting/Journals/Index', [
-            'entries' => $this->journals->paginate($request->only(['source_type', 'from', 'to', 'search'])),
-            'filters' => $request->only(['source_type', 'from', 'to', 'search']),
+            'entries' => $this->journals->paginate($request->only(['source_type', 'created_by', 'from', 'to', 'search'])),
+            'filters' => $request->only(['source_type', 'created_by', 'from', 'to', 'search']),
+            'authorOptions' => User::query()
+                ->where('tenant_id', $request->user()->tenant_id)
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
@@ -35,7 +40,7 @@ class JournalEntryController extends Controller
     {
         $this->authorize('viewAny', JournalEntry::class);
 
-        $entries = $this->journals->paginate($request->only(['source_type', 'from', 'to', 'search']), $this->exportMaxRows());
+        $entries = $this->journals->paginate($request->only(['source_type', 'created_by', 'from', 'to', 'search']), $this->exportMaxRows());
 
         $rows = collect($entries->items())->map(fn (JournalEntry $entry) => [
             $entry->date->toDateString(),

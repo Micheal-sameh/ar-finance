@@ -26,6 +26,7 @@ class EloquentJournalRepository implements JournalRepositoryInterface
         return JournalEntry::query()
             ->with(['createdBy', 'lines.account'])
             ->when($filters['source_type'] ?? null, fn ($query, $type) => $query->where('source_type', $type))
+            ->when($filters['created_by'] ?? null, fn ($query, $createdBy) => $query->where('created_by', $createdBy))
             ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('date', '>=', $from))
             ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('date', '<=', $to))
             ->when($filters['search'] ?? null, function ($query, $search) {

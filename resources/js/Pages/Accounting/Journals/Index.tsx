@@ -15,9 +15,15 @@ import { AppLayout } from '@/Layouts/AppLayout';
 import type { JournalEntry, Paginated } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
+interface AuthorOption {
+    id: number;
+    name: string;
+}
+
 interface Props {
     entries: Paginated<JournalEntry>;
-    filters: { source_type?: string; from?: string; to?: string; search?: string };
+    filters: { source_type?: string; created_by?: string; from?: string; to?: string; search?: string };
+    authorOptions: AuthorOption[];
 }
 
 const SOURCE_TYPES = [
@@ -34,7 +40,7 @@ function entryTotal(entry: JournalEntry): number {
     return entry.lines.reduce((sum, line) => sum + parseFloat(line.debit), 0);
 }
 
-export default function JournalsIndex({ entries, filters }: Props) {
+export default function JournalsIndex({ entries, filters, authorOptions }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
 
     function runSearch(e: FormEvent) {
@@ -89,6 +95,18 @@ export default function JournalsIndex({ entries, filters }: Props) {
                                 </option>
                             ))}
                         </Select>
+                        <Select
+                            value={filters.created_by ?? ''}
+                            onChange={(e) => runFilters({ created_by: e.target.value || undefined })}
+                            style={{ maxWidth: '170px' }}
+                        >
+                            <option value="">All authors</option>
+                            {authorOptions.map((author) => (
+                                <option key={author.id} value={author.id}>
+                                    {author.name}
+                                </option>
+                            ))}
+                        </Select>
                         <Input
                             type="date"
                             label="From"
@@ -104,7 +122,7 @@ export default function JournalsIndex({ entries, filters }: Props) {
                         <Button type="submit" variant="outline">
                             Search
                         </Button>
-                        {(filters.source_type || filters.from || filters.to || filters.search) && (
+                        {(filters.source_type || filters.created_by || filters.from || filters.to || filters.search) && (
                             <Button type="button" variant="ghost" onClick={clearFilters}>
                                 Clear
                             </Button>
