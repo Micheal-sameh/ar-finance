@@ -13,6 +13,7 @@ class EloquentBankAccountRepository implements BankAccountRepositoryInterface
     {
         return BankAccount::query()
             ->with('account')
+            ->when($filters['currency'] ?? null, fn ($query, $currency) => $query->where('currency', $currency))
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->paginate($perPage)

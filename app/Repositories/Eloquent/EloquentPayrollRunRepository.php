@@ -13,6 +13,8 @@ class EloquentPayrollRunRepository implements PayrollRunRepositoryInterface
         return PayrollRun::query()
             ->with('payslips')
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('period_start', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('period_end', '<=', $to))
             ->orderByDesc('period_start')
             ->orderByDesc('id')
             ->paginate($perPage)

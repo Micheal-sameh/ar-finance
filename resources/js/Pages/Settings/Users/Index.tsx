@@ -16,7 +16,7 @@ import type { AppUser, Paginated, UserStatus } from '@/types/finance';
 
 interface Props {
     users: Paginated<AppUser>;
-    filters: { search?: string };
+    filters: { status?: string; role?: string; search?: string };
     canManage: boolean;
     availableRoles: string[];
 }
@@ -33,7 +33,16 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
 
     function runSearch(e: FormEvent) {
         e.preventDefault();
-        router.get(route('users.index'), { search }, { preserveState: true });
+        router.get(route('users.index'), { ...filters, search }, { preserveState: true });
+    }
+
+    function runFilters(next: Partial<Props['filters']>) {
+        router.get(route('users.index'), { ...filters, search, ...next }, { preserveState: true });
+    }
+
+    function clearFilters() {
+        setSearch('');
+        router.get(route('users.index'), {}, { preserveState: true });
     }
 
     function openEdit(user: AppUser) {
@@ -67,11 +76,42 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
-                        <Input placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
+                        <Input
+                            placeholder="Search by name or email…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{ maxWidth: '240px' }}
+                        />
+                        <Select
+                            value={filters.role ?? ''}
+                            onChange={(e) => runFilters({ role: e.target.value || undefined })}
+                            style={{ maxWidth: '170px' }}
+                        >
+                            <option value="">All roles</option>
+                            {availableRoles.map((role) => (
+                                <option key={role} value={role}>
+                                    {role}
+                                </option>
+                            ))}
+                        </Select>
+                        <Select
+                            value={filters.status ?? ''}
+                            onChange={(e) => runFilters({ status: e.target.value || undefined })}
+                            style={{ maxWidth: '150px' }}
+                        >
+                            <option value="">All statuses</option>
+                            <option value="active">Active</option>
+                            <option value="suspended">Suspended</option>
+                        </Select>
                         <Button type="submit" variant="outline">
                             Search
                         </Button>
+                        {(filters.status || filters.role || filters.search) && (
+                            <Button type="button" variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
                     </form>
                 </div>
 

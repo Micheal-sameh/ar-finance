@@ -21,7 +21,7 @@ interface CurrencyOption {
 
 interface Props {
     clients: Paginated<Client>;
-    filters: { search?: string };
+    filters: { currency?: string; search?: string };
     currencyOptions: CurrencyOption[];
 }
 
@@ -84,7 +84,16 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
 
     function runSearch(e: FormEvent) {
         e.preventDefault();
-        router.get(route('clients.index'), { search }, { preserveState: true });
+        router.get(route('clients.index'), { ...filters, search }, { preserveState: true });
+    }
+
+    function runFilters(next: Partial<Props['filters']>) {
+        router.get(route('clients.index'), { ...filters, search, ...next }, { preserveState: true });
+    }
+
+    function clearFilters() {
+        setSearch('');
+        router.get(route('clients.index'), {}, { preserveState: true });
     }
 
     return (
@@ -106,11 +115,33 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
-                        <Input placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
+                        <Input
+                            placeholder="Search by name or email…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{ maxWidth: '240px' }}
+                        />
+                        <Select
+                            value={filters.currency ?? ''}
+                            onChange={(e) => runFilters({ currency: e.target.value || undefined })}
+                            style={{ maxWidth: '170px' }}
+                        >
+                            <option value="">All currencies</option>
+                            {currencyOptions.map((currency) => (
+                                <option key={currency.code} value={currency.code}>
+                                    {currency.code}
+                                </option>
+                            ))}
+                        </Select>
                         <Button type="submit" variant="outline">
                             Search
                         </Button>
+                        {(filters.currency || filters.search) && (
+                            <Button type="button" variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
                     </form>
                 </div>
 

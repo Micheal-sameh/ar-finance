@@ -9,6 +9,7 @@ import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
+import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Paginated, PurchaseOrder, PurchaseOrderStatus } from '@/types/finance';
@@ -16,8 +17,15 @@ import { formatDate } from '@/utils/finance';
 
 interface Props {
     purchaseOrders: Paginated<PurchaseOrder>;
-    filters: { status?: string; search?: string };
+    filters: { status?: string; from?: string; to?: string; search?: string };
 }
+
+const PURCHASE_ORDER_STATUSES: { value: PurchaseOrderStatus; label: string }[] = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'sent', label: 'Sent' },
+    { value: 'closed', label: 'Closed' },
+    { value: 'cancelled', label: 'Cancelled' },
+];
 
 function poTotal(po: PurchaseOrder): number {
     return po.lines.reduce((sum, line) => sum + parseFloat(line.quantity) * parseFloat(line.unit_price), 0);
@@ -39,6 +47,15 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters }: Props) 
         router.get(route('purchase-orders.index'), { ...filters, search }, { preserveState: true });
     }
 
+    function runFilters(next: Partial<Props['filters']>) {
+        router.get(route('purchase-orders.index'), { ...filters, search, ...next }, { preserveState: true });
+    }
+
+    function clearFilters() {
+        setSearch('');
+        router.get(route('purchase-orders.index'), {}, { preserveState: true });
+    }
+
     return (
         <AppLayout>
             <Head title="Purchase Orders" />
@@ -58,11 +75,45 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters }: Props) 
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
-                        <Input placeholder="Search PO # or vendor…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
+                        <Input
+                            placeholder="Search PO # or vendor…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{ maxWidth: '240px' }}
+                        />
+                        <Select
+                            value={filters.status ?? ''}
+                            onChange={(e) => runFilters({ status: e.target.value || undefined })}
+                            style={{ maxWidth: '150px' }}
+                        >
+                            <option value="">All statuses</option>
+                            {PURCHASE_ORDER_STATUSES.map((s) => (
+                                <option key={s.value} value={s.value}>
+                                    {s.label}
+                                </option>
+                            ))}
+                        </Select>
+                        <Input
+                            type="date"
+                            label="From"
+                            value={filters.from ?? ''}
+                            onChange={(e) => runFilters({ from: e.target.value || undefined })}
+                        />
+                        <Input
+                            type="date"
+                            label="To"
+                            value={filters.to ?? ''}
+                            onChange={(e) => runFilters({ to: e.target.value || undefined })}
+                        />
                         <Button type="submit" variant="outline">
                             Search
                         </Button>
+                        {(filters.status || filters.from || filters.to || filters.search) && (
+                            <Button type="button" variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
                     </form>
                 </div>
 

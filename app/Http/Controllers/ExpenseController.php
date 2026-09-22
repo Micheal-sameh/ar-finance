@@ -29,8 +29,8 @@ class ExpenseController extends Controller
         $this->authorize('viewAny', Expense::class);
 
         return Inertia::render('Purchases/Expenses/Index', [
-            'expenses' => $this->expenses->paginate($request->only(['status', 'search'])),
-            'filters' => $request->only(['status', 'search']),
+            'expenses' => $this->expenses->paginate($request->only(['status', 'from', 'to', 'search'])),
+            'filters' => $request->only(['status', 'from', 'to', 'search']),
         ]);
     }
 
@@ -38,7 +38,7 @@ class ExpenseController extends Controller
     {
         $this->authorize('viewAny', Expense::class);
 
-        $expenses = $this->expenses->paginate($request->only(['status', 'search']), $this->exportMaxRows());
+        $expenses = $this->expenses->paginate($request->only(['status', 'from', 'to', 'search']), $this->exportMaxRows());
 
         $rows = collect($expenses->items())->map(fn (Expense $expense) => [
             $expense->date->toDateString(),

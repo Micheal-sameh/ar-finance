@@ -31,8 +31,8 @@ class BankAccountController extends Controller
         $this->authorize('viewAny', BankAccount::class);
 
         return Inertia::render('Banking/BankAccounts/Index', [
-            'bankAccounts' => $this->bankAccounts->paginate($request->only(['search'])),
-            'filters' => $request->only(['search']),
+            'bankAccounts' => $this->bankAccounts->paginate($request->only(['currency', 'search'])),
+            'filters' => $request->only(['currency', 'search']),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
         ]);
     }
@@ -41,7 +41,7 @@ class BankAccountController extends Controller
     {
         $this->authorize('viewAny', BankAccount::class);
 
-        $bankAccounts = $this->bankAccounts->paginate($request->only(['search']), $this->exportMaxRows());
+        $bankAccounts = $this->bankAccounts->paginate($request->only(['currency', 'search']), $this->exportMaxRows());
 
         $rows = collect($bankAccounts->items())->map(fn (BankAccount $bankAccount) => [
             $bankAccount->name,

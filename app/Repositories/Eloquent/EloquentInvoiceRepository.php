@@ -14,6 +14,8 @@ class EloquentInvoiceRepository implements InvoiceRepositoryInterface
         return Invoice::query()
             ->with(['client', 'lines'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('issue_date', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('issue_date', '<=', $to))
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('invoice_number', 'like', "%{$search}%")

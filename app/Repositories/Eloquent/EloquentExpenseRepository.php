@@ -13,6 +13,8 @@ class EloquentExpenseRepository implements ExpenseRepositoryInterface
         return Expense::query()
             ->with(['account', 'vendor', 'costCenter'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('date', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('date', '<=', $to))
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('description', 'like', "%{$search}%"))
             ->orderByDesc('date')
             ->orderByDesc('id')

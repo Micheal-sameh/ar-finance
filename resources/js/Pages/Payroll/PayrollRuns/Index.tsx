@@ -7,6 +7,8 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { Input } from '@/Components/ui/Input';
+import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Paginated, PayrollRun, PayrollRunStatus } from '@/types/finance';
@@ -14,8 +16,14 @@ import { formatDate } from '@/utils/finance';
 
 interface Props {
     payrollRuns: Paginated<PayrollRun>;
-    filters: { status?: string };
+    filters: { status?: string; from?: string; to?: string };
 }
+
+const PAYROLL_RUN_STATUSES: { value: PayrollRunStatus; label: string }[] = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'paid', label: 'Paid' },
+];
 
 function statusVariant(status: PayrollRunStatus) {
     return { draft: 'neutral', approved: 'warning', paid: 'success' }[status] as 'neutral' | 'warning' | 'success';
@@ -26,6 +34,14 @@ function totalNet(run: PayrollRun): number {
 }
 
 export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
+    function runFilters(next: Partial<Props['filters']>) {
+        router.get(route('payroll-runs.index'), { ...filters, ...next }, { preserveState: true });
+    }
+
+    function clearFilters() {
+        router.get(route('payroll-runs.index'), {}, { preserveState: true });
+    }
+
     return (
         <AppLayout>
             <Head title="Payroll Runs" />
@@ -44,6 +60,40 @@ export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
             />
 
             <Card padded={false}>
+                <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
+                    <div className="d-flex gap-2 flex-wrap align-items-end">
+                        <Select
+                            value={filters.status ?? ''}
+                            onChange={(e) => runFilters({ status: e.target.value || undefined })}
+                            style={{ maxWidth: '150px' }}
+                        >
+                            <option value="">All statuses</option>
+                            {PAYROLL_RUN_STATUSES.map((s) => (
+                                <option key={s.value} value={s.value}>
+                                    {s.label}
+                                </option>
+                            ))}
+                        </Select>
+                        <Input
+                            type="date"
+                            label="Period from"
+                            value={filters.from ?? ''}
+                            onChange={(e) => runFilters({ from: e.target.value || undefined })}
+                        />
+                        <Input
+                            type="date"
+                            label="Period to"
+                            value={filters.to ?? ''}
+                            onChange={(e) => runFilters({ to: e.target.value || undefined })}
+                        />
+                        {(filters.status || filters.from || filters.to) && (
+                            <Button type="button" variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
                 {payrollRuns.data.length === 0 ? (
                     <EmptyState
                         icon={<Landmark size={20} />}

@@ -9,6 +9,7 @@ import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
+import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { JournalEntry, Paginated } from '@/types/finance';
@@ -18,6 +19,16 @@ interface Props {
     entries: Paginated<JournalEntry>;
     filters: { source_type?: string; from?: string; to?: string; search?: string };
 }
+
+const SOURCE_TYPES = [
+    { value: 'invoice', label: 'Invoice' },
+    { value: 'expense', label: 'Expense' },
+    { value: 'payroll', label: 'Payroll' },
+    { value: 'manual', label: 'Manual' },
+    { value: 'depreciation', label: 'Depreciation' },
+    { value: 'revaluation', label: 'Currency Revaluation' },
+    { value: 'opening_balance', label: 'Opening Balance' },
+];
 
 function entryTotal(entry: JournalEntry): number {
     return entry.lines.reduce((sum, line) => sum + parseFloat(line.debit), 0);
@@ -29,6 +40,15 @@ export default function JournalsIndex({ entries, filters }: Props) {
     function runSearch(e: FormEvent) {
         e.preventDefault();
         router.get(route('journals.index'), { ...filters, search }, { preserveState: true });
+    }
+
+    function runFilters(next: Partial<Props['filters']>) {
+        router.get(route('journals.index'), { ...filters, search, ...next }, { preserveState: true });
+    }
+
+    function clearFilters() {
+        setSearch('');
+        router.get(route('journals.index'), {}, { preserveState: true });
     }
 
     return (
@@ -50,15 +70,45 @@ export default function JournalsIndex({ entries, filters }: Props) {
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
+                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
                         <Input
                             placeholder="Search description or reference…"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
+                            style={{ maxWidth: '240px' }}
+                        />
+                        <Select
+                            value={filters.source_type ?? ''}
+                            onChange={(e) => runFilters({ source_type: e.target.value || undefined })}
+                            style={{ maxWidth: '170px' }}
+                        >
+                            <option value="">All sources</option>
+                            {SOURCE_TYPES.map((s) => (
+                                <option key={s.value} value={s.value}>
+                                    {s.label}
+                                </option>
+                            ))}
+                        </Select>
+                        <Input
+                            type="date"
+                            label="From"
+                            value={filters.from ?? ''}
+                            onChange={(e) => runFilters({ from: e.target.value || undefined })}
+                        />
+                        <Input
+                            type="date"
+                            label="To"
+                            value={filters.to ?? ''}
+                            onChange={(e) => runFilters({ to: e.target.value || undefined })}
                         />
                         <Button type="submit" variant="outline">
                             Search
                         </Button>
+                        {(filters.source_type || filters.from || filters.to || filters.search) && (
+                            <Button type="button" variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
                     </form>
                 </div>
 

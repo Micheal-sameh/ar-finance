@@ -29,8 +29,8 @@ class PurchaseOrderController extends Controller
         $this->authorize('viewAny', PurchaseOrder::class);
 
         return Inertia::render('Purchases/PurchaseOrders/Index', [
-            'purchaseOrders' => $this->purchaseOrders->paginate($request->only(['status', 'search'])),
-            'filters' => $request->only(['status', 'search']),
+            'purchaseOrders' => $this->purchaseOrders->paginate($request->only(['status', 'from', 'to', 'search'])),
+            'filters' => $request->only(['status', 'from', 'to', 'search']),
         ]);
     }
 
@@ -38,7 +38,7 @@ class PurchaseOrderController extends Controller
     {
         $this->authorize('viewAny', PurchaseOrder::class);
 
-        $purchaseOrders = $this->purchaseOrders->paginate($request->only(['status', 'search']), $this->exportMaxRows());
+        $purchaseOrders = $this->purchaseOrders->paginate($request->only(['status', 'from', 'to', 'search']), $this->exportMaxRows());
 
         $rows = collect($purchaseOrders->items())->map(fn (PurchaseOrder $purchaseOrder) => [
             $purchaseOrder->po_number,

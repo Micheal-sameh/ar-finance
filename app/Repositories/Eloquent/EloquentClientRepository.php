@@ -12,6 +12,7 @@ class EloquentClientRepository implements ClientRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return Client::query()
+            ->when($filters['currency'] ?? null, fn ($query, $currency) => $query->where('currency', $currency))
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")

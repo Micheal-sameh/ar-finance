@@ -86,6 +86,15 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
         router.get(route('cost-centers.index'), { ...filters, search }, { preserveState: true });
     }
 
+    function runFilters(next: Partial<Props['filters']>) {
+        router.get(route('cost-centers.index'), { ...filters, search, ...next }, { preserveState: true });
+    }
+
+    function clearFilters() {
+        setSearch('');
+        router.get(route('cost-centers.index'), {}, { preserveState: true });
+    }
+
     const summaryByCenter = new Map(summary.map((row) => [row.cost_center_id, row]));
 
     return (
@@ -107,11 +116,30 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
-                        <Input placeholder="Search by name…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
+                        <Input
+                            placeholder="Search by name…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{ maxWidth: '240px' }}
+                        />
+                        <Select
+                            value={filters.type ?? ''}
+                            onChange={(e) => runFilters({ type: e.target.value || undefined })}
+                            style={{ maxWidth: '170px' }}
+                        >
+                            <option value="">All types</option>
+                            <option value="cost">Cost Center</option>
+                            <option value="profit">Profit Center</option>
+                        </Select>
                         <Button type="submit" variant="outline">
                             Search
                         </Button>
+                        {(filters.type || filters.search) && (
+                            <Button type="button" variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
                     </form>
                 </div>
 

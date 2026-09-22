@@ -29,8 +29,8 @@ class BillController extends Controller
         $this->authorize('viewAny', Bill::class);
 
         return Inertia::render('Purchases/Bills/Index', [
-            'bills' => $this->bills->paginate($request->only(['status', 'search'])),
-            'filters' => $request->only(['status', 'search']),
+            'bills' => $this->bills->paginate($request->only(['status', 'from', 'to', 'search'])),
+            'filters' => $request->only(['status', 'from', 'to', 'search']),
         ]);
     }
 
@@ -38,7 +38,7 @@ class BillController extends Controller
     {
         $this->authorize('viewAny', Bill::class);
 
-        $bills = $this->bills->paginate($request->only(['status', 'search']), $this->exportMaxRows());
+        $bills = $this->bills->paginate($request->only(['status', 'from', 'to', 'search']), $this->exportMaxRows());
 
         $rows = collect($bills->items())->map(fn (Bill $bill) => [
             $bill->bill_number,

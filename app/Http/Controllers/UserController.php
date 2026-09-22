@@ -26,7 +26,7 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = $this->users->paginate($request->only(['search']))
+        $users = $this->users->paginate($request->only(['status', 'role', 'search']))
             ->through(fn (User $user) => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -38,7 +38,7 @@ class UserController extends Controller
 
         return Inertia::render('Settings/Users/Index', [
             'users' => $users,
-            'filters' => $request->only(['search']),
+            'filters' => $request->only(['status', 'role', 'search']),
             'canManage' => $request->user()->can('manage', User::class),
             'availableRoles' => Role::query()->where('guard_name', 'web')->orderBy('name')->pluck('name'),
         ]);
@@ -48,7 +48,7 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = $this->users->paginate($request->only(['search']), $this->exportMaxRows());
+        $users = $this->users->paginate($request->only(['status', 'role', 'search']), $this->exportMaxRows());
 
         $rows = collect($users->items())->map(fn (User $user) => [
             $user->name,

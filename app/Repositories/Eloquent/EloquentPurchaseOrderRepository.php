@@ -13,6 +13,8 @@ class EloquentPurchaseOrderRepository implements PurchaseOrderRepositoryInterfac
         return PurchaseOrder::query()
             ->with(['vendor', 'lines'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('order_date', '>=', $from))
+            ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('order_date', '<=', $to))
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('po_number', 'like', "%{$search}%")

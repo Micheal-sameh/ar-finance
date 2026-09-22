@@ -29,8 +29,8 @@ class PayrollRunController extends Controller
         $this->authorize('viewAny', PayrollRun::class);
 
         return Inertia::render('Payroll/PayrollRuns/Index', [
-            'payrollRuns' => $this->payrollRuns->paginate($request->only(['status'])),
-            'filters' => $request->only(['status']),
+            'payrollRuns' => $this->payrollRuns->paginate($request->only(['status', 'from', 'to'])),
+            'filters' => $request->only(['status', 'from', 'to']),
         ]);
     }
 
@@ -38,7 +38,7 @@ class PayrollRunController extends Controller
     {
         $this->authorize('viewAny', PayrollRun::class);
 
-        $payrollRuns = $this->payrollRuns->paginate($request->only(['status']), $this->exportMaxRows());
+        $payrollRuns = $this->payrollRuns->paginate($request->only(['status', 'from', 'to']), $this->exportMaxRows());
 
         $rows = collect($payrollRuns->items())->map(fn (PayrollRun $run) => [
             $run->period_start->toDateString().' – '.$run->period_end->toDateString(),

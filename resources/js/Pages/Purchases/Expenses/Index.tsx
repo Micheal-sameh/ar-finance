@@ -9,6 +9,7 @@ import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
+import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Expense, Paginated } from '@/types/finance';
@@ -16,8 +17,14 @@ import { expenseStatusVariant, formatDate } from '@/utils/finance';
 
 interface Props {
     expenses: Paginated<Expense>;
-    filters: { status?: string; search?: string };
+    filters: { status?: string; from?: string; to?: string; search?: string };
 }
+
+const EXPENSE_STATUSES = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'paid', label: 'Paid' },
+];
 
 export default function ExpensesIndex({ expenses, filters }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
@@ -25,6 +32,15 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
     function runSearch(e: FormEvent) {
         e.preventDefault();
         router.get(route('expenses.index'), { ...filters, search }, { preserveState: true });
+    }
+
+    function runFilters(next: Partial<Props['filters']>) {
+        router.get(route('expenses.index'), { ...filters, search, ...next }, { preserveState: true });
+    }
+
+    function clearFilters() {
+        setSearch('');
+        router.get(route('expenses.index'), {}, { preserveState: true });
     }
 
     return (
@@ -46,11 +62,45 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
-                        <Input placeholder="Search description…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
+                        <Input
+                            placeholder="Search description…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{ maxWidth: '240px' }}
+                        />
+                        <Select
+                            value={filters.status ?? ''}
+                            onChange={(e) => runFilters({ status: e.target.value || undefined })}
+                            style={{ maxWidth: '150px' }}
+                        >
+                            <option value="">All statuses</option>
+                            {EXPENSE_STATUSES.map((s) => (
+                                <option key={s.value} value={s.value}>
+                                    {s.label}
+                                </option>
+                            ))}
+                        </Select>
+                        <Input
+                            type="date"
+                            label="From"
+                            value={filters.from ?? ''}
+                            onChange={(e) => runFilters({ from: e.target.value || undefined })}
+                        />
+                        <Input
+                            type="date"
+                            label="To"
+                            value={filters.to ?? ''}
+                            onChange={(e) => runFilters({ to: e.target.value || undefined })}
+                        />
                         <Button type="submit" variant="outline">
                             Search
                         </Button>
+                        {(filters.status || filters.from || filters.to || filters.search) && (
+                            <Button type="button" variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
                     </form>
                 </div>
 

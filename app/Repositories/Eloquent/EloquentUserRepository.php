@@ -13,6 +13,8 @@ class EloquentUserRepository implements UserRepositoryInterface
         return User::query()
             ->with('roles')
             ->where('tenant_id', auth()->user()?->tenant_id)
+            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when($filters['role'] ?? null, fn ($query, $role) => $query->whereHas('roles', fn ($q) => $q->where('name', $role)))
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(
                 fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"),
             ))

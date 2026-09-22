@@ -31,8 +31,8 @@ class InvoiceController extends Controller
         $this->authorize('viewAny', Invoice::class);
 
         return Inertia::render('Sales/Invoices/Index', [
-            'invoices' => $this->invoices->paginate($request->only(['status', 'search'])),
-            'filters' => $request->only(['status', 'search']),
+            'invoices' => $this->invoices->paginate($request->only(['status', 'from', 'to', 'search'])),
+            'filters' => $request->only(['status', 'from', 'to', 'search']),
         ]);
     }
 
@@ -40,7 +40,7 @@ class InvoiceController extends Controller
     {
         $this->authorize('viewAny', Invoice::class);
 
-        $invoices = $this->invoices->paginate($request->only(['status', 'search']), $this->exportMaxRows());
+        $invoices = $this->invoices->paginate($request->only(['status', 'from', 'to', 'search']), $this->exportMaxRows());
 
         $rows = collect($invoices->items())->map(fn (Invoice $invoice) => [
             $invoice->invoice_number,

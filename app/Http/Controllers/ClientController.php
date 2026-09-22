@@ -28,8 +28,8 @@ class ClientController extends Controller
         $this->authorize('viewAny', Client::class);
 
         return Inertia::render('Contacts/Clients/Index', [
-            'clients' => $this->clients->paginate($request->only(['search'])),
-            'filters' => $request->only(['search']),
+            'clients' => $this->clients->paginate($request->only(['currency', 'search'])),
+            'filters' => $request->only(['currency', 'search']),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
         ]);
     }
@@ -38,7 +38,7 @@ class ClientController extends Controller
     {
         $this->authorize('viewAny', Client::class);
 
-        $clients = $this->clients->paginate($request->only(['search']), $this->exportMaxRows());
+        $clients = $this->clients->paginate($request->only(['currency', 'search']), $this->exportMaxRows());
 
         $rows = collect($clients->items())->map(fn (Client $client) => [
             $client->name,

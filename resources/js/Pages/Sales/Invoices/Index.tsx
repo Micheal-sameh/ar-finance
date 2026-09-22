@@ -9,15 +9,24 @@ import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
+import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
-import type { Invoice, Paginated } from '@/types/finance';
+import type { Invoice, InvoiceStatus, Paginated } from '@/types/finance';
 import { formatDate, invoiceStatusVariant } from '@/utils/finance';
 
 interface Props {
     invoices: Paginated<Invoice>;
-    filters: { status?: string; search?: string };
+    filters: { status?: string; from?: string; to?: string; search?: string };
 }
+
+const INVOICE_STATUSES: { value: InvoiceStatus; label: string }[] = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'sent', label: 'Sent' },
+    { value: 'paid', label: 'Paid' },
+    { value: 'overdue', label: 'Overdue' },
+    { value: 'void', label: 'Void' },
+];
 
 function invoiceTotal(invoice: Invoice): number {
     return invoice.lines.reduce((sum, line) => {
@@ -35,6 +44,15 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
     function runSearch(e: FormEvent) {
         e.preventDefault();
         router.get(route('invoices.index'), { ...filters, search }, { preserveState: true });
+    }
+
+    function runFilters(next: Partial<Props['filters']>) {
+        router.get(route('invoices.index'), { ...filters, search, ...next }, { preserveState: true });
+    }
+
+    function clearFilters() {
+        setSearch('');
+        router.get(route('invoices.index'), {}, { preserveState: true });
     }
 
     return (
@@ -56,11 +74,45 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2" style={{ maxWidth: '320px' }}>
-                        <Input placeholder="Search invoice # or client…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
+                        <Input
+                            placeholder="Search invoice # or client…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{ maxWidth: '240px' }}
+                        />
+                        <Select
+                            value={filters.status ?? ''}
+                            onChange={(e) => runFilters({ status: e.target.value || undefined })}
+                            style={{ maxWidth: '150px' }}
+                        >
+                            <option value="">All statuses</option>
+                            {INVOICE_STATUSES.map((s) => (
+                                <option key={s.value} value={s.value}>
+                                    {s.label}
+                                </option>
+                            ))}
+                        </Select>
+                        <Input
+                            type="date"
+                            label="From"
+                            value={filters.from ?? ''}
+                            onChange={(e) => runFilters({ from: e.target.value || undefined })}
+                        />
+                        <Input
+                            type="date"
+                            label="To"
+                            value={filters.to ?? ''}
+                            onChange={(e) => runFilters({ to: e.target.value || undefined })}
+                        />
                         <Button type="submit" variant="outline">
                             Search
                         </Button>
+                        {(filters.status || filters.from || filters.to || filters.search) && (
+                            <Button type="button" variant="ghost" onClick={clearFilters}>
+                                Clear
+                            </Button>
+                        )}
                     </form>
                 </div>
 
