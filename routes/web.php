@@ -82,6 +82,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.record-payment');
     Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
+    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
 
     Route::get('expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
     Route::resource('expenses', ExpenseController::class)->only(['index', 'create', 'store', 'show']);
@@ -98,6 +99,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::resource('bills', BillController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
     Route::post('bills/{bill}/pay', [BillController::class, 'markPaid'])->name('bills.mark-paid');
+    Route::get('bills/{bill}/pdf', [BillController::class, 'pdf'])->name('bills.pdf');
 
     Route::get('fixed-assets/export', [FixedAssetController::class, 'export'])->name('fixed-assets.export');
     Route::resource('fixed-assets', FixedAssetController::class)->only(['index', 'create', 'store', 'show']);
@@ -111,6 +113,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::resource('payroll-runs', PayrollRunController::class)->only(['index', 'create', 'store', 'show']);
     Route::post('payroll-runs/{payroll_run}/approve', [PayrollRunController::class, 'approve'])->name('payroll-runs.approve');
     Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'markPaid'])->name('payroll-runs.mark-paid');
+    Route::get('payroll-runs/{payroll_run}/payslips/{payslip}/pdf', [PayrollRunController::class, 'payslipPdf'])->name('payroll-runs.payslips.pdf');
 
     Route::get('bank-accounts/export', [BankAccountController::class, 'export'])->name('bank-accounts.export');
     Route::resource('bank-accounts', BankAccountController::class)->only(['index', 'show', 'store', 'update', 'destroy']);

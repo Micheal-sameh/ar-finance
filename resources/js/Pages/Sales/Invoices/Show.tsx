@@ -7,6 +7,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -67,6 +68,7 @@ export default function InvoicesShow({ invoice }: Props) {
                 action={
                     <div className="d-flex align-items-center gap-2">
                         <Badge variant={invoiceStatusVariant(invoice.status)}>{invoice.status}</Badge>
+                        <ExportButton label="Download PDF" href={route('invoices.pdf', invoice.id)} target="_blank" />
                         {invoice.status === 'draft' && (
                             <>
                                 <Button variant="outline" onClick={voidInvoice}>

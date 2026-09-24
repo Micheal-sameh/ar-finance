@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ExportsExcel;
+use App\Http\Controllers\Concerns\GeneratesPdf;
 use App\Http\Requests\PayrollRuns\MarkPayrollPaidRequest;
 use App\Http\Requests\PayrollRuns\StorePayrollRunRequest;
 use App\Models\PayrollRun;
+use App\Models\Payslip;
 use App\Services\EmployeeService;
 use App\Services\PayrollRunService;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class PayrollRunController extends Controller
 {
     use ExportsExcel;
+    use GeneratesPdf;
 
     public function __construct(
         private readonly PayrollRunService $payrollRuns,
@@ -67,6 +70,21 @@ class PayrollRunController extends Controller
         return Inertia::render('Payroll/PayrollRuns/Show', [
             'payrollRun' => $this->payrollRuns->find($payrollRun->id),
         ]);
+    }
+
+    public function payslipPdf(PayrollRun $payrollRun, Payslip $payslip): StreamedResponse
+    {
+        $this->authorize('view', $payrollRun);
+
+        abort_unless($payslip->payroll_run_id === $payrollRun->id, 404);
+
+        $payslip->load(['employee', 'payrollRun.tenant']);
+
+        return $this->downloadPdf(
+            "payslip-{$payslip->employee?->name}-{$payrollRun->pay_date->format('Y-m-d')}.pdf",
+            'pdf.payslip',
+            ['payslip' => $payslip],
+        );
     }
 
     public function store(StorePayrollRunRequest $request): RedirectResponse

@@ -92,7 +92,8 @@ export default function PayrollRunsShow({ payrollRun }: Props) {
                         <Table.HeadCell className="ps-3">Employee</Table.HeadCell>
                         <Table.HeadCell className="text-end">Gross Pay</Table.HeadCell>
                         <Table.HeadCell className="text-end">Deductions</Table.HeadCell>
-                        <Table.HeadCell className="text-end pe-3">Net Pay</Table.HeadCell>
+                        <Table.HeadCell className="text-end">Net Pay</Table.HeadCell>
+                        <Table.HeadCell className="pe-3" />
                     </Table.Head>
                     <tbody>
                         {payrollRun.payslips.map((payslip) => (
@@ -104,8 +105,18 @@ export default function PayrollRunsShow({ payrollRun }: Props) {
                                 <Table.Cell className="text-end">
                                     <MoneyDisplay amount={payslip.deductions} />
                                 </Table.Cell>
-                                <Table.Cell className="text-end pe-3">
+                                <Table.Cell className="text-end">
                                     <MoneyDisplay amount={payslip.net_pay} />
+                                </Table.Cell>
+                                <Table.Cell className="text-end pe-3">
+                                    <a
+                                        href={route('payroll-runs.payslips.pdf', [payrollRun.id, payslip.id])}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        style={{ fontSize: '13px' }}
+                                    >
+                                        PDF
+                                    </a>
                                 </Table.Cell>
                             </Table.Row>
                         ))}
@@ -117,9 +128,10 @@ export default function PayrollRunsShow({ payrollRun }: Props) {
                             <Table.Cell className="text-end">
                                 <MoneyDisplay amount={totalDeductions} />
                             </Table.Cell>
-                            <Table.Cell className="text-end pe-3">
+                            <Table.Cell className="text-end">
                                 <MoneyDisplay amount={totalNet} />
                             </Table.Cell>
+                            <Table.Cell className="pe-3" />
                         </Table.Row>
                     </tbody>
                 </Table>

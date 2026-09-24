@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ExportsExcel;
+use App\Http\Controllers\Concerns\GeneratesPdf;
 use App\Http\Requests\Invoices\RecordInvoicePaymentRequest;
 use App\Http\Requests\Invoices\StoreInvoiceRequest;
 use App\Models\Invoice;
@@ -19,6 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class InvoiceController extends Controller
 {
     use ExportsExcel;
+    use GeneratesPdf;
 
     public function __construct(
         private readonly InvoiceService $invoices,
@@ -73,6 +75,17 @@ class InvoiceController extends Controller
         return Inertia::render('Sales/Invoices/Show', [
             'invoice' => $this->invoices->find($invoice->id),
         ]);
+    }
+
+    public function pdf(Invoice $invoice): StreamedResponse
+    {
+        $this->authorize('view', $invoice);
+
+        return $this->downloadPdf(
+            "{$invoice->invoice_number}.pdf",
+            'pdf.invoice',
+            ['invoice' => $this->invoices->find($invoice->id)?->load('tenant')],
+        );
     }
 
     public function store(StoreInvoiceRequest $request): RedirectResponse

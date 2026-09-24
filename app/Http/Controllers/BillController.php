@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ExportsExcel;
+use App\Http\Controllers\Concerns\GeneratesPdf;
 use App\Http\Requests\Bills\MarkBillPaidRequest;
 use App\Http\Requests\Bills\StoreBillRequest;
 use App\Models\Bill;
@@ -18,6 +19,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class BillController extends Controller
 {
     use ExportsExcel;
+    use GeneratesPdf;
 
     public function __construct(
         private readonly BillService $bills,
@@ -67,6 +69,17 @@ class BillController extends Controller
         return Inertia::render('Purchases/Bills/Show', [
             'bill' => $this->bills->find($bill->id),
         ]);
+    }
+
+    public function pdf(Bill $bill): StreamedResponse
+    {
+        $this->authorize('view', $bill);
+
+        return $this->downloadPdf(
+            "{$bill->bill_number}.pdf",
+            'pdf.bill',
+            ['bill' => $this->bills->find($bill->id)?->load('tenant')],
+        );
     }
 
     public function store(StoreBillRequest $request): RedirectResponse

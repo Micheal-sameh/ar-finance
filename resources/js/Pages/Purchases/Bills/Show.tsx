@@ -7,6 +7,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { Bill, BillStatus } from '@/types/finance';
@@ -53,6 +54,7 @@ export default function BillsShow({ bill }: Props) {
                 action={
                     <div className="d-flex align-items-center gap-2">
                         <Badge variant={statusVariant(bill.status)}>{bill.status}</Badge>
+                        <ExportButton label="Download PDF" href={route('bills.pdf', bill.id)} target="_blank" />
                         {bill.status === 'draft' && <Button onClick={approve}>Approve</Button>}
                         {bill.status === 'approved' && <Button onClick={() => setShowPaymentForm(true)}>Mark as Paid</Button>}
                     </div>
