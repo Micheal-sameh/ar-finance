@@ -163,17 +163,39 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
                         </Table.Head>
                         <tbody>
                             {clients.data.map((client) => (
-                                <Table.Row key={client.id}>
+                                <Table.Row
+                                    key={client.id}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('clients.show', client.id))}
+                                >
                                     <Table.Cell className="ps-3">{client.name}</Table.Cell>
                                     <Table.Cell>{client.email ?? '—'}</Table.Cell>
                                     <Table.Cell>{client.phone ?? '—'}</Table.Cell>
                                     <Table.Cell>{client.currency}</Table.Cell>
                                     <Table.Cell className="text-end pe-3">
                                         <div className="d-flex justify-content-end gap-1">
-                                            <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(client)} aria-label="Edit">
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm p-1"
+                                                style={{ color: 'var(--af-label)' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openEdit(client);
+                                                }}
+                                                aria-label="Edit"
+                                            >
                                                 <Pencil size={15} />
                                             </button>
-                                            <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => destroy(client)} aria-label="Delete">
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm p-1"
+                                                style={{ color: 'var(--af-danger)' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    destroy(client);
+                                                }}
+                                                aria-label="Delete"
+                                            >
                                                 <Trash2 size={15} />
                                             </button>
                                         </div>

@@ -50,6 +50,19 @@ class ClientController extends Controller
         return $this->exportXlsx('clients.xlsx', ['Name', 'Email', 'Phone', 'Currency'], $rows);
     }
 
+    public function show(Client $client): Response
+    {
+        $this->authorize('view', $client);
+
+        $invoices = $this->clients->invoiceHistory($client);
+
+        return Inertia::render('Contacts/Clients/Show', [
+            'client' => $client,
+            'invoices' => $invoices,
+            'summary' => $this->clients->summarize($invoices),
+        ]);
+    }
+
     public function store(SaveClientRequest $request): RedirectResponse
     {
         $this->clients->create($request->toDto());
