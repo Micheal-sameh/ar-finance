@@ -75,7 +75,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('clients/export', [ClientController::class, 'export'])->name('clients.export');
     Route::resource('clients', ClientController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
     Route::get('vendors/export', [VendorController::class, 'export'])->name('vendors.export');
-    Route::resource('vendors', VendorController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('vendors', VendorController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 
     Route::get('invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show']);

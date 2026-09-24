@@ -46,6 +46,20 @@ class VendorController extends Controller
         return $this->exportXlsx('vendors.xlsx', ['Name', 'Email', 'Payment Terms'], $rows);
     }
 
+    public function show(Vendor $vendor): Response
+    {
+        $this->authorize('view', $vendor);
+
+        $bills = $this->vendors->billHistory($vendor);
+
+        return Inertia::render('Contacts/Vendors/Show', [
+            'vendor' => $vendor,
+            'bills' => $bills,
+            'purchaseOrders' => $this->vendors->purchaseOrderHistory($vendor),
+            'summary' => $this->vendors->summarize($bills),
+        ]);
+    }
+
     public function store(SaveVendorRequest $request): RedirectResponse
     {
         $this->vendors->create($request->toDto());

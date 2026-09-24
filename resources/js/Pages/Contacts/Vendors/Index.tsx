@@ -120,16 +120,38 @@ export default function VendorsIndex({ vendors, filters }: Props) {
                         </Table.Head>
                         <tbody>
                             {vendors.data.map((vendor) => (
-                                <Table.Row key={vendor.id}>
+                                <Table.Row
+                                    key={vendor.id}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('vendors.show', vendor.id))}
+                                >
                                     <Table.Cell className="ps-3">{vendor.name}</Table.Cell>
                                     <Table.Cell>{vendor.email ?? '—'}</Table.Cell>
                                     <Table.Cell>{vendor.payment_terms ?? '—'}</Table.Cell>
                                     <Table.Cell className="text-end pe-3">
                                         <div className="d-flex justify-content-end gap-1">
-                                            <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(vendor)} aria-label="Edit">
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm p-1"
+                                                style={{ color: 'var(--af-label)' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openEdit(vendor);
+                                                }}
+                                                aria-label="Edit"
+                                            >
                                                 <Pencil size={15} />
                                             </button>
-                                            <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => destroy(vendor)} aria-label="Delete">
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm p-1"
+                                                style={{ color: 'var(--af-danger)' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    destroy(vendor);
+                                                }}
+                                                aria-label="Delete"
+                                            >
                                                 <Trash2 size={15} />
                                             </button>
                                         </div>
