@@ -96,6 +96,7 @@ export default function InvoicesShow({ invoice }: Props) {
                                 onChange={(id) => paymentForm.setData('payment_account_id', id)}
                                 error={paymentForm.errors.payment_account_id}
                                 placeholder="e.g. Bank account"
+                                filterType="asset"
                             />
                         </div>
                         {isForeignCurrency && (

@@ -146,6 +146,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                                 onChange={(id) => form.setData('receivable_account_id', id)}
                                 error={form.errors.receivable_account_id}
                                 placeholder="e.g. Accounts Receivable"
+                                filterType="asset"
                             />
                         </div>
                         {hasTax && (
@@ -158,6 +159,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                                     onChange={(id) => form.setData('tax_payable_account_id', id)}
                                     error={form.errors.tax_payable_account_id}
                                     placeholder="e.g. VAT Payable"
+                                    filterType="liability"
                                 />
                             </div>
                         )}

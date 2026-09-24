@@ -116,6 +116,7 @@ export function InvoiceLineEditor({ lines, onChange, currency = 'EGP', errors = 
                             onChange={(accountId) => updateLine(index, { account_id: accountId })}
                             error={errors[`lines.${index}.account_id`]}
                             placeholder="Revenue account"
+                            filterType="revenue"
                         />
                     </div>
                     <div style={{ flex: '1 1 0' }} className="text-end pt-2">
