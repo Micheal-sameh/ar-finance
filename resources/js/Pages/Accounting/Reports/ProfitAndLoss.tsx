@@ -5,7 +5,7 @@ import { ProfitLossSection } from '@/Components/finance/ProfitLossSection';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
-import { ExportButton } from '@/Components/ui/ExportButton';
+import { ExportMenu } from '@/Components/ui/ExportMenu';
 import { Input } from '@/Components/ui/Input';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { ProfitAndLossReport } from '@/types/finance';
@@ -46,7 +46,14 @@ export default function ProfitAndLoss({ report, filters }: Props) {
             <PageHeader
                 title="Profit & Loss"
                 subtitle="Revenue and expenses, computed from posted journal lines."
-                action={<ExportButton href={route('reports.profit-and-loss.export', filters)} />}
+                action={
+                    <ExportMenu
+                        options={[
+                            { label: 'Export to Excel', href: route('reports.profit-and-loss.export', filters) },
+                            { label: 'Download PDF', href: route('reports.profit-and-loss.pdf', filters), target: '_blank' },
+                        ]}
+                    />
+                }
             />
 
             <Card>

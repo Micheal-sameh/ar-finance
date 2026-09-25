@@ -133,10 +133,13 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
+        Route::get('trial-balance/pdf', [ReportController::class, 'trialBalancePdf'])->name('trial-balance.pdf');
         Route::get('general-ledger', [ReportController::class, 'generalLedger'])->name('general-ledger');
         Route::get('profit-and-loss', [ReportController::class, 'profitAndLoss'])->name('profit-and-loss');
         Route::get('profit-and-loss/export', [ReportController::class, 'profitAndLossExport'])->name('profit-and-loss.export');
+        Route::get('profit-and-loss/pdf', [ReportController::class, 'profitAndLossPdf'])->name('profit-and-loss.pdf');
         Route::get('balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
+        Route::get('balance-sheet/pdf', [ReportController::class, 'balanceSheetPdf'])->name('balance-sheet.pdf');
         Route::get('vat-return', [ReportController::class, 'vatReturn'])->name('vat-return');
         Route::get('aging', [ReportController::class, 'aging'])->name('aging');
     });

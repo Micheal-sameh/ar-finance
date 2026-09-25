@@ -5,6 +5,7 @@ import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import { AppLayout } from '@/Layouts/AppLayout';
@@ -28,7 +29,11 @@ export default function TrialBalance({ report, filters }: Props) {
         <AppLayout>
             <Head title="Trial Balance" />
 
-            <PageHeader title="Trial Balance" subtitle="Every posted account balance, derived from the general ledger." />
+            <PageHeader
+                title="Trial Balance"
+                subtitle="Every posted account balance, derived from the general ledger."
+                action={<ExportButton label="Download PDF" href={route('reports.trial-balance.pdf', filters)} target="_blank" />}
+            />
 
             <Card>
                 <form onSubmit={applyFilter} className="d-flex align-items-end gap-2 mb-4">

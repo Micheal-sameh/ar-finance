@@ -5,6 +5,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { AppLayout } from '@/Layouts/AppLayout';
 import type { BalanceSheetReport } from '@/types/finance';
@@ -30,9 +31,12 @@ export default function BalanceSheet({ report, filters }: Props) {
                 title="Balance Sheet"
                 subtitle="Assets, liabilities, and equity as of a date — computed from posted journal lines."
                 action={
-                    <Badge variant={report.is_balanced ? 'success' : 'danger'}>
-                        {report.is_balanced ? 'Balanced' : 'Out of balance'}
-                    </Badge>
+                    <div className="d-flex align-items-center gap-2">
+                        <Badge variant={report.is_balanced ? 'success' : 'danger'}>
+                            {report.is_balanced ? 'Balanced' : 'Out of balance'}
+                        </Badge>
+                        <ExportButton label="Download PDF" href={route('reports.balance-sheet.pdf', filters)} target="_blank" />
+                    </div>
                 }
             />
 

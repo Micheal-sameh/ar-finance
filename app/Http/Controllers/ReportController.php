@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ExportsExcel;
+use App\Http\Controllers\Concerns\GeneratesPdf;
 use App\Models\Account;
 use App\Services\AccountService;
 use App\Services\ReportService;
@@ -14,6 +15,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ReportController extends Controller
 {
     use ExportsExcel;
+    use GeneratesPdf;
 
     public function __construct(
         private readonly ReportService $reports,
@@ -30,6 +32,21 @@ class ReportController extends Controller
         return Inertia::render('Accounting/Reports/TrialBalance', [
             'report' => $this->reports->trialBalance($from, $to),
             'filters' => ['from' => $from, 'to' => $to],
+        ]);
+    }
+
+    public function trialBalancePdf(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $from = $request->string('from')->value() ?: null;
+        $to = $request->string('to')->value() ?: null;
+
+        return $this->downloadPdf('trial-balance.pdf', 'pdf.reports.trial-balance', [
+            'tenant' => auth()->user()->tenant,
+            'report' => $this->reports->trialBalance($from, $to),
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 
@@ -94,6 +111,21 @@ class ReportController extends Controller
         return $this->exportXlsx('profit-and-loss.xlsx', ['Section', 'Code', 'Account', 'Amount', 'Prior Period'], $rows);
     }
 
+    public function profitAndLossPdf(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $from = $request->string('from')->value() ?: now()->startOfMonth()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
+        $compareFrom = $request->string('compare_from')->value() ?: null;
+        $compareTo = $request->string('compare_to')->value() ?: null;
+
+        return $this->downloadPdf('profit-and-loss.pdf', 'pdf.reports.profit-and-loss', [
+            'tenant' => auth()->user()->tenant,
+            'report' => $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo),
+        ]);
+    }
+
     public function balanceSheet(Request $request): Response
     {
         $this->authorize('viewAny', Account::class);
@@ -103,6 +135,18 @@ class ReportController extends Controller
         return Inertia::render('Accounting/Reports/BalanceSheet', [
             'report' => $this->reports->balanceSheet($asOf),
             'filters' => ['as_of' => $asOf],
+        ]);
+    }
+
+    public function balanceSheetPdf(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $asOf = $request->string('as_of')->value() ?: now()->toDateString();
+
+        return $this->downloadPdf('balance-sheet.pdf', 'pdf.reports.balance-sheet', [
+            'tenant' => auth()->user()->tenant,
+            'report' => $this->reports->balanceSheet($asOf),
         ]);
     }
 
