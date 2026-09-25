@@ -115,7 +115,7 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
+                    <form onSubmit={runSearch} className="af-filter-bar">
                         <Input
                             placeholder="Search by name…"
                             value={search}

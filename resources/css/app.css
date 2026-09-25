@@ -38,6 +38,28 @@ body {
     min-height: 100vh;
 }
 
+/* Filter/search bars: a flexible row on desktop, same as before. On narrow
+ * screens each field goes full-width and stacks instead of wrapping as a
+ * flex item mid-row — wrapping a label+control block into a row that also
+ * holds unrelated, unlabeled controls (e.g. a <Select> with no label) makes
+ * the label appear detached from its own input. */
+.af-filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+@media (max-width: 575.98px) {
+    /* !important overrides the inline max-width some fields set for their
+     * desktop column width, so every field still gets its own full-width
+     * row here regardless of that inline style. */
+    .af-filter-bar > * {
+        width: 100% !important;
+        max-width: none !important;
+    }
+}
+
 /* Bootstrap's responsive offcanvas resets background/box-shadow to
  * transparent once it becomes a static panel at its breakpoint (it's
  * designed to blend into a navbar, not stay panel-colored) — override

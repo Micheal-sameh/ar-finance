@@ -48,7 +48,7 @@ export default function CashFlow({ report, filters }: Props) {
             />
 
             <Card>
-                <form onSubmit={applyFilter} className="d-flex flex-wrap align-items-end gap-2 mb-4">
+                <form onSubmit={applyFilter} className="af-filter-bar mb-4">
                     <div style={{ maxWidth: '160px' }}>
                         <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
                     </div>

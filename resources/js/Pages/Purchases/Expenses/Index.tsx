@@ -61,45 +61,49 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="d-flex gap-2 flex-wrap align-items-end">
+                    <form onSubmit={runSearch} className="d-flex flex-column gap-2">
                         <Input
                             placeholder="Search description…"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            style={{ maxWidth: '240px' }}
+                            style={{ maxWidth: '320px' }}
                         />
-                        <Select
-                            value={filters.status ?? ''}
-                            onChange={(e) => runFilters({ status: e.target.value || undefined })}
-                            style={{ maxWidth: '150px' }}
-                        >
-                            <option value="">All statuses</option>
-                            {EXPENSE_STATUSES.map((s) => (
-                                <option key={s.value} value={s.value}>
-                                    {s.label}
-                                </option>
-                            ))}
-                        </Select>
-                        <Input
-                            type="date"
-                            label="From"
-                            value={filters.from ?? ''}
-                            onChange={(e) => runFilters({ from: e.target.value || undefined })}
-                        />
-                        <Input
-                            type="date"
-                            label="To"
-                            value={filters.to ?? ''}
-                            onChange={(e) => runFilters({ to: e.target.value || undefined })}
-                        />
-                        <Button type="submit" variant="outline">
-                            Search
-                        </Button>
-                        {(filters.status || filters.from || filters.to || filters.search) && (
-                            <Button type="button" variant="ghost" onClick={clearFilters}>
-                                Clear
+                        <div className="d-grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+                            <Select
+                                label="Status"
+                                value={filters.status ?? ''}
+                                onChange={(e) => runFilters({ status: e.target.value || undefined })}
+                            >
+                                <option value="">All statuses</option>
+                                {EXPENSE_STATUSES.map((s) => (
+                                    <option key={s.value} value={s.value}>
+                                        {s.label}
+                                    </option>
+                                ))}
+                            </Select>
+                            <Input
+                                type="date"
+                                label="From"
+                                value={filters.from ?? ''}
+                                onChange={(e) => runFilters({ from: e.target.value || undefined })}
+                            />
+                            <Input
+                                type="date"
+                                label="To"
+                                value={filters.to ?? ''}
+                                onChange={(e) => runFilters({ to: e.target.value || undefined })}
+                            />
+                        </div>
+                        <div className="d-flex gap-2">
+                            <Button type="submit" variant="outline">
+                                Search
                             </Button>
-                        )}
+                            {(filters.status || filters.from || filters.to || filters.search) && (
+                                <Button type="button" variant="ghost" onClick={clearFilters}>
+                                    Clear
+                                </Button>
+                            )}
+                        </div>
                     </form>
                 </div>
 

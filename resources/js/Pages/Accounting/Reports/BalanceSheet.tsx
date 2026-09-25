@@ -40,7 +40,7 @@ export default function BalanceSheet({ report, filters }: Props) {
             />
 
             <Card>
-                <form onSubmit={applyFilter} className="d-flex align-items-end gap-2 mb-4">
+                <form onSubmit={applyFilter} className="af-filter-bar mb-4">
                     <div style={{ maxWidth: '180px' }}>
                         <Input type="date" label="As of" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
                     </div>

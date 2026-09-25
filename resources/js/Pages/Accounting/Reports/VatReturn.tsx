@@ -49,7 +49,7 @@ export default function VatReturn({ report, filters }: Props) {
             />
 
             <Card>
-                <form onSubmit={applyFilter} className="d-flex align-items-end gap-2 mb-4">
+                <form onSubmit={applyFilter} className="af-filter-bar mb-4">
                     <div style={{ maxWidth: '180px' }}>
                         <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
                     </div>

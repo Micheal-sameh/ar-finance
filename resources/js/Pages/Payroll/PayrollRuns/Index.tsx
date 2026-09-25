@@ -60,7 +60,7 @@ export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <div className="d-flex gap-2 flex-wrap align-items-end">
+                    <div className="af-filter-bar">
                         <Select
                             value={filters.status ?? ''}
                             onChange={(e) => runFilters({ status: e.target.value || undefined })}
