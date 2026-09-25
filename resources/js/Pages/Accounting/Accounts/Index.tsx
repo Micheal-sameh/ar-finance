@@ -14,7 +14,6 @@ import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Account, AccountType } from '@/types/finance';
 
 interface CurrencyOption {
@@ -323,7 +322,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Chart of Accounts" />
 
             <PageHeader
@@ -573,6 +572,6 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                     </div>
                 </form>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

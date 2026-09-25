@@ -9,7 +9,6 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { PurchaseOrder, PurchaseOrderStatus } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -58,7 +57,7 @@ export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title={purchaseOrder.po_number} />
 
             <PageHeader
@@ -182,6 +181,6 @@ export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
                     </tbody>
                 </Table>
             </Card>
-        </AppLayout>
+        </>
     );
 }

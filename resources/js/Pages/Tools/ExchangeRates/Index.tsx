@@ -9,7 +9,6 @@ import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 
 interface ExchangeRateRow {
     currency: string;
@@ -73,7 +72,7 @@ export default function ExchangeRatesIndex({ report, canManage }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Exchange Rates" />
 
             <PageHeader
@@ -165,6 +164,6 @@ export default function ExchangeRatesIndex({ report, canManage }: Props) {
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

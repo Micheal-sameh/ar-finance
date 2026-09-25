@@ -14,7 +14,6 @@ import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { CostCenter, CostCenterSummaryRow, CostCenterType, Paginated } from '@/types/finance';
 
 interface Props {
@@ -98,7 +97,7 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
     const summaryByCenter = new Map(summary.map((row) => [row.cost_center_id, row]));
 
     return (
-        <AppLayout>
+        <>
             <Head title="P&C Centers" />
 
             <PageHeader
@@ -248,6 +247,6 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
                     </div>
                 </form>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

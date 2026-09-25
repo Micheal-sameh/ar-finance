@@ -7,7 +7,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Bill, BillStatus, PurchaseOrder, PurchaseOrderStatus, Vendor } from '@/types/finance';
 import { formatDate, formatDateTime } from '@/utils/finance';
 
@@ -61,7 +60,7 @@ function StatTile({ label, value }: { label: string; value: number }) {
 
 export default function VendorsShow({ vendor, bills, purchaseOrders, summary }: Props) {
     return (
-        <AppLayout>
+        <>
             <Head title={vendor.name} />
 
             <PageHeader
@@ -179,6 +178,6 @@ export default function VendorsShow({ vendor, bills, purchaseOrders, summary }: 
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

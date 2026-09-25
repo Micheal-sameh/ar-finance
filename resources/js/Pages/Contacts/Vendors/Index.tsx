@@ -10,7 +10,6 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Paginated, Vendor } from '@/types/finance';
 
 interface Props {
@@ -77,7 +76,7 @@ export default function VendorsIndex({ vendors, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Vendors" />
 
             <PageHeader
@@ -185,6 +184,6 @@ export default function VendorsIndex({ vendors, filters }: Props) {
                     <Input label="Payment terms" value={form.data.payment_terms} onChange={(e) => form.setData('payment_terms', e.target.value)} error={form.errors.payment_terms} placeholder="e.g. Net 30" />
                 </form>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

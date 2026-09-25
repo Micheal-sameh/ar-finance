@@ -11,7 +11,6 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Paginated, PurchaseOrder, PurchaseOrderStatus } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -57,7 +56,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters }: Props) 
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Purchase Orders" />
 
             <PageHeader
@@ -155,6 +154,6 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters }: Props) 
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

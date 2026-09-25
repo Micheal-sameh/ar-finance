@@ -7,7 +7,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { BalanceSheetReport } from '@/types/finance';
 
 interface Props {
@@ -24,7 +23,7 @@ export default function BalanceSheet({ report, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Balance Sheet" />
 
             <PageHeader
@@ -82,6 +81,6 @@ export default function BalanceSheet({ report, filters }: Props) {
                     <span>{(report.total_liabilities + report.total_equity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP</span>
                 </div>
             </Card>
-        </AppLayout>
+        </>
     );
 }

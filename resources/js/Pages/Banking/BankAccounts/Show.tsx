@@ -10,7 +10,6 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { BankAccount, BankTransaction, UnmatchedJournalLine } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -78,7 +77,7 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title={bankAccount.name} />
 
             <PageHeader
@@ -269,6 +268,6 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                     </tbody>
                 </Table>
             </Card>
-        </AppLayout>
+        </>
     );
 }

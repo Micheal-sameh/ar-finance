@@ -11,7 +11,6 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Expense, Paginated } from '@/types/finance';
 import { expenseStatusVariant, formatDate } from '@/utils/finance';
 
@@ -44,7 +43,7 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Expenses" />
 
             <PageHeader
@@ -144,6 +143,6 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

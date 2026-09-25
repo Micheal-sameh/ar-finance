@@ -12,7 +12,6 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Employee, Paginated } from '@/types/finance';
 
 interface Props {
@@ -83,7 +82,7 @@ export default function EmployeesIndex({ employees, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Employees" />
 
             <PageHeader
@@ -204,6 +203,6 @@ export default function EmployeesIndex({ employees, filters }: Props) {
                     </div>
                 </form>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

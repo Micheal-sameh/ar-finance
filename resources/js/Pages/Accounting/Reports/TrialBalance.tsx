@@ -8,7 +8,6 @@ import { Card } from '@/Components/ui/Card';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { TrialBalanceReport } from '@/types/finance';
 
 interface Props {
@@ -26,7 +25,7 @@ export default function TrialBalance({ report, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Trial Balance" />
 
             <PageHeader
@@ -87,6 +86,6 @@ export default function TrialBalance({ report, filters }: Props) {
                     </tbody>
                 </Table>
             </Card>
-        </AppLayout>
+        </>
     );
 }

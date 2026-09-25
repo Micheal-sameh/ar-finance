@@ -11,7 +11,6 @@ import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { AppUser, Paginated, UserStatus } from '@/types/finance';
 
 interface Props {
@@ -65,7 +64,7 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Users" />
 
             <PageHeader
@@ -213,6 +212,6 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
                     </Select>
                 </form>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

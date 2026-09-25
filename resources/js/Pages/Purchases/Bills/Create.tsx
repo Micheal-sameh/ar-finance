@@ -8,7 +8,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Vendor } from '@/types/finance';
 
 interface Props {
@@ -44,7 +43,7 @@ export default function BillsCreate({ vendors }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="New Bill" />
 
             <PageHeader title="New Bill" subtitle="Saved as a draft — approving it posts spend to the ledger." />
@@ -146,6 +145,6 @@ export default function BillsCreate({ vendors }: Props) {
                     </div>
                 </Card>
             </form>
-        </AppLayout>
+        </>
     );
 }

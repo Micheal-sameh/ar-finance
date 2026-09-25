@@ -6,7 +6,6 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
-import { AppLayout } from '@/Layouts/AppLayout';
 
 export default function JournalsCreate() {
     const form = useForm<{
@@ -39,7 +38,7 @@ export default function JournalsCreate() {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="New Journal Entry" />
 
             <PageHeader title="New Journal Entry" subtitle="Manual entries post directly to the general ledger." />
@@ -94,6 +93,6 @@ export default function JournalsCreate() {
                     </div>
                 </Card>
             </form>
-        </AppLayout>
+        </>
     );
 }

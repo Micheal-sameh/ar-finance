@@ -7,7 +7,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { ExportMenu } from '@/Components/ui/ExportMenu';
 import { Input } from '@/Components/ui/Input';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { ProfitAndLossReport } from '@/types/finance';
 
 interface Props {
@@ -40,7 +39,7 @@ export default function ProfitAndLoss({ report, filters }: Props) {
     const secondaryLabel = showSecondary ? `${report.compare_from} – ${report.compare_to}` : undefined;
 
     return (
-        <AppLayout>
+        <>
             <Head title="Profit & Loss" />
 
             <PageHeader
@@ -121,6 +120,6 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                     </span>
                 </div>
             </Card>
-        </AppLayout>
+        </>
     );
 }

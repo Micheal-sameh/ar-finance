@@ -7,7 +7,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Client, Invoice } from '@/types/finance';
 import { formatDate, formatDateTime, invoiceStatusVariant } from '@/utils/finance';
 
@@ -44,7 +43,7 @@ function StatTile({ label, value, currency }: { label: string; value: number; cu
 
 export default function ClientsShow({ client, invoices, summary }: Props) {
     return (
-        <AppLayout>
+        <>
             <Head title={client.name} />
 
             <PageHeader
@@ -126,6 +125,6 @@ export default function ClientsShow({ client, invoices, summary }: Props) {
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

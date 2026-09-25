@@ -5,7 +5,6 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
-import { AppLayout } from '@/Layouts/AppLayout';
 
 interface VatReturnReport {
     from: string;
@@ -41,7 +40,7 @@ export default function VatReturn({ report, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="VAT Return" />
 
             <PageHeader
@@ -89,6 +88,6 @@ export default function VatReturn({ report, filters }: Props) {
                     </div>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

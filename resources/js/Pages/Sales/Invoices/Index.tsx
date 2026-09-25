@@ -11,7 +11,6 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Invoice, InvoiceStatus, Paginated } from '@/types/finance';
 import { formatDate, invoiceStatusVariant } from '@/utils/finance';
 
@@ -56,7 +55,7 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Invoices" />
 
             <PageHeader
@@ -156,6 +155,6 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

@@ -2,7 +2,6 @@ import { Head } from '@inertiajs/react';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Card } from '@/Components/ui/Card';
-import { AppLayout } from '@/Layouts/AppLayout';
 
 interface Props {
     user: {
@@ -25,7 +24,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 export default function ProfileShow({ user }: Props) {
     return (
-        <AppLayout>
+        <>
             <Head title="Profile" />
 
             <PageHeader title="Profile" subtitle="Your account details" />
@@ -54,6 +53,6 @@ export default function ProfileShow({ user }: Props) {
                     </Card>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }

@@ -6,7 +6,6 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Employee } from '@/types/finance';
 
 interface Props {
@@ -38,7 +37,7 @@ export default function PayrollRunsCreate({ employees }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="New Payroll Run" />
 
             <PageHeader title="New Payroll Run" subtitle="Saved as a draft — approving it posts to the ledger." />
@@ -125,6 +124,6 @@ export default function PayrollRunsCreate({ employees }: Props) {
                     </div>
                 </Card>
             </form>
-        </AppLayout>
+        </>
     );
 }

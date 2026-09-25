@@ -11,7 +11,6 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { JournalEntry, Paginated } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -58,7 +57,7 @@ export default function JournalsIndex({ entries, filters, authorOptions }: Props
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Journal Entries" />
 
             <PageHeader
@@ -168,6 +167,6 @@ export default function JournalsIndex({ entries, filters, authorOptions }: Props
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

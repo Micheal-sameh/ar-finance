@@ -7,7 +7,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
-import { AppLayout } from '@/Layouts/AppLayout';
 
 interface AgingReport {
     as_of: string;
@@ -65,7 +64,7 @@ export default function Aging({ arReport, apReport, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="AR/AP Aging" />
 
             <PageHeader
@@ -133,6 +132,6 @@ export default function Aging({ arReport, apReport, filters }: Props) {
                     emptyDescription="No approved bills are currently awaiting payment."
                 />
             )}
-        </AppLayout>
+        </>
     );
 }

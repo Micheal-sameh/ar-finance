@@ -7,7 +7,6 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Expense } from '@/types/finance';
 import { expenseStatusVariant, formatDate, formatDateTime } from '@/utils/finance';
 
@@ -33,7 +32,7 @@ export default function ExpensesShow({ expense }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title={expense.description} />
 
             <PageHeader
@@ -94,6 +93,6 @@ export default function ExpensesShow({ expense }: Props) {
                     </div>
                 </div>
             </Card>
-        </AppLayout>
+        </>
     );
 }

@@ -10,7 +10,6 @@ import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Invoice } from '@/types/finance';
 import { formatDate, formatDateTime, invoiceStatusVariant } from '@/utils/finance';
 
@@ -59,7 +58,7 @@ export default function InvoicesShow({ invoice }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title={invoice.invoice_number} />
 
             <PageHeader
@@ -191,6 +190,6 @@ export default function InvoicesShow({ invoice }: Props) {
                     </tbody>
                 </Table>
             </Card>
-        </AppLayout>
+        </>
     );
 }

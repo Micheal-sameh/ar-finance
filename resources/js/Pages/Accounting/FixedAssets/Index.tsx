@@ -10,7 +10,6 @@ import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { FixedAsset, Paginated } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -44,7 +43,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Fixed Assets" />
 
             <PageHeader
@@ -113,6 +112,6 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

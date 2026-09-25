@@ -5,7 +5,6 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
-import { AppLayout } from '@/Layouts/AppLayout';
 
 export default function FixedAssetsCreate() {
     const form = useForm({
@@ -26,7 +25,7 @@ export default function FixedAssetsCreate() {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="New Fixed Asset" />
 
             <PageHeader title="New Fixed Asset" subtitle="Straight-line depreciation, posted monthly from the register." />
@@ -159,6 +158,6 @@ export default function FixedAssetsCreate() {
                     </div>
                 </Card>
             </form>
-        </AppLayout>
+        </>
     );
 }

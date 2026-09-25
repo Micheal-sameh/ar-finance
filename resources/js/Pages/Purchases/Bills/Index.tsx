@@ -11,7 +11,6 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Bill, BillStatus, Paginated } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -52,7 +51,7 @@ export default function BillsIndex({ bills, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Bills" />
 
             <PageHeader
@@ -150,6 +149,6 @@ export default function BillsIndex({ bills, filters }: Props) {
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

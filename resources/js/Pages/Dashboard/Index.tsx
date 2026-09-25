@@ -7,7 +7,6 @@ import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { StatCard } from '@/Components/ui/StatCard';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import { formatDate } from '@/utils/finance';
 
 interface TrendPoint {
@@ -104,7 +103,7 @@ export default function DashboardIndex({ summary, baseCurrency }: Props) {
     const netProfitPositive = summary.net_profit_month >= 0;
 
     return (
-        <AppLayout>
+        <>
             <Head title="Dashboard" />
 
             <PageHeader title="Dashboard" subtitle="Your financial position at a glance." />
@@ -200,6 +199,6 @@ export default function DashboardIndex({ summary, baseCurrency }: Props) {
                     </Card>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }

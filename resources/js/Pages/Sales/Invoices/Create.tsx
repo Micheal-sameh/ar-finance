@@ -7,7 +7,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Client } from '@/types/finance';
 
 interface CurrencyOption {
@@ -53,7 +52,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="New Invoice" />
 
             <PageHeader title="New Invoice" subtitle="Saved as a draft — nothing posts to the ledger until you send it." />
@@ -179,6 +178,6 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                     </div>
                 </Card>
             </form>
-        </AppLayout>
+        </>
     );
 }

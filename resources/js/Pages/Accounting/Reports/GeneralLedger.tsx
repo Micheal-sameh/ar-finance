@@ -9,7 +9,6 @@ import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Account, GeneralLedgerReport } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -30,7 +29,7 @@ export default function GeneralLedger({ account, ledger, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="General Ledger" />
 
             <PageHeader title="General Ledger" subtitle="Running balance for a single account, in posting order." />
@@ -115,6 +114,6 @@ export default function GeneralLedger({ account, ledger, filters }: Props) {
                     </>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

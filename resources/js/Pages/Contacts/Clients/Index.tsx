@@ -11,7 +11,6 @@ import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Client, Paginated } from '@/types/finance';
 
 interface CurrencyOption {
@@ -97,7 +96,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Clients" />
 
             <PageHeader
@@ -237,6 +236,6 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
                     </Select>
                 </form>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

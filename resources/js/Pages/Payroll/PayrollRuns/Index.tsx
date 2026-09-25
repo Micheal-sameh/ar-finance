@@ -10,7 +10,6 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Paginated, PayrollRun, PayrollRunStatus } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -43,7 +42,7 @@ export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Payroll Runs" />
 
             <PageHeader
@@ -132,6 +131,6 @@ export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
                     </Table>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

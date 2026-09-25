@@ -5,7 +5,6 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { DepreciationScheduleRow, FixedAsset } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -23,7 +22,7 @@ export default function FixedAssetsShow({ fixedAsset, schedule }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title={fixedAsset.name} />
 
             <PageHeader
@@ -126,6 +125,6 @@ export default function FixedAssetsShow({ fixedAsset, schedule }: Props) {
                     </tbody>
                 </Table>
             </Card>
-        </AppLayout>
+        </>
     );
 }

@@ -8,7 +8,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { PayrollRun, PayrollRunStatus } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -47,7 +46,7 @@ export default function PayrollRunsShow({ payrollRun }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title={`Payroll ${formatDate(payrollRun.period_start)} – ${formatDate(payrollRun.period_end)}`} />
 
             <PageHeader
@@ -136,6 +135,6 @@ export default function PayrollRunsShow({ payrollRun }: Props) {
                     </tbody>
                 </Table>
             </Card>
-        </AppLayout>
+        </>
     );
 }

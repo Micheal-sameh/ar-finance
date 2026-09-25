@@ -9,7 +9,6 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Bill, BillStatus } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
@@ -45,7 +44,7 @@ export default function BillsShow({ bill }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title={bill.bill_number} />
 
             <PageHeader
@@ -144,6 +143,6 @@ export default function BillsShow({ bill }: Props) {
                     </tbody>
                 </Table>
             </Card>
-        </AppLayout>
+        </>
     );
 }

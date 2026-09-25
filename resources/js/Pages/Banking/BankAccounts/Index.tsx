@@ -12,7 +12,6 @@ import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { BankAccount, Paginated } from '@/types/finance';
 
 interface CurrencyOption {
@@ -102,7 +101,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Bank Accounts" />
 
             <PageHeader
@@ -222,6 +221,6 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                     </Select>
                 </form>
             </Modal>
-        </AppLayout>
+        </>
     );
 }

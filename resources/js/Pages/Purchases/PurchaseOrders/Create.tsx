@@ -6,7 +6,6 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { Vendor } from '@/types/finance';
 
 interface Props {
@@ -34,7 +33,7 @@ export default function PurchaseOrdersCreate({ vendors }: Props) {
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="New Purchase Order" />
 
             <PageHeader title="New Purchase Order" subtitle="Never posts to the ledger — only converting it to a bill does." />
@@ -100,6 +99,6 @@ export default function PurchaseOrdersCreate({ vendors }: Props) {
                     </div>
                 </Card>
             </form>
-        </AppLayout>
+        </>
     );
 }

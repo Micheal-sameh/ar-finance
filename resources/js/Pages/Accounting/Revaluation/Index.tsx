@@ -12,7 +12,6 @@ import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 
 interface RevaluationRow {
     invoice_id: number;
@@ -78,7 +77,7 @@ export default function RevaluationIndex({ preview, filters, canManage }: Props)
     }
 
     return (
-        <AppLayout>
+        <>
             <Head title="Currency Revaluation" />
 
             <PageHeader
@@ -188,6 +187,6 @@ export default function RevaluationIndex({ preview, filters, canManage }: Props)
                     </>
                 )}
             </Card>
-        </AppLayout>
+        </>
     );
 }

@@ -4,7 +4,6 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Card } from '@/Components/ui/Card';
 import { Table } from '@/Components/ui/Table';
-import { AppLayout } from '@/Layouts/AppLayout';
 import type { JournalEntry } from '@/types/finance';
 import { formatDate, formatDateTime } from '@/utils/finance';
 
@@ -17,7 +16,7 @@ export default function JournalsShow({ entry }: Props) {
     const totalCredit = entry.lines.reduce((sum, line) => sum + parseFloat(line.credit), 0);
 
     return (
-        <AppLayout>
+        <>
             <Head title={`Journal Entry #${entry.id}`} />
 
             <PageHeader
@@ -82,6 +81,6 @@ export default function JournalsShow({ entry }: Props) {
                     </tbody>
                 </Table>
             </Card>
-        </AppLayout>
+        </>
     );
 }
