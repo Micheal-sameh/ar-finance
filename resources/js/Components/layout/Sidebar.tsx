@@ -18,7 +18,13 @@ export function Sidebar() {
         <>
             <div
                 className="d-flex d-lg-none align-items-center justify-content-between"
-                style={{ backgroundColor: 'var(--af-primary)', padding: '12px 16px' }}
+                style={{
+                    backgroundColor: 'var(--af-primary)',
+                    padding: '12px 16px',
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1020,
+                }}
             >
                 <div style={{ color: '#fff', fontWeight: 700, fontSize: '16px', letterSpacing: '-0.01em' }}>{brand}</div>
                 <button
