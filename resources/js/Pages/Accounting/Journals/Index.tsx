@@ -141,7 +141,7 @@ export default function JournalsIndex({ entries, filters, authorOptions }: Props
                         }
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Date</Table.HeadCell>
                             <Table.HeadCell>Description</Table.HeadCell>
@@ -152,13 +152,13 @@ export default function JournalsIndex({ entries, filters, authorOptions }: Props
                         <tbody>
                             {entries.data.map((entry) => (
                                 <Table.Row key={entry.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('journals.show', entry.id))}>
-                                    <Table.Cell className="ps-3">{formatDate(entry.date)}</Table.Cell>
-                                    <Table.Cell>{entry.description}</Table.Cell>
-                                    <Table.Cell>{entry.reference ?? '—'}</Table.Cell>
-                                    <Table.Cell>
+                                    <Table.Cell className="ps-3" label="Date">{formatDate(entry.date)}</Table.Cell>
+                                    <Table.Cell label="Description">{entry.description}</Table.Cell>
+                                    <Table.Cell label="Reference">{entry.reference ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Source">
                                         <Badge variant="neutral">{entry.source_type}</Badge>
                                     </Table.Cell>
-                                    <Table.Cell className="text-end pe-3">
+                                    <Table.Cell className="text-end pe-3" label="Amount">
                                         <MoneyDisplay amount={entryTotal(entry)} />
                                     </Table.Cell>
                                 </Table.Row>

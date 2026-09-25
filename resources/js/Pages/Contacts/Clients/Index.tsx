@@ -152,7 +152,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
                         action={<Button onClick={openCreate}>New Client</Button>}
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Email</Table.HeadCell>
@@ -167,11 +167,11 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
                                     style={{ cursor: 'pointer' }}
                                     onClick={() => router.get(route('clients.show', client.id))}
                                 >
-                                    <Table.Cell className="ps-3">{client.name}</Table.Cell>
-                                    <Table.Cell>{client.email ?? '—'}</Table.Cell>
-                                    <Table.Cell>{client.phone ?? '—'}</Table.Cell>
-                                    <Table.Cell>{client.currency}</Table.Cell>
-                                    <Table.Cell className="text-end pe-3">
+                                    <Table.Cell className="ps-3" label="Name">{client.name}</Table.Cell>
+                                    <Table.Cell label="Email">{client.email ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Phone">{client.phone ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Currency">{client.currency}</Table.Cell>
+                                    <Table.Cell className="text-end pe-3" label="Actions">
                                         <div className="d-flex justify-content-end gap-1">
                                             <button
                                                 type="button"

@@ -84,7 +84,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
                         }
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Purchase date</Table.HeadCell>
@@ -95,15 +95,15 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
                         <tbody>
                             {fixedAssets.data.map((asset) => (
                                 <Table.Row key={asset.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('fixed-assets.show', asset.id))}>
-                                    <Table.Cell className="ps-3">{asset.name}</Table.Cell>
-                                    <Table.Cell>{formatDate(asset.purchase_date)}</Table.Cell>
-                                    <Table.Cell className="text-end">
+                                    <Table.Cell className="ps-3" label="Name">{asset.name}</Table.Cell>
+                                    <Table.Cell label="Purchase date">{formatDate(asset.purchase_date)}</Table.Cell>
+                                    <Table.Cell className="text-end" label="Cost">
                                         <MoneyDisplay amount={asset.cost} />
                                     </Table.Cell>
-                                    <Table.Cell className="text-end">
+                                    <Table.Cell className="text-end" label="Accumulated Depr.">
                                         <MoneyDisplay amount={asset.accumulated_depreciation} />
                                     </Table.Cell>
-                                    <Table.Cell className="text-end pe-3">
+                                    <Table.Cell className="text-end pe-3" label="Net Book Value">
                                         <MoneyDisplay amount={netBookValue(asset)} />
                                     </Table.Cell>
                                 </Table.Row>

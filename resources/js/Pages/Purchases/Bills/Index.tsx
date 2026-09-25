@@ -123,7 +123,7 @@ export default function BillsIndex({ bills, filters }: Props) {
                         }
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Bill Number</Table.HeadCell>
                             <Table.HeadCell>Vendor</Table.HeadCell>
@@ -134,13 +134,13 @@ export default function BillsIndex({ bills, filters }: Props) {
                         <tbody>
                             {bills.data.map((bill) => (
                                 <Table.Row key={bill.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('bills.show', bill.id))}>
-                                    <Table.Cell className="ps-3">{bill.bill_number}</Table.Cell>
-                                    <Table.Cell>{bill.vendor?.name ?? '—'}</Table.Cell>
-                                    <Table.Cell>{formatDate(bill.due_date)}</Table.Cell>
-                                    <Table.Cell>
+                                    <Table.Cell className="ps-3" label="Bill Number">{bill.bill_number}</Table.Cell>
+                                    <Table.Cell label="Vendor">{bill.vendor?.name ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Due date">{formatDate(bill.due_date)}</Table.Cell>
+                                    <Table.Cell label="Status">
                                         <Badge variant={statusVariant(bill.status)}>{bill.status}</Badge>
                                     </Table.Cell>
-                                    <Table.Cell className="text-end pe-3">
+                                    <Table.Cell className="text-end pe-3" label="Total">
                                         <MoneyDisplay amount={billTotal(bill)} />
                                     </Table.Cell>
                                 </Table.Row>

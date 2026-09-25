@@ -127,7 +127,7 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
                         }
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Number</Table.HeadCell>
                             <Table.HeadCell>Client</Table.HeadCell>
@@ -139,14 +139,14 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
                         <tbody>
                             {invoices.data.map((invoice) => (
                                 <Table.Row key={invoice.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('invoices.show', invoice.id))}>
-                                    <Table.Cell className="ps-3">{invoice.invoice_number}</Table.Cell>
-                                    <Table.Cell>{invoice.client?.name ?? '—'}</Table.Cell>
-                                    <Table.Cell>{formatDate(invoice.issue_date)}</Table.Cell>
-                                    <Table.Cell>{formatDate(invoice.due_date)}</Table.Cell>
-                                    <Table.Cell>
+                                    <Table.Cell className="ps-3" label="Number">{invoice.invoice_number}</Table.Cell>
+                                    <Table.Cell label="Client">{invoice.client?.name ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Issue date">{formatDate(invoice.issue_date)}</Table.Cell>
+                                    <Table.Cell label="Due date">{formatDate(invoice.due_date)}</Table.Cell>
+                                    <Table.Cell label="Status">
                                         <Badge variant={invoiceStatusVariant(invoice.status)}>{invoice.status}</Badge>
                                     </Table.Cell>
-                                    <Table.Cell className="text-end pe-3">
+                                    <Table.Cell className="text-end pe-3" label="Total">
                                         <MoneyDisplay amount={invoiceTotal(invoice)} currency={invoice.currency} />
                                     </Table.Cell>
                                 </Table.Row>

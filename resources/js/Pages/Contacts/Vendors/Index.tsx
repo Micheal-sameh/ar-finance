@@ -110,7 +110,7 @@ export default function VendorsIndex({ vendors, filters }: Props) {
                         action={<Button onClick={openCreate}>New Vendor</Button>}
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Email</Table.HeadCell>
@@ -124,10 +124,10 @@ export default function VendorsIndex({ vendors, filters }: Props) {
                                     style={{ cursor: 'pointer' }}
                                     onClick={() => router.get(route('vendors.show', vendor.id))}
                                 >
-                                    <Table.Cell className="ps-3">{vendor.name}</Table.Cell>
-                                    <Table.Cell>{vendor.email ?? '—'}</Table.Cell>
-                                    <Table.Cell>{vendor.payment_terms ?? '—'}</Table.Cell>
-                                    <Table.Cell className="text-end pe-3">
+                                    <Table.Cell className="ps-3" label="Name">{vendor.name}</Table.Cell>
+                                    <Table.Cell label="Email">{vendor.email ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Payment terms">{vendor.payment_terms ?? '—'}</Table.Cell>
+                                    <Table.Cell className="text-end pe-3" label="Actions">
                                         <div className="d-flex justify-content-end gap-1">
                                             <button
                                                 type="button"

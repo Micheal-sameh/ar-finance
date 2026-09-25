@@ -135,3 +135,63 @@ body {
         flex-shrink: 0;
     }
 }
+
+/* Opt-in table→card collapse for list views (Table cards prop). Below `md`,
+ * rows stack as bordered cards and each cell shows its column header as a
+ * label via the `data-label` attribute Table.Cell sets from its `label`
+ * prop, instead of relying on a <thead> row that no longer makes sense
+ * once columns aren't aligned in a grid. */
+@media (max-width: 767.98px) {
+    .af-table-cards thead {
+        display: none;
+    }
+
+    .af-table-cards,
+    .af-table-cards tbody,
+    .af-table-cards tr,
+    .af-table-cards td {
+        display: block;
+        width: 100%;
+    }
+
+    .af-table-cards tbody tr {
+        border: 1px solid var(--af-border) !important;
+        border-radius: var(--af-radius-sm);
+        box-shadow: var(--af-shadow);
+        margin-bottom: 12px;
+        padding: 4px 12px;
+    }
+
+    .af-table-cards tbody tr:last-child {
+        margin-bottom: 0;
+    }
+
+    .af-table-cards td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        text-align: right;
+        padding: 8px 0 !important;
+        border-bottom: 1px solid var(--af-border);
+    }
+
+    .af-table-cards td:last-child {
+        border-bottom: none;
+    }
+
+    .af-table-cards td::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--af-label);
+        text-align: left;
+    }
+
+    .af-table-cards td:not([data-label]) {
+        display: none;
+    }
+}

@@ -115,7 +115,7 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
                         }
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Date</Table.HeadCell>
                             <Table.HeadCell>Description</Table.HeadCell>
@@ -127,14 +127,14 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
                         <tbody>
                             {expenses.data.map((expense) => (
                                 <Table.Row key={expense.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('expenses.show', expense.id))}>
-                                    <Table.Cell className="ps-3">{formatDate(expense.date)}</Table.Cell>
-                                    <Table.Cell>{expense.description}</Table.Cell>
-                                    <Table.Cell>{expense.account?.name ?? '—'}</Table.Cell>
-                                    <Table.Cell>{expense.vendor?.name ?? '—'}</Table.Cell>
-                                    <Table.Cell>
+                                    <Table.Cell className="ps-3" label="Date">{formatDate(expense.date)}</Table.Cell>
+                                    <Table.Cell label="Description">{expense.description}</Table.Cell>
+                                    <Table.Cell label="Category">{expense.account?.name ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Vendor">{expense.vendor?.name ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Status">
                                         <Badge variant={expenseStatusVariant(expense.status)}>{expense.status}</Badge>
                                     </Table.Cell>
-                                    <Table.Cell className="text-end pe-3">
+                                    <Table.Cell className="text-end pe-3" label="Amount">
                                         <MoneyDisplay amount={expense.amount} />
                                     </Table.Cell>
                                 </Table.Row>

@@ -117,7 +117,7 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
                 {users.data.length === 0 ? (
                     <EmptyState icon={<ShieldCheck size={20} />} title="No users found" description="Try a different search." />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Email</Table.HeadCell>
@@ -129,10 +129,10 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
                         <tbody>
                             {users.data.map((user) => (
                                 <Table.Row key={user.id}>
-                                    <Table.Cell className="ps-3">{user.name}</Table.Cell>
-                                    <Table.Cell>{user.email}</Table.Cell>
-                                    <Table.Cell>{user.membership_code ?? '—'}</Table.Cell>
-                                    <Table.Cell>
+                                    <Table.Cell className="ps-3" label="Name">{user.name}</Table.Cell>
+                                    <Table.Cell label="Email">{user.email}</Table.Cell>
+                                    <Table.Cell label="Membership Code">{user.membership_code ?? '—'}</Table.Cell>
+                                    <Table.Cell label="Roles">
                                         <div className="d-flex gap-1 flex-wrap">
                                             {user.roles.length > 0 ? (
                                                 user.roles.map((role) => (
@@ -145,13 +145,13 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
                                             )}
                                         </div>
                                     </Table.Cell>
-                                    <Table.Cell>
+                                    <Table.Cell label="Status">
                                         <Badge variant={user.status === 'active' ? 'success' : 'danger'}>
                                             {user.status === 'active' ? 'Active' : 'Suspended'}
                                         </Badge>
                                     </Table.Cell>
                                     {canManage && (
-                                        <Table.Cell className="text-end pe-3">
+                                        <Table.Cell className="text-end pe-3" label="Actions">
                                             {user.id !== auth.user?.id && (
                                                 <button
                                                     type="button"

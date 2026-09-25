@@ -329,7 +329,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                 title="Chart of Accounts"
                 subtitle="Every posting account in the ledger, grouped by type."
                 action={
-                    <div className="d-flex gap-2">
+                    <div className="d-flex flex-wrap gap-2">
                         <ExportButton href={route('accounts.export', filters)} />
                         <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={openImport}>
                             Import from Excel

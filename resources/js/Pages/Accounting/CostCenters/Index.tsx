@@ -150,7 +150,7 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
                         action={<Button onClick={openCreate}>New Center</Button>}
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Type</Table.HeadCell>
@@ -164,7 +164,7 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
 
                                 return (
                                     <Table.Row key={costCenter.id}>
-                                        <Table.Cell className="ps-3">
+                                        <Table.Cell className="ps-3" label="Name">
                                             {costCenter.name}
                                             {costCenter.parent && (
                                                 <span style={{ color: 'var(--af-label)', fontSize: '12px' }}>
@@ -173,19 +173,20 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
                                                 </span>
                                             )}
                                         </Table.Cell>
-                                        <Table.Cell>
+                                        <Table.Cell label="Type">
                                             <Badge variant={costCenter.type === 'profit' ? 'info' : 'neutral'}>{costCenter.type}</Badge>
                                         </Table.Cell>
-                                        <Table.Cell>
+                                        <Table.Cell label="Budget vs Actual">
                                             <BudgetBar budget={row?.budget ?? null} spent={row?.spent ?? 0} />
                                         </Table.Cell>
                                         <Table.Cell
                                             className="text-end"
+                                            label="Net"
                                             style={{ color: (row?.net ?? 0) < 0 ? 'var(--af-danger)' : 'var(--af-success)' }}
                                         >
                                             {(row?.net ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </Table.Cell>
-                                        <Table.Cell className="text-end pe-3">
+                                        <Table.Cell className="text-end pe-3" label="Actions">
                                             <div className="d-flex justify-content-end gap-1">
                                                 <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(costCenter)} aria-label="Edit">
                                                     <Pencil size={15} />

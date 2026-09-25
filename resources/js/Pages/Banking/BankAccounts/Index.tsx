@@ -157,7 +157,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                         action={<Button onClick={openCreate}>New Bank Account</Button>}
                     />
                 ) : (
-                    <Table>
+                    <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>GL Account</Table.HeadCell>
@@ -167,10 +167,10 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                         <tbody>
                             {bankAccounts.data.map((bankAccount) => (
                                 <Table.Row key={bankAccount.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('bank-accounts.show', bankAccount.id))}>
-                                    <Table.Cell className="ps-3">{bankAccount.name}</Table.Cell>
-                                    <Table.Cell>{bankAccount.account ? `${bankAccount.account.code} · ${bankAccount.account.name}` : '—'}</Table.Cell>
-                                    <Table.Cell>{bankAccount.bank_name ?? '—'}</Table.Cell>
-                                    <Table.Cell className="text-end pe-3" onClick={(e) => e.stopPropagation()}>
+                                    <Table.Cell className="ps-3" label="Name">{bankAccount.name}</Table.Cell>
+                                    <Table.Cell label="GL Account">{bankAccount.account ? `${bankAccount.account.code} · ${bankAccount.account.name}` : '—'}</Table.Cell>
+                                    <Table.Cell label="Bank">{bankAccount.bank_name ?? '—'}</Table.Cell>
+                                    <Table.Cell className="text-end pe-3" label="Actions" onClick={(e) => e.stopPropagation()}>
                                         <div className="d-flex justify-content-end gap-1">
                                             <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(bankAccount)} aria-label="Edit">
                                                 <Pencil size={15} />
