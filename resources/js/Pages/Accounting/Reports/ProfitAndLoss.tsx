@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { ExportMenu } from '@/Components/ui/ExportMenu';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import type { ProfitAndLossReport } from '@/types/finance';
 
@@ -56,39 +57,41 @@ export default function ProfitAndLoss({ report, filters }: Props) {
             />
 
             <Card>
-                <form onSubmit={applyFilter} className="af-filter-bar mb-4">
-                    <div style={{ maxWidth: '160px' }}>
-                        <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
-                    </div>
-                    <div style={{ maxWidth: '160px' }}>
-                        <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
-                    </div>
-                    <div className="form-check ms-2 mb-2">
-                        <input
-                            className="form-check-input"
-                            type="checkbox"
-                            id="compare"
-                            checked={compare}
-                            onChange={(e) => setCompare(e.target.checked)}
-                        />
-                        <label className="form-check-label" htmlFor="compare" style={{ fontSize: '13px' }}>
-                            Compare to another period
-                        </label>
-                    </div>
-                    {compare && (
-                        <>
-                            <div style={{ maxWidth: '160px' }}>
-                                <Input type="date" label="Compare from" value={compareFrom} onChange={(e) => setCompareFrom(e.target.value)} />
-                            </div>
-                            <div style={{ maxWidth: '160px' }}>
-                                <Input type="date" label="Compare to" value={compareTo} onChange={(e) => setCompareTo(e.target.value)} />
-                            </div>
-                        </>
-                    )}
-                    <Button type="submit" variant="outline">
-                        Apply
-                    </Button>
-                </form>
+                <FilterPanel active>
+                    <form onSubmit={applyFilter} className="af-filter-bar mb-4">
+                        <div style={{ maxWidth: '160px' }}>
+                            <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+                        </div>
+                        <div style={{ maxWidth: '160px' }}>
+                            <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+                        </div>
+                        <div className="form-check ms-2 mb-2">
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id="compare"
+                                checked={compare}
+                                onChange={(e) => setCompare(e.target.checked)}
+                            />
+                            <label className="form-check-label" htmlFor="compare" style={{ fontSize: '13px' }}>
+                                Compare to another period
+                            </label>
+                        </div>
+                        {compare && (
+                            <>
+                                <div style={{ maxWidth: '160px' }}>
+                                    <Input type="date" label="Compare from" value={compareFrom} onChange={(e) => setCompareFrom(e.target.value)} />
+                                </div>
+                                <div style={{ maxWidth: '160px' }}>
+                                    <Input type="date" label="Compare to" value={compareTo} onChange={(e) => setCompareTo(e.target.value)} />
+                                </div>
+                            </>
+                        )}
+                        <Button type="submit" variant="outline">
+                            Apply
+                        </Button>
+                    </form>
+                </FilterPanel>
 
                 <ProfitLossSection
                     title="Revenue"

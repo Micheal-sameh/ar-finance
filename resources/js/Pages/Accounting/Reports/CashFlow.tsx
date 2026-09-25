@@ -7,6 +7,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import type { CashFlowReport } from '@/types/finance';
 
@@ -48,17 +49,19 @@ export default function CashFlow({ report, filters }: Props) {
             />
 
             <Card>
-                <form onSubmit={applyFilter} className="af-filter-bar mb-4">
-                    <div style={{ maxWidth: '160px' }}>
-                        <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
-                    </div>
-                    <div style={{ maxWidth: '160px' }}>
-                        <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
-                    </div>
-                    <Button type="submit" variant="outline">
-                        Apply
-                    </Button>
-                </form>
+                <FilterPanel active>
+                    <form onSubmit={applyFilter} className="af-filter-bar mb-4">
+                        <div style={{ maxWidth: '160px' }}>
+                            <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+                        </div>
+                        <div style={{ maxWidth: '160px' }}>
+                            <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+                        </div>
+                        <Button type="submit" variant="outline">
+                            Apply
+                        </Button>
+                    </form>
+                </FilterPanel>
 
                 <ProfitLossSection
                     title="Operating Activities"

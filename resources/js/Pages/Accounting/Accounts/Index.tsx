@@ -10,6 +10,7 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -343,43 +344,45 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="af-filter-bar">
-                        <Input
-                            placeholder="Search by code or name…"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            style={{ maxWidth: '260px' }}
-                        />
-                        <Select
-                            value={filters.type ?? ''}
-                            onChange={(e) => runFilters({ type: e.target.value || undefined })}
-                            style={{ maxWidth: '160px' }}
-                        >
-                            <option value="">All types</option>
-                            {ACCOUNT_TYPES.map((t) => (
-                                <option key={t.value} value={t.value}>
-                                    {t.label}
-                                </option>
-                            ))}
-                        </Select>
-                        <Select
-                            value={filters.is_active ?? ''}
-                            onChange={(e) => runFilters({ is_active: e.target.value || undefined })}
-                            style={{ maxWidth: '160px' }}
-                        >
-                            <option value="">All statuses</option>
-                            <option value="1">Active</option>
-                            <option value="0">Inactive</option>
-                        </Select>
-                        <Button type="submit" variant="outline">
-                            Search
-                        </Button>
-                        {(filters.type || filters.is_active || filters.search) && (
-                            <Button type="button" variant="ghost" onClick={clearFilters}>
-                                Clear
+                    <FilterPanel active={Boolean(filters.type || filters.is_active || filters.search)}>
+                        <form onSubmit={runSearch} className="af-filter-bar">
+                            <Input
+                                placeholder="Search by code or name…"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                style={{ maxWidth: '260px' }}
+                            />
+                            <Select
+                                value={filters.type ?? ''}
+                                onChange={(e) => runFilters({ type: e.target.value || undefined })}
+                                style={{ maxWidth: '160px' }}
+                            >
+                                <option value="">All types</option>
+                                {ACCOUNT_TYPES.map((t) => (
+                                    <option key={t.value} value={t.value}>
+                                        {t.label}
+                                    </option>
+                                ))}
+                            </Select>
+                            <Select
+                                value={filters.is_active ?? ''}
+                                onChange={(e) => runFilters({ is_active: e.target.value || undefined })}
+                                style={{ maxWidth: '160px' }}
+                            >
+                                <option value="">All statuses</option>
+                                <option value="1">Active</option>
+                                <option value="0">Inactive</option>
+                            </Select>
+                            <Button type="submit" variant="outline">
+                                Search
                             </Button>
-                        )}
-                    </form>
+                            {(filters.type || filters.is_active || filters.search) && (
+                                <Button type="button" variant="ghost" onClick={clearFilters}>
+                                    Clear
+                                </Button>
+                            )}
+                        </form>
+                    </FilterPanel>
                 </div>
 
                 {accounts.length === 0 ? (

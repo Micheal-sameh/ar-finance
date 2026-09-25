@@ -7,6 +7,7 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -114,34 +115,36 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="af-filter-bar">
-                        <Input
-                            placeholder="Search by name or email…"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            style={{ maxWidth: '240px' }}
-                        />
-                        <Select
-                            value={filters.currency ?? ''}
-                            onChange={(e) => runFilters({ currency: e.target.value || undefined })}
-                            style={{ maxWidth: '170px' }}
-                        >
-                            <option value="">All currencies</option>
-                            {currencyOptions.map((currency) => (
-                                <option key={currency.code} value={currency.code}>
-                                    {currency.code}
-                                </option>
-                            ))}
-                        </Select>
-                        <Button type="submit" variant="outline">
-                            Search
-                        </Button>
-                        {(filters.currency || filters.search) && (
-                            <Button type="button" variant="ghost" onClick={clearFilters}>
-                                Clear
+                    <FilterPanel active={Boolean(filters.currency || filters.search)}>
+                        <form onSubmit={runSearch} className="af-filter-bar">
+                            <Input
+                                placeholder="Search by name or email…"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                style={{ maxWidth: '240px' }}
+                            />
+                            <Select
+                                value={filters.currency ?? ''}
+                                onChange={(e) => runFilters({ currency: e.target.value || undefined })}
+                                style={{ maxWidth: '170px' }}
+                            >
+                                <option value="">All currencies</option>
+                                {currencyOptions.map((currency) => (
+                                    <option key={currency.code} value={currency.code}>
+                                        {currency.code}
+                                    </option>
+                                ))}
+                            </Select>
+                            <Button type="submit" variant="outline">
+                                Search
                             </Button>
-                        )}
-                    </form>
+                            {(filters.currency || filters.search) && (
+                                <Button type="button" variant="ghost" onClick={clearFilters}>
+                                    Clear
+                                </Button>
+                            )}
+                        </form>
+                    </FilterPanel>
                 </div>
 
                 {clients.data.length === 0 ? (

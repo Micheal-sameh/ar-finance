@@ -60,6 +60,15 @@ body {
     }
 }
 
+/* FilterPanel's collapse only applies below md — at md and up its toggle
+ * button is hidden (d-md-none) and the content must stay visible even
+ * while collapsed on mobile. */
+@media (max-width: 767.98px) {
+    .af-filter-panel-collapsed {
+        display: none;
+    }
+}
+
 /* Bootstrap's responsive offcanvas resets background/box-shadow to
  * transparent once it becomes a static panel at its breakpoint (it's
  * designed to blend into a navbar, not stay panel-colored) — override

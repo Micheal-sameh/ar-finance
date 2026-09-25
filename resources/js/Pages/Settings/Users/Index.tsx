@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -75,6 +76,7 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
+                    <FilterPanel active={Boolean(filters.status || filters.role || filters.search)}>
                     <form onSubmit={runSearch} className="af-filter-bar">
                         <Input
                             placeholder="Search by name or email…"
@@ -112,6 +114,7 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
                             </Button>
                         )}
                     </form>
+                    </FilterPanel>
                 </div>
 
                 {users.data.length === 0 ? (

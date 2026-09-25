@@ -108,7 +108,7 @@ export default function BillsShow({ bill }: Props) {
                     </div>
                 </div>
 
-                <Table>
+                <Table cards>
                     <Table.Head>
                         <Table.HeadCell className="ps-3">Description</Table.HeadCell>
                         <Table.HeadCell className="text-end">Qty</Table.HeadCell>
@@ -120,14 +120,14 @@ export default function BillsShow({ bill }: Props) {
                     <tbody>
                         {bill.lines.map((line) => (
                             <Table.Row key={line.id}>
-                                <Table.Cell className="ps-3">{line.description}</Table.Cell>
-                                <Table.Cell className="text-end">{line.quantity}</Table.Cell>
-                                <Table.Cell className="text-end">
+                                <Table.Cell className="ps-3" label="Description">{line.description}</Table.Cell>
+                                <Table.Cell className="text-end" label="Qty">{line.quantity}</Table.Cell>
+                                <Table.Cell className="text-end" label="Unit price">
                                     <MoneyDisplay amount={line.unit_price} />
                                 </Table.Cell>
-                                <Table.Cell className="text-end">{line.tax_rate}%</Table.Cell>
-                                <Table.Cell>{line.account ? `${line.account.code} · ${line.account.name}` : '—'}</Table.Cell>
-                                <Table.Cell className="text-end pe-3">
+                                <Table.Cell className="text-end" label="Tax %">{line.tax_rate}%</Table.Cell>
+                                <Table.Cell label="Account">{line.account ? `${line.account.code} · ${line.account.name}` : '—'}</Table.Cell>
+                                <Table.Cell className="text-end pe-3" label="Total">
                                     <MoneyDisplay amount={lineTotal(line)} />
                                 </Table.Cell>
                             </Table.Row>
@@ -136,7 +136,7 @@ export default function BillsShow({ bill }: Props) {
                             <Table.Cell className="ps-3" colSpan={5}>
                                 Total
                             </Table.Cell>
-                            <Table.Cell className="text-end pe-3">
+                            <Table.Cell className="text-end pe-3" label="Total">
                                 <MoneyDisplay amount={total} />
                             </Table.Cell>
                         </Table.Row>

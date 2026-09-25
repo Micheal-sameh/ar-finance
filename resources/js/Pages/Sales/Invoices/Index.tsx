@@ -8,6 +8,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
@@ -73,6 +74,7 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
+                    <FilterPanel active={Boolean(filters.status || filters.from || filters.to || filters.search)}>
                     <form onSubmit={runSearch} className="af-filter-bar">
                         <Input
                             placeholder="Search invoice # or client…"
@@ -113,6 +115,7 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
                             </Button>
                         )}
                     </form>
+                    </FilterPanel>
                 </div>
 
                 {invoices.data.length === 0 ? (

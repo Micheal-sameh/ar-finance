@@ -4,6 +4,7 @@ import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 
 interface VatReturnReport {
@@ -49,17 +50,19 @@ export default function VatReturn({ report, filters }: Props) {
             />
 
             <Card>
-                <form onSubmit={applyFilter} className="af-filter-bar mb-4">
-                    <div style={{ maxWidth: '180px' }}>
-                        <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
-                    </div>
-                    <div style={{ maxWidth: '180px' }}>
-                        <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
-                    </div>
-                    <Button type="submit" variant="outline">
-                        Apply
-                    </Button>
-                </form>
+                <FilterPanel active>
+                    <form onSubmit={applyFilter} className="af-filter-bar mb-4">
+                        <div style={{ maxWidth: '180px' }}>
+                            <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+                        </div>
+                        <div style={{ maxWidth: '180px' }}>
+                            <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+                        </div>
+                        <Button type="submit" variant="outline">
+                            Apply
+                        </Button>
+                    </form>
+                </FilterPanel>
 
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--af-navy)', marginBottom: '8px' }}>
                     Sales (Output VAT)

@@ -6,6 +6,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import type { TrialBalanceReport } from '@/types/finance';
@@ -35,20 +36,22 @@ export default function TrialBalance({ report, filters }: Props) {
             />
 
             <Card>
-                <form onSubmit={applyFilter} className="af-filter-bar mb-4">
-                    <div style={{ maxWidth: '180px' }}>
-                        <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
-                    </div>
-                    <div style={{ maxWidth: '180px' }}>
-                        <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
-                    </div>
-                    <Button type="submit" variant="outline">
-                        Apply
-                    </Button>
-                    <div className="ms-auto">
-                        <BalanceCheck totalDebit={report.total_debit} totalCredit={report.total_credit} />
-                    </div>
-                </form>
+                <div className="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-2">
+                    <FilterPanel active={Boolean(filters.from || filters.to)}>
+                        <form onSubmit={applyFilter} className="af-filter-bar">
+                            <div style={{ maxWidth: '180px' }}>
+                                <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+                            </div>
+                            <div style={{ maxWidth: '180px' }}>
+                                <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+                            </div>
+                            <Button type="submit" variant="outline">
+                                Apply
+                            </Button>
+                        </form>
+                    </FilterPanel>
+                    <BalanceCheck totalDebit={report.total_debit} totalCredit={report.total_credit} />
+                </div>
 
                 <Table>
                     <Table.Head>

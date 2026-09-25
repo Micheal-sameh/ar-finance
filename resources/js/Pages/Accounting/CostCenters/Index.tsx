@@ -10,6 +10,7 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -115,31 +116,33 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <form onSubmit={runSearch} className="af-filter-bar">
-                        <Input
-                            placeholder="Search by name…"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            style={{ maxWidth: '240px' }}
-                        />
-                        <Select
-                            value={filters.type ?? ''}
-                            onChange={(e) => runFilters({ type: e.target.value || undefined })}
-                            style={{ maxWidth: '170px' }}
-                        >
-                            <option value="">All types</option>
-                            <option value="cost">Cost Center</option>
-                            <option value="profit">Profit Center</option>
-                        </Select>
-                        <Button type="submit" variant="outline">
-                            Search
-                        </Button>
-                        {(filters.type || filters.search) && (
-                            <Button type="button" variant="ghost" onClick={clearFilters}>
-                                Clear
+                    <FilterPanel active={Boolean(filters.type || filters.search)}>
+                        <form onSubmit={runSearch} className="af-filter-bar">
+                            <Input
+                                placeholder="Search by name…"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                style={{ maxWidth: '240px' }}
+                            />
+                            <Select
+                                value={filters.type ?? ''}
+                                onChange={(e) => runFilters({ type: e.target.value || undefined })}
+                                style={{ maxWidth: '170px' }}
+                            >
+                                <option value="">All types</option>
+                                <option value="cost">Cost Center</option>
+                                <option value="profit">Profit Center</option>
+                            </Select>
+                            <Button type="submit" variant="outline">
+                                Search
                             </Button>
-                        )}
-                    </form>
+                            {(filters.type || filters.search) && (
+                                <Button type="button" variant="ghost" onClick={clearFilters}>
+                                    Clear
+                                </Button>
+                            )}
+                        </form>
+                    </FilterPanel>
                 </div>
 
                 {costCenters.data.length === 0 ? (

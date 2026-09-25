@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
@@ -60,37 +61,39 @@ export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
 
             <Card padded={false}>
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <div className="af-filter-bar">
-                        <Select
-                            value={filters.status ?? ''}
-                            onChange={(e) => runFilters({ status: e.target.value || undefined })}
-                            style={{ maxWidth: '150px' }}
-                        >
-                            <option value="">All statuses</option>
-                            {PAYROLL_RUN_STATUSES.map((s) => (
-                                <option key={s.value} value={s.value}>
-                                    {s.label}
-                                </option>
-                            ))}
-                        </Select>
-                        <Input
-                            type="date"
-                            label="Period from"
-                            value={filters.from ?? ''}
-                            onChange={(e) => runFilters({ from: e.target.value || undefined })}
-                        />
-                        <Input
-                            type="date"
-                            label="Period to"
-                            value={filters.to ?? ''}
-                            onChange={(e) => runFilters({ to: e.target.value || undefined })}
-                        />
-                        {(filters.status || filters.from || filters.to) && (
-                            <Button type="button" variant="ghost" onClick={clearFilters}>
-                                Clear
-                            </Button>
-                        )}
-                    </div>
+                    <FilterPanel active={Boolean(filters.status || filters.from || filters.to)}>
+                        <div className="af-filter-bar">
+                            <Select
+                                value={filters.status ?? ''}
+                                onChange={(e) => runFilters({ status: e.target.value || undefined })}
+                                style={{ maxWidth: '150px' }}
+                            >
+                                <option value="">All statuses</option>
+                                {PAYROLL_RUN_STATUSES.map((s) => (
+                                    <option key={s.value} value={s.value}>
+                                        {s.label}
+                                    </option>
+                                ))}
+                            </Select>
+                            <Input
+                                type="date"
+                                label="Period from"
+                                value={filters.from ?? ''}
+                                onChange={(e) => runFilters({ from: e.target.value || undefined })}
+                            />
+                            <Input
+                                type="date"
+                                label="Period to"
+                                value={filters.to ?? ''}
+                                onChange={(e) => runFilters({ to: e.target.value || undefined })}
+                            />
+                            {(filters.status || filters.from || filters.to) && (
+                                <Button type="button" variant="ghost" onClick={clearFilters}>
+                                    Clear
+                                </Button>
+                            )}
+                        </div>
+                    </FilterPanel>
                 </div>
 
                 {payrollRuns.data.length === 0 ? (
