@@ -140,6 +140,8 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::get('profit-and-loss/pdf', [ReportController::class, 'profitAndLossPdf'])->name('profit-and-loss.pdf');
         Route::get('balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
         Route::get('balance-sheet/pdf', [ReportController::class, 'balanceSheetPdf'])->name('balance-sheet.pdf');
+        Route::get('cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
+        Route::get('cash-flow/pdf', [ReportController::class, 'cashFlowPdf'])->name('cash-flow.pdf');
         Route::get('vat-return', [ReportController::class, 'vatReturn'])->name('vat-return');
         Route::get('aging', [ReportController::class, 'aging'])->name('aging');
     });

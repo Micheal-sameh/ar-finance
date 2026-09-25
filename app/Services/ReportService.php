@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Enums\AccountType;
 use App\Models\Account;
+use App\Repositories\Contracts\BankAccountRepositoryInterface;
 use App\Repositories\Contracts\BillRepositoryInterface;
 use App\Repositories\Contracts\CostCenterRepositoryInterface;
+use App\Repositories\Contracts\FixedAssetRepositoryInterface;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
 use App\Repositories\Contracts\JournalRepositoryInterface;
 use Closure;
@@ -36,8 +38,9 @@ class ReportService
         private readonly CostCenterRepositoryInterface $costCenters,
         private readonly InvoiceRepositoryInterface $invoices,
         private readonly BillRepositoryInterface $bills,
-    ) {
-    }
+        private readonly BankAccountRepositoryInterface $bankAccounts,
+        private readonly FixedAssetRepositoryInterface $fixedAssets,
+    ) {}
 
     /**
      * @return array{
@@ -101,20 +104,13 @@ class ReportService
      */
     public function accountBalances(): array
     {
-        $balances = $this->journals->postedLinesWithAccounts(null, now()->toDateString())
-            ->groupBy('account_id')
-            ->map(function ($lines) {
-                $account = $lines->first()->account;
-                $debit = (float) $lines->sum('debit');
-                $credit = (float) $lines->sum('credit');
+        $asOf = now()->toDateString();
 
-                return $account->normal_balance->value === 'debit'
-                    ? round($debit - $credit, 2)
-                    : round($credit - $debit, 2);
-            })
+        $balances = $this->balancesAsOf($asOf)
+            ->map(fn ($row) => $row['balance'])
             ->all();
 
-        $split = $this->netIncomeSplitAsOf(now()->toDateString());
+        $split = $this->netIncomeSplitAsOf($asOf);
 
         if ($netIncomeAccount = Account::where('code', self::NET_INCOME_CODE)->first()) {
             $balances[$netIncomeAccount->id] = $split['current'];
@@ -125,6 +121,30 @@ class ReportService
         }
 
         return $balances;
+    }
+
+    /**
+     * Every account's cumulative balance through $asOf, in its own
+     * normal-balance direction, alongside the loaded account itself so
+     * callers don't have to re-fetch it. An account with no posted
+     * activity by $asOf simply won't have a key here.
+     *
+     * @return Collection<int, array{account: Account, balance: float}>
+     */
+    private function balancesAsOf(string $asOf): Collection
+    {
+        return $this->journals->postedLinesWithAccounts(null, $asOf)
+            ->groupBy('account_id')
+            ->map(function ($lines) {
+                $account = $lines->first()->account;
+                $debit = (float) $lines->sum('debit');
+                $credit = (float) $lines->sum('credit');
+                $balance = $account->normal_balance->value === 'debit'
+                    ? round($debit - $credit, 2)
+                    : round($credit - $debit, 2);
+
+                return ['account' => $account, 'balance' => $balance];
+            });
     }
 
     /**
@@ -364,6 +384,170 @@ class ReportService
             'total_liabilities' => $totalLiabilities,
             'total_equity' => $totalEquity,
             'is_balanced' => abs($totalAssets - ($totalLiabilities + $totalEquity)) < 0.005,
+        ];
+    }
+
+    /**
+     * Cash generated/used across operating, investing, and financing
+     * activities for a period, indirect method — starts from net income
+     * and reconciles it to the actual change in cash by walking every
+     * other balance-sheet account's change over the period.
+     *
+     * "Cash" means accounts backing one of the tenant's bank accounts
+     * (BankAccount::account_id) — the one place this system already
+     * records which GL accounts represent cash. An asset account never
+     * wired up as a bank account (e.g. petty cash tracked manually) won't
+     * be picked up here.
+     *
+     * Every other Asset/Liability account's balance change is treated as
+     * an operating working-capital movement, *except* accounts a
+     * FixedAsset points to: its asset_account_id's change is Investing
+     * (purchases/disposals), and its accumulated_depreciation_account_id
+     * is left out entirely, since its only mover — posted depreciation —
+     * is already added back via the "adjustments" line below in the same
+     * amount, so including both would double-count it. Equity account
+     * changes (other than the derived 3100/3200 net-income rows, already
+     * the starting point) are Financing — owner contributions/draws.
+     *
+     * @return array{
+     *     from: string, to: string,
+     *     operating: array{
+     *         net_income: float,
+     *         adjustments: array<int, array{account_id: int, code: string, name: string, amount: float}>,
+     *         working_capital: array<int, array{account_id: int, code: string, name: string, amount: float}>,
+     *         total: float,
+     *     },
+     *     investing: array{rows: array<int, array{account_id: int, code: string, name: string, amount: float}>, total: float},
+     *     financing: array{rows: array<int, array{account_id: int, code: string, name: string, amount: float}>, total: float},
+     *     beginning_cash: float,
+     *     ending_cash: float,
+     *     net_change_in_cash: float,
+     *     is_reconciled: bool,
+     * }
+     */
+    public function cashFlow(string $from, string $to): array
+    {
+        $periodStart = Carbon::parse($from)->subDay()->toDateString();
+
+        $startBalances = $this->balancesAsOf($periodStart);
+        $endBalances = $this->balancesAsOf($to);
+
+        $cashAccountIds = $this->bankAccounts->all()->pluck('account_id')->unique()->filter()->values()->all();
+
+        $fixedAssets = $this->fixedAssets->all();
+        $investingAccountIds = $fixedAssets->pluck('asset_account_id')->unique()->filter()->values()->all();
+        $excludedAccountIds = $fixedAssets->pluck('accumulated_depreciation_account_id')->unique()->filter()->values()->all();
+        $depreciationAccountIds = $fixedAssets->pluck('depreciation_account_id')->unique()->filter()->values()->all();
+
+        $netIncomeCodes = [self::NET_INCOME_CODE, self::RETAINED_EARNINGS_CODE];
+
+        $workingCapital = [];
+        $investingRows = [];
+        $financingRows = [];
+
+        $accountIds = $startBalances->keys()->merge($endBalances->keys())->unique();
+
+        foreach ($accountIds as $accountId) {
+            if (in_array($accountId, $cashAccountIds, true) || in_array($accountId, $excludedAccountIds, true)) {
+                continue;
+            }
+
+            $startBalance = $startBalances->get($accountId)['balance'] ?? 0.0;
+            $endRow = $endBalances->get($accountId) ?? $startBalances->get($accountId);
+            $delta = round(($endBalances->get($accountId)['balance'] ?? 0.0) - $startBalance, 2);
+
+            if ($delta === 0.0) {
+                continue;
+            }
+
+            $account = $endRow['account'];
+
+            if (in_array($accountId, $investingAccountIds, true)) {
+                $investingRows[] = $this->cashFlowRow($account, -$delta);
+
+                continue;
+            }
+
+            if ($account->type === AccountType::Asset) {
+                $workingCapital[] = $this->cashFlowRow($account, -$delta);
+
+                continue;
+            }
+
+            if ($account->type === AccountType::Liability) {
+                $workingCapital[] = $this->cashFlowRow($account, $delta);
+
+                continue;
+            }
+
+            if ($account->type === AccountType::Equity && ! in_array($account->code, $netIncomeCodes, true)) {
+                $financingRows[] = $this->cashFlowRow($account, $delta);
+            }
+        }
+
+        usort($workingCapital, fn ($a, $b) => $a['code'] <=> $b['code']);
+        usort($investingRows, fn ($a, $b) => $a['code'] <=> $b['code']);
+        usort($financingRows, fn ($a, $b) => $a['code'] <=> $b['code']);
+
+        $depreciation = round(
+            (float) $this->journals->postedLinesWithAccounts($from, $to)
+                ->filter(fn ($line) => in_array($line->account_id, $depreciationAccountIds, true))
+                ->sum('debit'),
+            2,
+        );
+
+        $adjustments = $depreciation !== 0.0
+            ? [['account_id' => 0, 'code' => '', 'name' => 'Depreciation and amortization', 'amount' => $depreciation]]
+            : [];
+
+        $netIncome = $this->netIncomeBetween($from, $to);
+
+        $operatingTotal = round(
+            $netIncome + $depreciation + array_sum(array_column($workingCapital, 'amount')),
+            2,
+        );
+        $investingTotal = round(array_sum(array_column($investingRows, 'amount')), 2);
+        $financingTotal = round(array_sum(array_column($financingRows, 'amount')), 2);
+
+        $netChangeInCash = round($operatingTotal + $investingTotal + $financingTotal, 2);
+
+        $beginningCash = round(array_sum(array_map(
+            fn ($id) => $startBalances->get($id)['balance'] ?? 0.0,
+            $cashAccountIds,
+        )), 2);
+        $endingCash = round(array_sum(array_map(
+            fn ($id) => $endBalances->get($id)['balance'] ?? 0.0,
+            $cashAccountIds,
+        )), 2);
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'operating' => [
+                'net_income' => $netIncome,
+                'adjustments' => $adjustments,
+                'working_capital' => $workingCapital,
+                'total' => $operatingTotal,
+            ],
+            'investing' => ['rows' => $investingRows, 'total' => $investingTotal],
+            'financing' => ['rows' => $financingRows, 'total' => $financingTotal],
+            'beginning_cash' => $beginningCash,
+            'ending_cash' => $endingCash,
+            'net_change_in_cash' => $netChangeInCash,
+            'is_reconciled' => abs($netChangeInCash - round($endingCash - $beginningCash, 2)) < 0.005,
+        ];
+    }
+
+    /**
+     * @return array{account_id: int, code: string, name: string, amount: float}
+     */
+    private function cashFlowRow(Account $account, float $amount): array
+    {
+        return [
+            'account_id' => $account->id,
+            'code' => $account->code,
+            'name' => $account->name,
+            'amount' => round($amount, 2),
         ];
     }
 

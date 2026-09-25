@@ -119,4 +119,12 @@ class ReportPdfExportTest extends TestCase
         $response->assertOk();
         $response->assertHeader('Content-Type', 'application/pdf');
     }
+
+    public function test_cash_flow_pdf_route_streams_a_pdf(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('reports.cash-flow.pdf', ['from' => '2026-01-01', 'to' => '2026-01-31']));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/pdf');
+    }
 }

@@ -192,6 +192,30 @@ export interface BalanceSheetReport {
     is_balanced: boolean;
 }
 
+export interface CashFlowRow {
+    account_id: number;
+    code: string;
+    name: string;
+    amount: number;
+}
+
+export interface CashFlowReport {
+    from: string;
+    to: string;
+    operating: {
+        net_income: number;
+        adjustments: CashFlowRow[];
+        working_capital: CashFlowRow[];
+        total: number;
+    };
+    investing: { rows: CashFlowRow[]; total: number };
+    financing: { rows: CashFlowRow[]; total: number };
+    beginning_cash: number;
+    ending_cash: number;
+    net_change_in_cash: number;
+    is_reconciled: boolean;
+}
+
 export type CostCenterType = 'cost' | 'profit';
 
 export interface CostCenter {

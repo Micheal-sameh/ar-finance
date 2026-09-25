@@ -150,6 +150,32 @@ class ReportController extends Controller
         ]);
     }
 
+    public function cashFlow(Request $request): Response
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $from = $request->string('from')->value() ?: now()->startOfMonth()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
+
+        return Inertia::render('Accounting/Reports/CashFlow', [
+            'report' => $this->reports->cashFlow($from, $to),
+            'filters' => ['from' => $from, 'to' => $to],
+        ]);
+    }
+
+    public function cashFlowPdf(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $from = $request->string('from')->value() ?: now()->startOfMonth()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
+
+        return $this->downloadPdf('cash-flow.pdf', 'pdf.reports.cash-flow', [
+            'tenant' => auth()->user()->tenant,
+            'report' => $this->reports->cashFlow($from, $to),
+        ]);
+    }
+
     public function vatReturn(Request $request): Response
     {
         $this->authorize('viewAny', Account::class);
