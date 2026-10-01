@@ -14,8 +14,16 @@ DB_PORT="${DB_PORT:-3306}"
 DB_USERNAME="${DB_USERNAME:-root}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 
-echo "Running composer install..."
-composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+COMPOSER_LOCK_HASH_FILE="vendor/.composer-lock-hash"
+COMPOSER_LOCK_HASH="$(md5sum composer.lock | cut -d' ' -f1)"
+
+if [ ! -f "$COMPOSER_LOCK_HASH_FILE" ] || [ "$(cat "$COMPOSER_LOCK_HASH_FILE")" != "$COMPOSER_LOCK_HASH" ]; then
+    echo "composer.lock changed, running composer install..."
+    composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+    echo "$COMPOSER_LOCK_HASH" > "$COMPOSER_LOCK_HASH_FILE"
+else
+    echo "composer.lock unchanged, skipping composer install."
+fi
 
 echo "Waiting for database at ${DB_HOST}:${DB_PORT}..."
 DB_WAIT_RETRIES=30
