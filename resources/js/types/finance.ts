@@ -174,6 +174,38 @@ export interface ProfitAndLossReport {
     net_profit: { current: number; prior: number };
 }
 
+export type ProfitAndLossGroupBy = 'month' | 'quarter' | 'cost_center';
+
+export interface ProfitLossGroupedColumn {
+    key: string;
+    label: string;
+}
+
+export interface ProfitLossGroupedRow {
+    account_id: number;
+    code: string;
+    name: string;
+    amounts: Record<string, number>;
+    total: number;
+}
+
+export interface ProfitLossGroupedTotals {
+    amounts: Record<string, number>;
+    total: number;
+}
+
+export interface ProfitAndLossGroupedReport {
+    from: string;
+    to: string;
+    group_by: ProfitAndLossGroupBy;
+    columns: ProfitLossGroupedColumn[];
+    revenue: ProfitLossGroupedRow[];
+    expenses: ProfitLossGroupedRow[];
+    total_revenue: ProfitLossGroupedTotals;
+    total_expenses: ProfitLossGroupedTotals;
+    net_profit: ProfitLossGroupedTotals;
+}
+
 export interface BalanceSheetRow {
     account_id: number;
     code: string;

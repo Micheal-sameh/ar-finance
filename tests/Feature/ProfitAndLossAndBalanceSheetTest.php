@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\DTOs\CreateJournalEntryData;
 use App\DTOs\JournalLineData;
 use App\Enums\AccountType;
+use App\Enums\CostCenterType;
 use App\Enums\JournalSourceType;
 use App\Models\Account;
+use App\Models\CostCenter;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\JournalService;
@@ -101,6 +103,67 @@ class ProfitAndLossAndBalanceSheetTest extends TestCase
             ->where('report.total_revenue.current', 500)
             ->where('report.total_expenses.current', 200)
             ->where('report.net_profit.current', 300)
+        );
+    }
+
+    public function test_profit_and_loss_can_be_grouped_by_month(): void
+    {
+        auth()->login($this->user);
+
+        $this->postManualEntry('2026-01-10', [
+            ['accountId' => $this->cash->id, 'debit' => 500, 'credit' => 0],
+            ['accountId' => $this->revenue->id, 'debit' => 0, 'credit' => 500],
+        ]);
+        $this->postManualEntry('2026-02-10', [
+            ['accountId' => $this->cash->id, 'debit' => 300, 'credit' => 0],
+            ['accountId' => $this->revenue->id, 'debit' => 0, 'credit' => 300],
+        ]);
+
+        $response = $this->actingAs($this->user)->get(
+            route('reports.profit-and-loss', ['from' => '2026-01-01', 'to' => '2026-02-28', 'group_by' => 'month']),
+        );
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('Accounting/Reports/ProfitAndLoss')
+            ->where('report.group_by', 'month')
+            ->where('report.columns.0.key', '2026-01')
+            ->where('report.columns.1.key', '2026-02')
+            ->where('report.revenue.0.amounts.2026-01', 500)
+            ->where('report.revenue.0.amounts.2026-02', 300)
+            ->where('report.revenue.0.total', 800)
+            ->where('report.total_revenue.total', 800)
+            ->where('report.net_profit.total', 800)
+        );
+    }
+
+    public function test_profit_and_loss_can_be_grouped_by_cost_center(): void
+    {
+        auth()->login($this->user);
+
+        $marketing = CostCenter::create([
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Marketing',
+            'type' => CostCenterType::Cost,
+        ]);
+
+        $this->postManualEntry('2026-01-10', [
+            ['accountId' => $this->cash->id, 'debit' => 500, 'credit' => 0],
+            ['accountId' => $this->revenue->id, 'debit' => 0, 'credit' => 500, 'costCenterId' => $marketing->id],
+        ]);
+        $this->postManualEntry('2026-01-12', [
+            ['accountId' => $this->cash->id, 'debit' => 300, 'credit' => 0],
+            ['accountId' => $this->revenue->id, 'debit' => 0, 'credit' => 300],
+        ]);
+
+        $response = $this->actingAs($this->user)->get(
+            route('reports.profit-and-loss', ['from' => '2026-01-01', 'to' => '2026-01-31', 'group_by' => 'cost_center']),
+        );
+
+        $response->assertInertia(fn ($page) => $page
+            ->where('report.group_by', 'cost_center')
+            ->where('report.revenue.0.amounts.'.$marketing->id, 500)
+            ->where('report.revenue.0.amounts.unassigned', 300)
+            ->where('report.revenue.0.total', 800)
         );
     }
 

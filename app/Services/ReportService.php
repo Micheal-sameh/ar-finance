@@ -339,6 +339,192 @@ class ReportService
     }
 
     /**
+     * Same revenue/expense figures as profitAndLoss(), but broken out
+     * across several columns instead of one current/prior pair — a column
+     * per calendar month, per calendar quarter, or per cost center (plus
+     * "Unassigned" for lines with none). Mutually exclusive with the
+     * compare-to-another-period feature: a grouped view already shows
+     * multiple periods/centers side by side.
+     *
+     * @return array{
+     *     from: string, to: string, group_by: string,
+     *     columns: array<int, array{key: string, label: string}>,
+     *     revenue: array<int, array{account_id: int, code: string, name: string, amounts: array<string, float>, total: float}>,
+     *     expenses: array<int, array{account_id: int, code: string, name: string, amounts: array<string, float>, total: float}>,
+     *     total_revenue: array{amounts: array<string, float>, total: float},
+     *     total_expenses: array{amounts: array<string, float>, total: float},
+     *     net_profit: array{amounts: array<string, float>, total: float},
+     * }
+     */
+    public function profitAndLossGrouped(string $from, string $to, string $groupBy): array
+    {
+        $columns = match ($groupBy) {
+            'month' => $this->monthColumns($from, $to),
+            'quarter' => $this->quarterColumns($from, $to),
+            'cost_center' => $this->costCenterColumns(),
+            default => throw new \InvalidArgumentException("Unsupported group_by [{$groupBy}]."),
+        };
+
+        $revenueByAccount = [];
+        $expensesByAccount = [];
+        $totalRevenue = [];
+        $totalExpenses = [];
+
+        foreach ($columns as $column) {
+            $flows = $groupBy === 'cost_center'
+                ? $this->flowBalancesByType($from, $to, [AccountType::Revenue, AccountType::Expense], $column['cost_center_filter'])
+                : $this->flowBalancesByType($column['from'], $column['to'], [AccountType::Revenue, AccountType::Expense]);
+
+            $revenueRows = $flows->get(AccountType::Revenue->value, collect());
+            $expenseRows = $flows->get(AccountType::Expense->value, collect());
+
+            foreach ($revenueRows as $row) {
+                $revenueByAccount[$row['account_id']] ??= ['account_id' => $row['account_id'], 'code' => $row['code'], 'name' => $row['name'], 'amounts' => []];
+                $revenueByAccount[$row['account_id']]['amounts'][$column['key']] = $row['current'];
+            }
+            foreach ($expenseRows as $row) {
+                $expensesByAccount[$row['account_id']] ??= ['account_id' => $row['account_id'], 'code' => $row['code'], 'name' => $row['name'], 'amounts' => []];
+                $expensesByAccount[$row['account_id']]['amounts'][$column['key']] = $row['current'];
+            }
+
+            $totalRevenue[$column['key']] = round((float) $revenueRows->sum('current'), 2);
+            $totalExpenses[$column['key']] = round((float) $expenseRows->sum('current'), 2);
+        }
+
+        $columnKeys = array_column($columns, 'key');
+        $revenue = $this->finalizeGroupedRows($revenueByAccount, $columnKeys);
+        $expenses = $this->finalizeGroupedRows($expensesByAccount, $columnKeys);
+
+        $totalRevenueRow = $this->groupedTotalsRow($totalRevenue, $columnKeys);
+        $totalExpensesRow = $this->groupedTotalsRow($totalExpenses, $columnKeys);
+
+        $netProfitAmounts = [];
+        foreach ($columnKeys as $key) {
+            $netProfitAmounts[$key] = round($totalRevenueRow['amounts'][$key] - $totalExpensesRow['amounts'][$key], 2);
+        }
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'group_by' => $groupBy,
+            'columns' => array_map(fn ($c) => ['key' => $c['key'], 'label' => $c['label']], $columns),
+            'revenue' => $revenue,
+            'expenses' => $expenses,
+            'total_revenue' => $totalRevenueRow,
+            'total_expenses' => $totalExpensesRow,
+            'net_profit' => ['amounts' => $netProfitAmounts, 'total' => round(array_sum($netProfitAmounts), 2)],
+        ];
+    }
+
+    /**
+     * @param  array<int, array{key: string}>  $columns
+     */
+    private function costCenterColumns(): array
+    {
+        $columns = $this->costCenters->all()
+            ->map(fn ($center) => ['key' => (string) $center->id, 'label' => $center->name, 'cost_center_filter' => $center->id])
+            ->values()
+            ->all();
+
+        $columns[] = ['key' => 'unassigned', 'label' => 'Unassigned', 'cost_center_filter' => 'unassigned'];
+
+        return $columns;
+    }
+
+    /**
+     * One column per calendar month touched by [$from, $to], clipped to
+     * that range at both ends.
+     *
+     * @return array<int, array{key: string, label: string, from: string, to: string}>
+     */
+    private function monthColumns(string $from, string $to): array
+    {
+        $rangeStart = Carbon::parse($from);
+        $rangeEnd = Carbon::parse($to);
+        $cursor = $rangeStart->copy()->startOfMonth();
+        $columns = [];
+
+        while ($cursor->lte($rangeEnd)) {
+            $columns[] = [
+                'key' => $cursor->format('Y-m'),
+                'label' => $cursor->format('M Y'),
+                'from' => $cursor->copy()->max($rangeStart)->toDateString(),
+                'to' => $cursor->copy()->endOfMonth()->min($rangeEnd)->toDateString(),
+            ];
+            $cursor->addMonthNoOverflow();
+        }
+
+        return $columns;
+    }
+
+    /**
+     * One column per calendar quarter touched by [$from, $to], clipped to
+     * that range at both ends.
+     *
+     * @return array<int, array{key: string, label: string, from: string, to: string}>
+     */
+    private function quarterColumns(string $from, string $to): array
+    {
+        $rangeStart = Carbon::parse($from);
+        $rangeEnd = Carbon::parse($to);
+        $cursor = $rangeStart->copy()->firstOfQuarter();
+        $columns = [];
+
+        while ($cursor->lte($rangeEnd)) {
+            $columns[] = [
+                'key' => $cursor->format('Y').'-Q'.$cursor->quarter,
+                'label' => 'Q'.$cursor->quarter.' '.$cursor->format('Y'),
+                'from' => $cursor->copy()->max($rangeStart)->toDateString(),
+                'to' => $cursor->copy()->lastOfQuarter()->min($rangeEnd)->toDateString(),
+            ];
+            $cursor->addQuarterNoOverflow();
+        }
+
+        return $columns;
+    }
+
+    /**
+     * Zero-fills every row's amounts across all columns (in column order)
+     * and adds each row's total, sorted by account code.
+     *
+     * @param  array<int, array{account_id: int, code: string, name: string, amounts: array<string, float>}>  $rowsByAccount
+     * @param  string[]  $columnKeys
+     * @return array<int, array{account_id: int, code: string, name: string, amounts: array<string, float>, total: float}>
+     */
+    private function finalizeGroupedRows(array $rowsByAccount, array $columnKeys): array
+    {
+        $rows = array_map(function ($row) use ($columnKeys) {
+            $amounts = [];
+            foreach ($columnKeys as $key) {
+                $amounts[$key] = $row['amounts'][$key] ?? 0.0;
+            }
+            $row['amounts'] = $amounts;
+            $row['total'] = round(array_sum($amounts), 2);
+
+            return $row;
+        }, array_values($rowsByAccount));
+
+        usort($rows, fn ($a, $b) => $a['code'] <=> $b['code']);
+
+        return $rows;
+    }
+
+    /**
+     * @param  array<string, float>  $totalsByColumn
+     * @param  string[]  $columnKeys
+     * @return array{amounts: array<string, float>, total: float}
+     */
+    private function groupedTotalsRow(array $totalsByColumn, array $columnKeys): array
+    {
+        $amounts = [];
+        foreach ($columnKeys as $key) {
+            $amounts[$key] = $totalsByColumn[$key] ?? 0.0;
+        }
+
+        return ['amounts' => $amounts, 'total' => round(array_sum($amounts), 2)];
+    }
+
+    /**
      * Assets = Liabilities + Equity as of a date, always — this system has
      * no period-close step that sweeps net income into an equity account,
      * so the net-income-to-date figure is derived here from posted revenue
@@ -556,13 +742,23 @@ class ReportService
      * account's natural-direction net (credit-debit for revenue,
      * debit-credit for expense) — a period total, not a running balance.
      *
+     * $costCenterFilter narrows to one center's lines when an int, to
+     * lines with no center at all when 'unassigned', or applies no filter
+     * when null.
+     *
      * @param  AccountType[]  $types
      * @return Collection<string, Collection<int, array{account_id: int, code: string, name: string, current: float}>>
      */
-    private function flowBalancesByType(string $from, string $to, array $types): Collection
+    private function flowBalancesByType(string $from, string $to, array $types, int|string|null $costCenterFilter = null): Collection
     {
         $lines = $this->journals->postedLinesWithAccounts($from, $to)
             ->filter(fn ($line) => in_array($line->account->type, $types, true));
+
+        if ($costCenterFilter === 'unassigned') {
+            $lines = $lines->filter(fn ($line) => $line->cost_center_id === null);
+        } elseif ($costCenterFilter !== null) {
+            $lines = $lines->filter(fn ($line) => $line->cost_center_id === $costCenterFilter);
+        }
 
         return $lines->groupBy(fn ($line) => $line->account->type->value)
             ->map(function ($typeLines) {

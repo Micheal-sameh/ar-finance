@@ -76,10 +76,19 @@ class ReportController extends Controller
         $to = $request->string('to')->value() ?: now()->toDateString();
         $compareFrom = $request->string('compare_from')->value() ?: null;
         $compareTo = $request->string('compare_to')->value() ?: null;
+        $groupBy = $this->groupBy($request);
 
         return Inertia::render('Accounting/Reports/ProfitAndLoss', [
-            'report' => $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo),
-            'filters' => ['from' => $from, 'to' => $to, 'compare_from' => $compareFrom, 'compare_to' => $compareTo],
+            'report' => $groupBy
+                ? $this->reports->profitAndLossGrouped($from, $to, $groupBy)
+                : $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo),
+            'filters' => [
+                'from' => $from,
+                'to' => $to,
+                'compare_from' => $compareFrom,
+                'compare_to' => $compareTo,
+                'group_by' => $groupBy,
+            ],
         ]);
     }
 
@@ -91,6 +100,24 @@ class ReportController extends Controller
         $to = $request->string('to')->value() ?: now()->toDateString();
         $compareFrom = $request->string('compare_from')->value() ?: null;
         $compareTo = $request->string('compare_to')->value() ?: null;
+        $groupBy = $this->groupBy($request);
+
+        if ($groupBy) {
+            $report = $this->reports->profitAndLossGrouped($from, $to, $groupBy);
+            $headings = ['Section', 'Code', 'Account', ...array_column($report['columns'], 'label'), 'Total'];
+
+            $rows = collect();
+            foreach (['Revenue' => $report['revenue'], 'Expense' => $report['expenses']] as $section => $sectionRows) {
+                foreach ($sectionRows as $row) {
+                    $rows->push([$section, $row['code'], $row['name'], ...array_values($row['amounts']), $row['total']]);
+                }
+                $totals = $section === 'Revenue' ? $report['total_revenue'] : $report['total_expenses'];
+                $rows->push([$section, '', "Total {$section}", ...array_values($totals['amounts']), $totals['total']]);
+            }
+            $rows->push(['', '', 'Net Profit', ...array_values($report['net_profit']['amounts']), $report['net_profit']['total']]);
+
+            return $this->exportXlsx('profit-and-loss.xlsx', $headings, $rows);
+        }
 
         $report = $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo);
 
@@ -119,11 +146,26 @@ class ReportController extends Controller
         $to = $request->string('to')->value() ?: now()->toDateString();
         $compareFrom = $request->string('compare_from')->value() ?: null;
         $compareTo = $request->string('compare_to')->value() ?: null;
+        $groupBy = $this->groupBy($request);
 
         return $this->downloadPdf('profit-and-loss.pdf', 'pdf.reports.profit-and-loss', [
             'tenant' => auth()->user()->tenant,
-            'report' => $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo),
+            'report' => $groupBy
+                ? $this->reports->profitAndLossGrouped($from, $to, $groupBy)
+                : $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo),
         ]);
+    }
+
+    /**
+     * Validates the `group_by` query param against the report's supported
+     * groupings, so an unrecognized value falls back to the plain
+     * current/prior view instead of erroring.
+     */
+    private function groupBy(Request $request): ?string
+    {
+        $groupBy = $request->string('group_by')->value() ?: null;
+
+        return in_array($groupBy, ['month', 'quarter', 'cost_center'], true) ? $groupBy : null;
     }
 
     public function balanceSheet(Request $request): Response
