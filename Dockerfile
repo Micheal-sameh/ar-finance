@@ -76,7 +76,7 @@ COPY --from=vendor /build ./
 COPY --from=frontend /app/public/build /opt/frontend-build
 
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data .
 
 COPY docker/php/local.ini /usr/local/etc/php/conf.d/local.ini
 COPY docker/supervisord.conf /etc/supervisord.conf
