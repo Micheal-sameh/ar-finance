@@ -162,4 +162,50 @@ class PlatformAdminTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('Accounting/Reports/GeneralLedger'));
     }
+
+    public function test_platform_admin_can_assign_a_user_to_a_tenant(): void
+    {
+        $admin = $this->platformAdmin();
+
+        $tenantA = Tenant::create(['name' => 'Alpha Co', 'slug' => 'alpha-co', 'base_currency' => 'EGP']);
+        $tenantB = Tenant::create(['name' => 'Beta Co', 'slug' => 'beta-co', 'base_currency' => 'EGP']);
+        $user = User::factory()->create(['tenant_id' => $tenantA->id]);
+
+        $this->actingAs($admin)
+            ->put(route('platform.users.assign-tenant', $user), ['tenant_id' => $tenantB->id])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'tenant_id' => $tenantB->id]);
+
+        $this->actingAs($admin)
+            ->put(route('platform.users.assign-tenant', $user), ['tenant_id' => null])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'tenant_id' => null]);
+    }
+
+    public function test_platform_admin_cannot_reassign_their_own_tenant(): void
+    {
+        $admin = $this->platformAdmin();
+        $tenant = Tenant::create(['name' => 'Alpha Co', 'slug' => 'alpha-co', 'base_currency' => 'EGP']);
+
+        $this->actingAs($admin)
+            ->put(route('platform.users.assign-tenant', $admin), ['tenant_id' => $tenant->id])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id, 'tenant_id' => null]);
+    }
+
+    public function test_ordinary_user_cannot_assign_a_tenant(): void
+    {
+        $tenant = Tenant::create(['name' => 'Alpha Co', 'slug' => 'alpha-co', 'base_currency' => 'EGP']);
+        $other = Tenant::create(['name' => 'Beta Co', 'slug' => 'beta-co', 'base_currency' => 'EGP']);
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user->assignRole('Super Admin');
+        $target = User::factory()->create(['tenant_id' => $tenant->id]);
+
+        $this->actingAs($user)
+            ->put(route('platform.users.assign-tenant', $target), ['tenant_id' => $other->id])
+            ->assertForbidden();
+    }
 }

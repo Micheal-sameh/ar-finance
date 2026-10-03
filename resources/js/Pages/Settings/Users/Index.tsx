@@ -12,17 +12,19 @@ import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import type { AppUser, Paginated, UserStatus } from '@/types/finance';
+import type { AppUser, Paginated, Tenant, UserStatus } from '@/types/finance';
 
 interface Props {
     users: Paginated<AppUser>;
     filters: { status?: string; role?: string; search?: string };
     canManage: boolean;
+    canAssignTenant: boolean;
     availableRoles: string[];
+    tenants: Pick<Tenant, 'id' | 'name'>[];
     viewingAllTenants: boolean;
 }
 
-export default function UsersIndex({ users, filters, canManage, availableRoles, viewingAllTenants }: Props) {
+export default function UsersIndex({ users, filters, canManage, canAssignTenant, availableRoles, tenants, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [editing, setEditing] = useState<AppUser | null>(null);
     const { auth } = usePage<{ auth: { user: { id: number } | null } }>().props;
@@ -63,6 +65,14 @@ export default function UsersIndex({ users, filters, canManage, availableRoles, 
             preserveScroll: true,
             onSuccess: () => setEditing(null),
         });
+    }
+
+    function assignTenant(user: AppUser, tenantId: string) {
+        router.put(
+            route('platform.users.assign-tenant', user.id),
+            { tenant_id: tenantId || null },
+            { preserveScroll: true, preserveState: true },
+        );
     }
 
     return (
@@ -155,7 +165,26 @@ export default function UsersIndex({ users, filters, canManage, availableRoles, 
                                             {user.status === 'active' ? 'Active' : 'Suspended'}
                                         </Badge>
                                     </Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{user.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && (
+                                        <Table.Cell label="Tenant">
+                                            {canAssignTenant && user.id !== auth.user?.id ? (
+                                                <Select
+                                                    value={user.tenant_id ?? ''}
+                                                    onChange={(e) => assignTenant(user, e.target.value)}
+                                                    style={{ maxWidth: '180px' }}
+                                                >
+                                                    <option value="">Unassigned</option>
+                                                    {tenants.map((tenant) => (
+                                                        <option key={tenant.id} value={tenant.id}>
+                                                            {tenant.name}
+                                                        </option>
+                                                    ))}
+                                                </Select>
+                                            ) : (
+                                                user.tenant_name
+                                            )}
+                                        </Table.Cell>
+                                    )}
                                     {canManage && (
                                         <Table.Cell className="text-end pe-3" label="Actions">
                                             {user.id !== auth.user?.id && (

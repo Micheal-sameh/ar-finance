@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserStatus;
 use App\Http\Controllers\Concerns\ExportsExcel;
+use App\Http\Requests\Users\AssignUserTenantRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\UserService;
 use App\Support\TenantContext;
@@ -39,13 +41,18 @@ class UserController extends Controller
                 'status' => $user->status->value,
                 'roles' => $user->roles->pluck('name')->all(),
                 'tenant_name' => $viewingAllTenants ? $user->tenant?->name : null,
+                'tenant_id' => $viewingAllTenants ? $user->tenant_id : null,
             ]);
+
+        $canAssignTenant = $viewingAllTenants && $request->user()->can('tenants.manage');
 
         return Inertia::render('Settings/Users/Index', [
             'users' => $users,
             'filters' => $request->only(['status', 'role', 'search']),
             'canManage' => $viewingAllTenants ? false : $request->user()->can('manage', User::class),
+            'canAssignTenant' => $canAssignTenant,
             'availableRoles' => Role::query()->where('guard_name', 'web')->orderBy('name')->pluck('name'),
+            'tenants' => $canAssignTenant ? Tenant::query()->orderBy('name')->get(['id', 'name']) : [],
             'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
@@ -76,5 +83,16 @@ class UserController extends Controller
         $this->users->update($user, UserStatus::from($request->validated('status')), $request->validated('role'));
 
         return redirect()->route('users.index')->with('success', 'User updated.');
+    }
+
+    public function assignTenant(AssignUserTenantRequest $request, User $user): RedirectResponse
+    {
+        if ($user->is($request->user())) {
+            return back()->with('error', "You can't reassign your own account.");
+        }
+
+        $this->users->assignTenant($user, $request->validated('tenant_id'));
+
+        return redirect()->route('users.index')->with('success', 'User reassigned.');
     }
 }

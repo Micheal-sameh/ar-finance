@@ -66,6 +66,8 @@ Route::middleware(['auth', 'active', 'permission:platform.access'])->prefix('pla
 
     Route::resource('tenants', TenantController::class)->only(['index', 'store', 'update']);
 
+    Route::put('users/{user}/tenant', [UserController::class, 'assignTenant'])->name('users.assign-tenant');
+
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [PlatformReportController::class, 'trialBalance'])->name('trial-balance');
         Route::get('profit-and-loss', [PlatformReportController::class, 'profitAndLoss'])->name('profit-and-loss');

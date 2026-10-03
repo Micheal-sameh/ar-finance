@@ -12,4 +12,6 @@ interface UserRepositoryInterface
     public function find(int $id): ?User;
 
     public function update(User $user, string $status, string $role): User;
+
+    public function assignTenant(User $user, ?int $tenantId): User;
 }

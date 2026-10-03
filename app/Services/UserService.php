@@ -22,4 +22,9 @@ class UserService
     {
         return $this->users->update($user, $status->value, $role);
     }
+
+    public function assignTenant(User $user, ?int $tenantId): User
+    {
+        return $this->users->assignTenant($user, $tenantId);
+    }
 }
