@@ -6,7 +6,12 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 
-export default function FixedAssetsCreate() {
+type FixedAssetsCreateProps = {
+    defaultDepreciationAccountId: number | null;
+    defaultAccumulatedDepreciationAccountId: number | null;
+};
+
+export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaultAccumulatedDepreciationAccountId }: FixedAssetsCreateProps) {
     const form = useForm({
         name: '',
         purchase_date: new Date().toISOString().slice(0, 10),
@@ -15,8 +20,8 @@ export default function FixedAssetsCreate() {
         useful_life_years: '5',
         depreciation_method: 'straight_line',
         asset_account_id: null as number | null,
-        depreciation_account_id: null as number | null,
-        accumulated_depreciation_account_id: null as number | null,
+        depreciation_account_id: defaultDepreciationAccountId,
+        accumulated_depreciation_account_id: defaultAccumulatedDepreciationAccountId,
     });
 
     function submit(e: FormEvent) {
@@ -120,6 +125,7 @@ export default function FixedAssetsCreate() {
                                 error={form.errors.asset_account_id}
                                 placeholder="e.g. Office Equipment"
                                 filterType="asset"
+                                filterAncestorCode="1100"
                                 dropUp
                             />
                         </div>
@@ -133,6 +139,8 @@ export default function FixedAssetsCreate() {
                                 error={form.errors.depreciation_account_id}
                                 placeholder="e.g. Depreciation Expense"
                                 filterType="expense"
+                                filterAncestorCode="5310"
+                                includeAncestor
                                 dropUp
                             />
                         </div>
@@ -146,6 +154,7 @@ export default function FixedAssetsCreate() {
                                 error={form.errors.accumulated_depreciation_account_id}
                                 placeholder="e.g. Accumulated Depreciation"
                                 filterType="asset"
+                                filterAncestorCode="1100"
                                 dropUp
                             />
                         </div>

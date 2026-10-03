@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\AccountType;
+use App\Enums\NormalBalance;
 use App\Models\Account;
 use Illuminate\Database\Seeder;
 
@@ -25,6 +26,7 @@ class ChartOfAccountsSeeder extends Seeder
         $accounts = [
             ['code' => '1000', 'name' => 'Assets', 'type' => AccountType::Asset, 'parent' => null],
             ['code' => '1100', 'name' => 'Fixed Assets', 'type' => AccountType::Asset, 'parent' => '1000'],
+            ['code' => '1120', 'name' => 'Accumulated Depreciation', 'type' => AccountType::Asset, 'parent' => '1100', 'normal_balance' => NormalBalance::Credit],
             ['code' => '1200', 'name' => 'Current Assets', 'type' => AccountType::Asset, 'parent' => '1000'],
 
             ['code' => '2000', 'name' => 'Liabilities', 'type' => AccountType::Liability, 'parent' => null],
@@ -41,6 +43,7 @@ class ChartOfAccountsSeeder extends Seeder
             ['code' => '5100', 'name' => 'Direct Expenses', 'type' => AccountType::Expense, 'parent' => '5000'],
             ['code' => '5200', 'name' => 'Indirect Expenses', 'type' => AccountType::Expense, 'parent' => '5000'],
             ['code' => '5300', 'name' => 'Other Expenses', 'type' => AccountType::Expense, 'parent' => '5000'],
+            ['code' => '5310', 'name' => 'Depreciation Expense', 'type' => AccountType::Expense, 'parent' => '5300'],
         ];
 
         $idsByCode = [];
@@ -51,7 +54,7 @@ class ChartOfAccountsSeeder extends Seeder
                 [
                     'name' => $account['name'],
                     'type' => $account['type'],
-                    'normal_balance' => $account['type']->defaultNormalBalance(),
+                    'normal_balance' => $account['normal_balance'] ?? $account['type']->defaultNormalBalance(),
                     'parent_id' => $account['parent'] ? $idsByCode[$account['parent']] : null,
                     'is_active' => true,
                     'is_deletable' => false,

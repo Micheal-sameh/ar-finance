@@ -24,6 +24,7 @@ export interface AccountOption {
     name: string;
     type: AccountType;
     normal_balance: NormalBalance;
+    parent_id: number | null;
 }
 
 export interface JournalLine {

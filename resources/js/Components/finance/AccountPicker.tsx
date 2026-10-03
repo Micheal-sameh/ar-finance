@@ -10,6 +10,10 @@ export interface AccountPickerProps {
     error?: string;
     placeholder?: string;
     filterType?: AccountType;
+    /** Only show accounts descended from the account with this code (e.g. '1100' for Fixed Assets). */
+    filterAncestorCode?: string;
+    /** Also include the account with filterAncestorCode's own code, not just its descendants (e.g. '5310' when that's itself a leaf account). */
+    includeAncestor?: boolean;
     dropUp?: boolean;
 }
 
@@ -18,22 +22,50 @@ export interface AccountPickerProps {
  * one component reused everywhere an account is chosen (journal lines,
  * report filters, expense categorization, ...).
  */
-export function AccountPicker({ value, onChange, error, placeholder = 'Select account…', filterType, dropUp = false }: AccountPickerProps) {
+export function AccountPicker({
+    value,
+    onChange,
+    error,
+    placeholder = 'Select account…',
+    filterType,
+    filterAncestorCode,
+    includeAncestor = false,
+    dropUp = false,
+}: AccountPickerProps) {
     const { accounts, loading } = useAccounts();
     const [query, setQuery] = useState('');
 
     const selected = accounts.find((a) => a.id === value) ?? null;
 
-    const filtered = useMemo(() => {
-        const byType = filterType ? accounts.filter((a) => a.type === filterType) : accounts;
+    const isDescendantOf = (account: AccountOption, ancestorCode: string): boolean => {
+        const byId = new Map(accounts.map((a) => [a.id, a]));
+        let current: AccountOption | undefined = account;
 
-        if (query === '') return byType;
+        while (current?.parent_id) {
+            current = byId.get(current.parent_id);
+            if (current?.code === ancestorCode) return true;
+        }
+
+        return false;
+    };
+
+    const filtered = useMemo(() => {
+        let scoped = filterType ? accounts.filter((a) => a.type === filterType) : accounts;
+
+        if (filterAncestorCode) {
+            scoped = scoped.filter(
+                (a) => isDescendantOf(a, filterAncestorCode) || (includeAncestor && a.code === filterAncestorCode),
+            );
+        }
+
+        if (query === '') return scoped;
         const q = query.toLowerCase();
 
-        return byType.filter(
+        return scoped.filter(
             (a) => a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q),
         );
-    }, [accounts, filterType, query]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [accounts, filterType, filterAncestorCode, includeAncestor, query]);
 
     return (
         <Combobox value={selected} onChange={(account: AccountOption | null) => onChange(account?.id ?? null)}>

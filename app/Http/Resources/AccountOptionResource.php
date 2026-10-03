@@ -18,6 +18,7 @@ class AccountOptionResource extends JsonResource
             'name' => $this->name,
             'type' => $this->type->value,
             'normal_balance' => $this->normal_balance->value,
+            'parent_id' => $this->parent_id,
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\FixedAssets\RunDepreciationRequest;
 use App\Http\Requests\FixedAssets\StoreFixedAssetRequest;
+use App\Models\Account;
 use App\Models\FixedAsset;
 use App\Services\FixedAssetService;
 use Illuminate\Http\RedirectResponse;
@@ -53,7 +54,10 @@ class FixedAssetController extends Controller
     {
         $this->authorize('create', FixedAsset::class);
 
-        return Inertia::render('Accounting/FixedAssets/Create');
+        return Inertia::render('Accounting/FixedAssets/Create', [
+            'defaultDepreciationAccountId' => Account::where('code', '5310')->value('id'),
+            'defaultAccumulatedDepreciationAccountId' => Account::where('code', '1120')->value('id'),
+        ]);
     }
 
     public function show(FixedAsset $fixedAsset): Response
