@@ -179,6 +179,9 @@ export type ProfitAndLossGroupBy = 'month' | 'quarter' | 'cost_center';
 export interface ProfitLossGroupedColumn {
     key: string;
     label: string;
+    from: string | null;
+    to: string | null;
+    cost_center_id: number | string | null;
 }
 
 export interface ProfitLossGroupedRow {

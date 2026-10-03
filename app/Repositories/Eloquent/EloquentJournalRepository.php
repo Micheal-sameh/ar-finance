@@ -91,11 +91,16 @@ class EloquentJournalRepository implements JournalRepositoryInterface
         return $this->costCentersCache ??= CostCenter::all()->keyBy('id');
     }
 
-    public function postedLinesForAccount(int $accountId, ?string $from = null, ?string $to = null): Collection
+    public function postedLinesForAccount(int $accountId, ?string $from = null, ?string $to = null, int|string|null $costCenterFilter = null): Collection
     {
         return JournalLine::query()
             ->with('journalEntry')
             ->where('account_id', $accountId)
+            ->when(
+                $costCenterFilter === 'unassigned',
+                fn ($query) => $query->whereNull('cost_center_id'),
+                fn ($query) => $query->when($costCenterFilter !== null, fn ($query) => $query->where('cost_center_id', $costCenterFilter)),
+            )
             ->whereHas('journalEntry', function ($query) use ($from, $to) {
                 $query->whereNotNull('posted_at')
                     ->when($from, fn ($query, $value) => $query->whereDate('date', '>=', $value))

@@ -245,19 +245,20 @@ class ReportService
 
     /**
      * Running balance for a single account, in date/entry order.
+     * $costCenterFilter narrows to one center's lines when an int, to
+     * lines with no center at all when 'unassigned', or applies no filter
+     * when null — see flowBalancesByType()'s docblock for the same
+     * convention.
      *
      * @return array{
      *     lines: array<int, array{date: string, description: string, reference: ?string, debit: float, credit: float, balance: float}>,
      *     ending_balance: float,
      * }
      */
-    public function generalLedger(Account $account, ?string $from = null, ?string $to = null): array
+    public function generalLedger(Account $account, ?string $from = null, ?string $to = null, int|string|null $costCenterFilter = null): array
     {
-        $lines = $this->journals->postedLinesForAccount($account->id, $from, $to)
-            ->sortBy([
-                fn ($line) => $line->journalEntry->date,
-                fn ($line) => $line->journalEntry->id,
-            ])
+        $lines = $this->journals->postedLinesForAccount($account->id, $from, $to, $costCenterFilter)
+            ->sortBy(['journalEntry.date', 'journalEntry.id'])
             ->values();
 
         $isDebitNormal = $account->normal_balance->value === 'debit';
@@ -407,7 +408,13 @@ class ReportService
             'from' => $from,
             'to' => $to,
             'group_by' => $groupBy,
-            'columns' => array_map(fn ($c) => ['key' => $c['key'], 'label' => $c['label']], $columns),
+            'columns' => array_map(fn ($c) => [
+                'key' => $c['key'],
+                'label' => $c['label'],
+                'from' => $groupBy === 'cost_center' ? $from : $c['from'],
+                'to' => $groupBy === 'cost_center' ? $to : $c['to'],
+                'cost_center_id' => $c['cost_center_filter'] ?? null,
+            ], $columns),
             'revenue' => $revenue,
             'expenses' => $expenses,
             'total_revenue' => $totalRevenueRow,

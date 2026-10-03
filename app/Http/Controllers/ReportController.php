@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Controllers\Concerns\GeneratesPdf;
 use App\Models\Account;
+use App\Models\CostCenter;
 use App\Services\AccountService;
 use App\Services\ReportService;
 use Illuminate\Http\Request;
@@ -57,15 +58,38 @@ class ReportController extends Controller
         $accountId = $request->integer('account_id') ?: null;
         $from = $request->string('from')->value() ?: null;
         $to = $request->string('to')->value() ?: null;
+        $costCenterFilter = $this->costCenterFilter($request);
 
         $account = $accountId ? $this->accounts->find($accountId) : null;
+        $costCenter = is_int($costCenterFilter) ? CostCenter::find($costCenterFilter) : null;
 
         return Inertia::render('Accounting/Reports/GeneralLedger', [
             'accounts' => $this->accounts->all(),
             'account' => $account,
-            'ledger' => $account ? $this->reports->generalLedger($account, $from, $to) : null,
-            'filters' => ['account_id' => $accountId, 'from' => $from, 'to' => $to],
+            'ledger' => $account ? $this->reports->generalLedger($account, $from, $to, $costCenterFilter) : null,
+            'costCenterLabel' => match (true) {
+                $costCenter !== null => $costCenter->name,
+                $costCenterFilter === 'unassigned' => 'Unassigned',
+                default => null,
+            },
+            'filters' => ['account_id' => $accountId, 'from' => $from, 'to' => $to, 'cost_center_id' => $costCenterFilter],
         ]);
+    }
+
+    /**
+     * Reads `cost_center_id` as an int, the literal string 'unassigned',
+     * or null — the same convention ReportService's cost-center filtering
+     * uses throughout.
+     */
+    private function costCenterFilter(Request $request): int|string|null
+    {
+        $value = $request->string('cost_center_id')->value() ?: null;
+
+        if ($value === 'unassigned') {
+            return 'unassigned';
+        }
+
+        return $value !== null ? (int) $value : null;
     }
 
     public function profitAndLoss(Request $request): Response

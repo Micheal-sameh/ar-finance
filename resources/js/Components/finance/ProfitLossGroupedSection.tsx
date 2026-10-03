@@ -1,3 +1,4 @@
+import { AmountLink } from './AmountLink';
 import { MoneyDisplay } from './MoneyDisplay';
 import type { ProfitLossGroupedColumn, ProfitLossGroupedRow, ProfitLossGroupedTotals } from '@/types/finance';
 
@@ -58,7 +59,14 @@ export function ProfitLossGroupedSection({
                                     <td style={{ padding: '4px 8px 4px 0' }}>{row.name}</td>
                                     {columns.map((column) => (
                                         <td key={column.key} className="text-end" style={{ padding: '4px 8px', whiteSpace: 'nowrap' }}>
-                                            <MoneyDisplay amount={row.amounts[column.key] ?? 0} currency={currency} />
+                                            <AmountLink
+                                                accountId={row.account_id}
+                                                from={column.from}
+                                                to={column.to}
+                                                costCenterId={column.cost_center_id}
+                                                amount={row.amounts[column.key] ?? 0}
+                                                currency={currency}
+                                            />
                                         </td>
                                     ))}
                                     <td className="text-end" style={{ padding: '4px 0 4px 8px', whiteSpace: 'nowrap' }}>

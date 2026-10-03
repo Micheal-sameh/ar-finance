@@ -28,7 +28,12 @@ export default function CashFlow({ report, filters }: Props) {
     const operatingRows = [
         { key: 'net-income', label: 'Net Income', amount: report.operating.net_income },
         ...report.operating.adjustments.map((row) => ({ key: `adj-${row.account_id}-${row.name}`, label: row.name, amount: row.amount })),
-        ...report.operating.working_capital.map((row) => ({ key: row.account_id, label: row.name, amount: row.amount })),
+        ...report.operating.working_capital.map((row) => ({
+            key: row.account_id,
+            label: row.name,
+            amount: row.amount,
+            accountId: row.account_id,
+        })),
     ];
 
     return (
@@ -69,22 +74,28 @@ export default function CashFlow({ report, filters }: Props) {
                     totalLabel="Net Cash from Operating Activities"
                     total={report.operating.total}
                     emptyLabel="No operating activity in this period."
+                    linkFrom={report.from}
+                    linkTo={report.to}
                 />
 
                 <ProfitLossSection
                     title="Investing Activities"
-                    rows={report.investing.rows.map((row) => ({ key: row.account_id, label: row.name, amount: row.amount }))}
+                    rows={report.investing.rows.map((row) => ({ key: row.account_id, label: row.name, amount: row.amount, accountId: row.account_id }))}
                     totalLabel="Net Cash from Investing Activities"
                     total={report.investing.total}
                     emptyLabel="No investing activity in this period."
+                    linkFrom={report.from}
+                    linkTo={report.to}
                 />
 
                 <ProfitLossSection
                     title="Financing Activities"
-                    rows={report.financing.rows.map((row) => ({ key: row.account_id, label: row.name, amount: row.amount }))}
+                    rows={report.financing.rows.map((row) => ({ key: row.account_id, label: row.name, amount: row.amount, accountId: row.account_id }))}
                     totalLabel="Net Cash from Financing Activities"
                     total={report.financing.total}
                     emptyLabel="No financing activity in this period."
+                    linkFrom={report.from}
+                    linkTo={report.to}
                 />
 
                 <div

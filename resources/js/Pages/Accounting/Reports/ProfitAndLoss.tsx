@@ -194,12 +194,17 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                                 label: row.name,
                                 amount: row.current,
                                 secondaryAmount: row.prior,
+                                accountId: row.account_id,
                             }))}
                             totalLabel="Total Revenue"
                             total={report.total_revenue.current}
                             secondaryTotal={report.total_revenue.prior}
                             secondaryColumnLabel={secondaryLabel}
                             emptyLabel="No revenue posted in this period."
+                            linkFrom={report.from}
+                            linkTo={report.to}
+                            secondaryLinkFrom={report.compare_from}
+                            secondaryLinkTo={report.compare_to}
                         />
 
                         <ProfitLossSection
@@ -209,12 +214,17 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                                 label: row.name,
                                 amount: row.current,
                                 secondaryAmount: row.prior,
+                                accountId: row.account_id,
                             }))}
                             totalLabel="Total Expenses"
                             total={report.total_expenses.current}
                             secondaryTotal={report.total_expenses.prior}
                             secondaryColumnLabel={secondaryLabel}
                             emptyLabel="No expenses posted in this period."
+                            linkFrom={report.from}
+                            linkTo={report.to}
+                            secondaryLinkFrom={report.compare_from}
+                            secondaryLinkTo={report.compare_to}
                         />
 
                         <div

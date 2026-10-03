@@ -60,6 +60,15 @@ body {
     }
 }
 
+/* A report amount that drills down into its General Ledger lines. */
+.af-amount-link {
+    text-decoration: none;
+}
+
+.af-amount-link:hover {
+    text-decoration: underline;
+}
+
 /* FilterPanel's collapse only applies below md — at md and up its toggle
  * button is hidden (d-md-none) and the content must stay visible even
  * while collapsed on mobile. */

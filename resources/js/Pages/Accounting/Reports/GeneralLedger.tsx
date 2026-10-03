@@ -15,17 +15,19 @@ import { formatDate } from '@/utils/finance';
 interface Props {
     account: Account | null;
     ledger: GeneralLedgerReport | null;
-    filters: { account_id: number | null; from: string | null; to: string | null };
+    costCenterLabel: string | null;
+    filters: { account_id: number | null; from: string | null; to: string | null; cost_center_id: number | string | null };
 }
 
-export default function GeneralLedger({ account, ledger, filters }: Props) {
+export default function GeneralLedger({ account, ledger, costCenterLabel, filters }: Props) {
     const [accountId, setAccountId] = useState<number | null>(filters.account_id);
     const [from, setFrom] = useState(filters.from ?? '');
     const [to, setTo] = useState(filters.to ?? '');
+    const [costCenterId, setCostCenterId] = useState<number | string | null>(filters.cost_center_id);
 
     function applyFilter(e: FormEvent) {
         e.preventDefault();
-        router.get(route('reports.general-ledger'), { account_id: accountId, from, to }, { preserveState: true });
+        router.get(route('reports.general-ledger'), { account_id: accountId, from, to, cost_center_id: costCenterId }, { preserveState: true });
     }
 
     return (
@@ -54,6 +56,23 @@ export default function GeneralLedger({ account, ledger, filters }: Props) {
                         </Button>
                     </div>
                 </form>
+
+                {costCenterLabel && (
+                    <div className="mb-4 d-flex align-items-center" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                        Filtered to cost center: <strong className="ms-1">{costCenterLabel}</strong>
+                        <button
+                            type="button"
+                            className="btn btn-link p-0 ms-2"
+                            style={{ fontSize: '13px' }}
+                            onClick={() => {
+                                setCostCenterId(null);
+                                router.get(route('reports.general-ledger'), { account_id: accountId, from, to }, { preserveState: true });
+                            }}
+                        >
+                            Clear
+                        </button>
+                    </div>
+                )}
 
                 {!account || !ledger ? (
                     <EmptyState

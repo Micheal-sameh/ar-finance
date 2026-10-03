@@ -25,7 +25,12 @@ interface JournalRepositoryInterface
      */
     public function postedLinesWithAccounts(?string $from = null, ?string $to = null): Collection;
 
-    public function postedLinesForAccount(int $accountId, ?string $from = null, ?string $to = null): Collection;
+    /**
+     * $costCenterFilter narrows to one center's lines when an int, to
+     * lines with no center at all when 'unassigned', or applies no filter
+     * when null.
+     */
+    public function postedLinesForAccount(int $accountId, ?string $from = null, ?string $to = null, int|string|null $costCenterFilter = null): Collection;
 
     /**
      * True if a posted entry already exists for this source within the

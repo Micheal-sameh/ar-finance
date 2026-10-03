@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
+import { AmountLink } from '@/Components/finance/AmountLink';
 import { BalanceCheck } from '@/Components/finance/BalanceCheck';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
@@ -68,10 +69,14 @@ export default function TrialBalance({ report, filters }: Props) {
                                 <Table.Cell>{row.name}</Table.Cell>
                                 <Table.Cell style={{ textTransform: 'capitalize' }}>{row.type}</Table.Cell>
                                 <Table.Cell className="text-end">
-                                    {row.debit > 0 && <MoneyDisplay amount={row.debit} />}
+                                    {row.debit > 0 && (
+                                        <AmountLink accountId={row.account_id} from={filters.from} to={filters.to} amount={row.debit} />
+                                    )}
                                 </Table.Cell>
                                 <Table.Cell className="text-end pe-3">
-                                    {row.credit > 0 && <MoneyDisplay amount={row.credit} />}
+                                    {row.credit > 0 && (
+                                        <AmountLink accountId={row.account_id} from={filters.from} to={filters.to} amount={row.credit} />
+                                    )}
                                 </Table.Cell>
                             </Table.Row>
                         ))}

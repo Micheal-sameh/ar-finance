@@ -1,3 +1,4 @@
+import { AmountLink } from './AmountLink';
 import { MoneyDisplay } from './MoneyDisplay';
 
 export interface ProfitLossSectionRow {
@@ -5,6 +6,8 @@ export interface ProfitLossSectionRow {
     label: string;
     amount: number;
     secondaryAmount?: number;
+    /** Real account id to drill into via the General Ledger — omit for a synthetic row with no ledger behind it. */
+    accountId?: number;
 }
 
 export interface ProfitLossSectionProps {
@@ -17,6 +20,12 @@ export interface ProfitLossSectionProps {
     /** Header for the comparison column — omit to render a single-column section. */
     secondaryColumnLabel?: string;
     emptyLabel?: string;
+    /** Date range each row's `amount` was computed over, for the General Ledger drill-down link. */
+    linkFrom?: string | null;
+    linkTo?: string | null;
+    /** Date range each row's `secondaryAmount` was computed over. */
+    secondaryLinkFrom?: string | null;
+    secondaryLinkTo?: string | null;
 }
 
 /**
@@ -33,6 +42,10 @@ export function ProfitLossSection({
     currency = 'EGP',
     secondaryColumnLabel,
     emptyLabel = 'No activity in this period.',
+    linkFrom,
+    linkTo,
+    secondaryLinkFrom,
+    secondaryLinkTo,
 }: ProfitLossSectionProps) {
     const showSecondary = secondaryColumnLabel !== undefined;
 
@@ -55,11 +68,25 @@ export function ProfitLossSection({
                     <div key={row.key} className="d-flex" style={{ fontSize: '14px', padding: '4px 0' }}>
                         <div style={{ flex: 1 }}>{row.label}</div>
                         <div style={{ width: showSecondary ? '140px' : '160px' }} className="text-end">
-                            <MoneyDisplay amount={row.amount} currency={currency} />
+                            {row.accountId ? (
+                                <AmountLink accountId={row.accountId} from={linkFrom} to={linkTo} amount={row.amount} currency={currency} />
+                            ) : (
+                                <MoneyDisplay amount={row.amount} currency={currency} />
+                            )}
                         </div>
                         {showSecondary && (
                             <div style={{ width: '140px' }} className="text-end">
-                                <MoneyDisplay amount={row.secondaryAmount ?? 0} currency={currency} />
+                                {row.accountId ? (
+                                    <AmountLink
+                                        accountId={row.accountId}
+                                        from={secondaryLinkFrom}
+                                        to={secondaryLinkTo}
+                                        amount={row.secondaryAmount ?? 0}
+                                        currency={currency}
+                                    />
+                                ) : (
+                                    <MoneyDisplay amount={row.secondaryAmount ?? 0} currency={currency} />
+                                )}
                             </div>
                         )}
                     </div>

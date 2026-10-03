@@ -51,26 +51,29 @@ export default function BalanceSheet({ report, filters }: Props) {
 
                 <ProfitLossSection
                     title="Assets"
-                    rows={report.assets.map((row) => ({ key: row.account_id, label: row.name, amount: row.balance }))}
+                    rows={report.assets.map((row) => ({ key: row.account_id, label: row.name, amount: row.balance, accountId: row.account_id }))}
                     totalLabel="Total Assets"
                     total={report.total_assets}
                     emptyLabel="No asset balances as of this date."
+                    linkTo={report.as_of}
                 />
 
                 <ProfitLossSection
                     title="Liabilities"
-                    rows={report.liabilities.map((row) => ({ key: row.account_id, label: row.name, amount: row.balance }))}
+                    rows={report.liabilities.map((row) => ({ key: row.account_id, label: row.name, amount: row.balance, accountId: row.account_id }))}
                     totalLabel="Total Liabilities"
                     total={report.total_liabilities}
                     emptyLabel="No liability balances as of this date."
+                    linkTo={report.as_of}
                 />
 
                 <ProfitLossSection
                     title="Equity"
-                    rows={report.equity.map((row) => ({ key: row.account_id, label: row.name, amount: row.balance }))}
+                    rows={report.equity.map((row) => ({ key: row.account_id, label: row.name, amount: row.balance, accountId: row.account_id }))}
                     totalLabel="Total Equity"
                     total={report.total_equity}
                     emptyLabel="No equity balances as of this date."
+                    linkTo={report.as_of}
                 />
 
                 <div
