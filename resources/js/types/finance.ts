@@ -236,6 +236,23 @@ export interface BalanceSheetReport {
     is_balanced: boolean;
 }
 
+export type BalanceSheetGroupBy = 'month' | 'quarter';
+
+export interface BalanceSheetGroupedReport {
+    from: string;
+    to: string;
+    group_by: BalanceSheetGroupBy;
+    columns: ProfitLossGroupedColumn[];
+    assets: ProfitLossGroupedRow[];
+    liabilities: ProfitLossGroupedRow[];
+    equity: ProfitLossGroupedRow[];
+    total_assets: ProfitLossGroupedTotals;
+    total_liabilities: ProfitLossGroupedTotals;
+    total_equity: ProfitLossGroupedTotals;
+    liabilities_plus_equity: ProfitLossGroupedTotals;
+    is_balanced: boolean;
+}
+
 export interface CashFlowRow {
     account_id: number;
     code: string;

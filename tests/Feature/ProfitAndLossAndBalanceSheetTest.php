@@ -199,6 +199,37 @@ class ProfitAndLossAndBalanceSheetTest extends TestCase
         );
     }
 
+    public function test_balance_sheet_can_be_grouped_by_month(): void
+    {
+        auth()->login($this->user);
+
+        $this->postManualEntry('2026-01-05', [
+            ['accountId' => $this->cash->id, 'debit' => 1000, 'credit' => 0],
+            ['accountId' => $this->equity->id, 'debit' => 0, 'credit' => 1000],
+        ]);
+        $this->postManualEntry('2026-02-10', [
+            ['accountId' => $this->cash->id, 'debit' => 500, 'credit' => 0],
+            ['accountId' => $this->revenue->id, 'debit' => 0, 'credit' => 500],
+        ]);
+
+        $response = $this->actingAs($this->user)->get(
+            route('reports.balance-sheet', ['from' => '2026-01-01', 'to' => '2026-02-28', 'group_by' => 'month']),
+        );
+
+        // Jan: cash 1000 (owner investment). Feb: cash 1500 (+500 revenue), cumulative.
+        $response->assertInertia(fn ($page) => $page
+            ->component('Accounting/Reports/BalanceSheet')
+            ->where('report.group_by', 'month')
+            ->where('report.columns.0.key', '2026-01')
+            ->where('report.columns.1.key', '2026-02')
+            ->where('report.assets.0.amounts.2026-01', 1000)
+            ->where('report.assets.0.amounts.2026-02', 1500)
+            ->where('report.total_assets.amounts.2026-01', 1000)
+            ->where('report.total_assets.amounts.2026-02', 1500)
+            ->where('report.is_balanced', true)
+        );
+    }
+
     public function test_profit_and_loss_period_filter_excludes_activity_outside_the_range(): void
     {
         auth()->login($this->user);

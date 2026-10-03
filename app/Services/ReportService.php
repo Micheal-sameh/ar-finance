@@ -626,6 +626,105 @@ class ReportService
     }
 
     /**
+     * Same Assets/Liabilities/Equity figures as balanceSheet(), but broken
+     * out across several columns instead of a single as-of date — one
+     * column per calendar month or quarter touched by [$from, $to], each
+     * evaluated cumulatively through that column's end date (unlike
+     * profitAndLossGrouped()'s columns, these are running balances, not
+     * period flow). Cost-center grouping isn't offered here: equity isn't
+     * cost-center-scoped, so Assets = Liabilities + Equity wouldn't hold
+     * per column.
+     *
+     * @return array{
+     *     from: string, to: string, group_by: string,
+     *     columns: array<int, array{key: string, label: string}>,
+     *     assets: array<int, array{account_id: int, code: string, name: string, amounts: array<string, float>, total: float}>,
+     *     liabilities: array<int, array{account_id: int, code: string, name: string, amounts: array<string, float>, total: float}>,
+     *     equity: array<int, array{account_id: int, code: string, name: string, amounts: array<string, float>, total: float}>,
+     *     total_assets: array{amounts: array<string, float>, total: float},
+     *     total_liabilities: array{amounts: array<string, float>, total: float},
+     *     total_equity: array{amounts: array<string, float>, total: float},
+     *     liabilities_plus_equity: array{amounts: array<string, float>, total: float},
+     *     is_balanced: bool,
+     * }
+     */
+    public function balanceSheetGrouped(string $from, string $to, string $groupBy): array
+    {
+        $columns = match ($groupBy) {
+            'month' => $this->monthColumns($from, $to),
+            'quarter' => $this->quarterColumns($from, $to),
+            default => throw new \InvalidArgumentException("Unsupported group_by [{$groupBy}]."),
+        };
+
+        $assetsByAccount = [];
+        $liabilitiesByAccount = [];
+        $equityByAccount = [];
+        $totalAssets = [];
+        $totalLiabilities = [];
+        $totalEquity = [];
+
+        foreach ($columns as $column) {
+            $asOf = $column['to'];
+            $byType = $this->cumulativeBalancesByType($this->journals->postedLinesWithAccounts(null, $asOf));
+
+            $assets = $byType->get(AccountType::Asset->value, collect())->values()->all();
+            $liabilities = $byType->get(AccountType::Liability->value, collect())->values()->all();
+            $equity = $this->withNetIncomeToDate($byType->get(AccountType::Equity->value, collect())->values()->all(), $asOf);
+
+            foreach ($assets as $row) {
+                $assetsByAccount[$row['account_id']] ??= ['account_id' => $row['account_id'], 'code' => $row['code'], 'name' => $row['name'], 'amounts' => []];
+                $assetsByAccount[$row['account_id']]['amounts'][$column['key']] = $row['balance'];
+            }
+            foreach ($liabilities as $row) {
+                $liabilitiesByAccount[$row['account_id']] ??= ['account_id' => $row['account_id'], 'code' => $row['code'], 'name' => $row['name'], 'amounts' => []];
+                $liabilitiesByAccount[$row['account_id']]['amounts'][$column['key']] = $row['balance'];
+            }
+            foreach ($equity as $row) {
+                $equityByAccount[$row['account_id']] ??= ['account_id' => $row['account_id'], 'code' => $row['code'], 'name' => $row['name'], 'amounts' => []];
+                $equityByAccount[$row['account_id']]['amounts'][$column['key']] = $row['balance'];
+            }
+
+            $totalAssets[$column['key']] = round(array_sum(array_column($assets, 'balance')), 2);
+            $totalLiabilities[$column['key']] = round(array_sum(array_column($liabilities, 'balance')), 2);
+            $totalEquity[$column['key']] = round(array_sum(array_column($equity, 'balance')), 2);
+        }
+
+        $columnKeys = array_column($columns, 'key');
+        $assetsRows = $this->finalizeGroupedRows($assetsByAccount, $columnKeys);
+        $liabilitiesRows = $this->finalizeGroupedRows($liabilitiesByAccount, $columnKeys);
+        $equityRows = $this->finalizeGroupedRows($equityByAccount, $columnKeys);
+
+        $totalAssetsRow = $this->groupedTotalsRow($totalAssets, $columnKeys);
+        $totalLiabilitiesRow = $this->groupedTotalsRow($totalLiabilities, $columnKeys);
+        $totalEquityRow = $this->groupedTotalsRow($totalEquity, $columnKeys);
+
+        $liabilitiesPlusEquity = [];
+        $isBalanced = true;
+        foreach ($columnKeys as $key) {
+            $liabilitiesPlusEquity[$key] = round($totalLiabilitiesRow['amounts'][$key] + $totalEquityRow['amounts'][$key], 2);
+
+            if (abs($totalAssetsRow['amounts'][$key] - $liabilitiesPlusEquity[$key]) >= 0.005) {
+                $isBalanced = false;
+            }
+        }
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'group_by' => $groupBy,
+            'columns' => array_map(fn ($c) => ['key' => $c['key'], 'label' => $c['label'], 'from' => null, 'to' => $c['to'], 'cost_center_id' => null], $columns),
+            'assets' => $assetsRows,
+            'liabilities' => $liabilitiesRows,
+            'equity' => $equityRows,
+            'total_assets' => $totalAssetsRow,
+            'total_liabilities' => $totalLiabilitiesRow,
+            'total_equity' => $totalEquityRow,
+            'liabilities_plus_equity' => ['amounts' => $liabilitiesPlusEquity, 'total' => round(array_sum($liabilitiesPlusEquity), 2)],
+            'is_balanced' => $isBalanced,
+        ];
+    }
+
+    /**
      * Cash generated/used across operating, investing, and financing
      * activities for a period, indirect method — starts from net income
      * and reconciles it to the actual change in cash by walking every

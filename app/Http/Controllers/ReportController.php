@@ -197,10 +197,15 @@ class ReportController extends Controller
         $this->authorize('viewAny', Account::class);
 
         $asOf = $request->string('as_of')->value() ?: now()->toDateString();
+        $from = $request->string('from')->value() ?: now()->startOfYear()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
+        $groupBy = $this->balanceSheetGroupBy($request);
 
         return Inertia::render('Accounting/Reports/BalanceSheet', [
-            'report' => $this->reports->balanceSheet($asOf),
-            'filters' => ['as_of' => $asOf],
+            'report' => $groupBy
+                ? $this->reports->balanceSheetGrouped($from, $to, $groupBy)
+                : $this->reports->balanceSheet($asOf),
+            'filters' => ['as_of' => $asOf, 'from' => $from, 'to' => $to, 'group_by' => $groupBy],
         ]);
     }
 
@@ -209,11 +214,29 @@ class ReportController extends Controller
         $this->authorize('viewAny', Account::class);
 
         $asOf = $request->string('as_of')->value() ?: now()->toDateString();
+        $from = $request->string('from')->value() ?: now()->startOfYear()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
+        $groupBy = $this->balanceSheetGroupBy($request);
 
         return $this->downloadPdf('balance-sheet.pdf', 'pdf.reports.balance-sheet', [
             'tenant' => auth()->user()->tenant,
-            'report' => $this->reports->balanceSheet($asOf),
+            'report' => $groupBy
+                ? $this->reports->balanceSheetGrouped($from, $to, $groupBy)
+                : $this->reports->balanceSheet($asOf),
         ]);
+    }
+
+    /**
+     * Validates the `group_by` query param against the balance sheet's
+     * supported groupings — month/quarter only. Unlike P&L's groupBy(),
+     * 'cost_center' isn't offered here: equity isn't cost-center-scoped,
+     * so Assets = Liabilities + Equity wouldn't hold per column.
+     */
+    private function balanceSheetGroupBy(Request $request): ?string
+    {
+        $groupBy = $request->string('group_by')->value() ?: null;
+
+        return in_array($groupBy, ['month', 'quarter'], true) ? $groupBy : null;
     }
 
     public function cashFlow(Request $request): Response
