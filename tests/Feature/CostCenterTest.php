@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AccountType;
 use App\Models\Account;
 use App\Models\CostCenter;
+use App\Models\Expense;
 use App\Models\Tenant;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -88,7 +89,7 @@ class CostCenterTest extends TestCase
             'payable_account_id' => $ap->id,
             'cost_center_id' => $center->id,
         ]);
-        $expenseId = \App\Models\Expense::where('description', 'Facebook ads')->firstOrFail()->id;
+        $expenseId = Expense::where('description', 'Facebook ads')->firstOrFail()->id;
         $this->actingAs($this->user)->post(route('expenses.approve', $expenseId));
 
         $response = $this->actingAs($this->user)->get(route('cost-centers.index', [
@@ -116,7 +117,7 @@ class CostCenterTest extends TestCase
             'description' => 'Software subscription',
             'lines' => [
                 ['account_id' => $expense->id, 'debit' => 99, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 99],
+                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 99, 'cost_center_id' => $center->id],
             ],
         ]);
 

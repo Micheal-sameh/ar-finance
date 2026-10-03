@@ -5,7 +5,7 @@ namespace App\Http\Requests\Journals;
 use App\DTOs\CreateJournalEntryData;
 use App\Enums\JournalSourceType;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Validator;
 
 class StoreJournalEntryRequest extends FormRequest
 {
@@ -27,6 +27,19 @@ class StoreJournalEntryRequest extends FormRequest
             'lines.*.cost_center_id' => ['nullable', 'exists:cost_centers,id'],
             'lines.*.description' => ['nullable', 'string', 'max:255'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            foreach ((array) $this->input('lines', []) as $index => $line) {
+                $hasAmount = (float) ($line['debit'] ?? 0) > 0 || (float) ($line['credit'] ?? 0) > 0;
+
+                if ($hasAmount && empty($line['cost_center_id'])) {
+                    $validator->errors()->add("lines.{$index}.cost_center_id", 'The cost center field is required.');
+                }
+            }
+        });
     }
 
     public function toDto(): CreateJournalEntryData

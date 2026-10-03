@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\AccountType;
 use App\Models\Account;
+use App\Models\CostCenter;
 use App\Models\Tenant;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
@@ -76,13 +77,18 @@ class NPlusOneTest extends TestCase
 
     private function postEntries(int $count, int $cashId, int $revenueId): void
     {
+        $center = CostCenter::firstOrCreate(
+            ['tenant_id' => $this->user->tenant_id, 'name' => 'General'],
+            ['type' => 'cost'],
+        );
+
         for ($i = 0; $i < $count; $i++) {
             $this->actingAs($this->user)->post(route('journals.store'), [
                 'date' => now()->toDateString(),
                 'description' => "Entry {$i}",
                 'lines' => [
-                    ['account_id' => $cashId, 'debit' => 10, 'credit' => 0],
-                    ['account_id' => $revenueId, 'debit' => 0, 'credit' => 10],
+                    ['account_id' => $cashId, 'debit' => 10, 'credit' => 0, 'cost_center_id' => $center->id],
+                    ['account_id' => $revenueId, 'debit' => 0, 'credit' => 10, 'cost_center_id' => $center->id],
                 ],
             ]);
         }

@@ -15,6 +15,10 @@ export function emptyJournalLine(): JournalLineInput {
     return { account_id: null, debit: '', credit: '', cost_center_id: null, description: '' };
 }
 
+function hasAmount(line: JournalLineInput): boolean {
+    return (parseFloat(line.debit) || 0) > 0 || (parseFloat(line.credit) || 0) > 0;
+}
+
 export interface JournalLineEditorProps {
     lines: JournalLineInput[];
     onChange: (lines: JournalLineInput[]) => void;
@@ -46,7 +50,7 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                 <div style={{ flex: '2 1 0' }}>Account</div>
                 <div style={{ flex: '1 1 0' }} className="text-end">Debit</div>
                 <div style={{ flex: '1 1 0' }} className="text-end">Credit</div>
-                <div style={{ flex: '1.3 1 0' }} className="ps-2">Cost center</div>
+                <div style={{ flex: '1.3 1 0' }} className="ps-2">Cost center *</div>
                 <div style={{ flex: '1.5 1 0' }} className="ps-2">Description</div>
                 <div style={{ width: '36px' }} />
             </div>
@@ -68,7 +72,13 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                             className="form-control text-end"
                             style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
                             value={line.debit}
-                            onChange={(e) => updateLine(index, { debit: e.target.value, credit: e.target.value ? '' : line.credit })}
+                            onChange={(e) =>
+                                updateLine(index, {
+                                    debit: e.target.value,
+                                    credit: e.target.value ? '' : line.credit,
+                                    cost_center_id: e.target.value || line.credit ? line.cost_center_id : null,
+                                })
+                            }
                             placeholder="0.00"
                         />
                     </div>
@@ -80,7 +90,13 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                             className="form-control text-end"
                             style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
                             value={line.credit}
-                            onChange={(e) => updateLine(index, { credit: e.target.value, debit: e.target.value ? '' : line.debit })}
+                            onChange={(e) =>
+                                updateLine(index, {
+                                    credit: e.target.value,
+                                    debit: e.target.value ? '' : line.debit,
+                                    cost_center_id: e.target.value || line.debit ? line.cost_center_id : null,
+                                })
+                            }
                             placeholder="0.00"
                         />
                     </div>
@@ -89,6 +105,7 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                             value={line.cost_center_id}
                             onChange={(costCenterId) => updateLine(index, { cost_center_id: costCenterId })}
                             error={errors[`lines.${index}.cost_center_id`]}
+                            disabled={!hasAmount(line)}
                         />
                     </div>
                     <div style={{ flex: '1.5 1 0' }}>
