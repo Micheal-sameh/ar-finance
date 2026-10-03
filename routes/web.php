@@ -10,6 +10,7 @@ use App\Http\Controllers\CurrencyRevaluationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevComponentsController;
 use App\Http\Controllers\DevLoginController;
+use App\Http\Controllers\DevSwitchUserController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\ExpenseController;
@@ -46,6 +47,14 @@ if (app()->environment('local')) {
     Route::post('/dev-login', DevLoginController::class)
         ->middleware('throttle:10,1')
         ->name('dev-login');
+
+    // Quick "log in as" user switcher in the navbar (see DevUserSwitcher.tsx
+    // and HandleInertiaRequests' `devUsers` share). Gated to local by
+    // DevSwitchUserRequest::authorize() too — route is only registered
+    // here for defense in depth.
+    Route::post('/dev-switch-user/{user}', DevSwitchUserController::class)
+        ->middleware(['auth', 'throttle:10,1'])
+        ->name('dev-switch-user');
 }
 
 // avarewase/sso-client logs the user into a normal session guard (see

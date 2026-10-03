@@ -26,6 +26,16 @@
         'Noto Color Emoji';
 }
 
+@keyframes af-dev-switcher-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
 body {
     margin: 0;
     background-color: var(--af-bg);

@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { ChevronDown, LogOut, User as UserIcon } from 'lucide-react';
 import { Dropdown } from 'react-bootstrap';
+import { DevUserSwitcher, type DevUser } from './DevUserSwitcher';
 import { TenantSwitcher, type PlatformShare } from './TenantSwitcher';
 
 interface AuthUser {
@@ -9,7 +10,11 @@ interface AuthUser {
 }
 
 export function Topbar() {
-    const { auth, platform } = usePage<{ auth: { user: AuthUser | null }; platform: PlatformShare | null }>().props;
+    const { auth, platform, devUsers } = usePage<{
+        auth: { user: AuthUser | null };
+        platform: PlatformShare | null;
+        devUsers: DevUser[] | null;
+    }>().props;
     const user = auth.user;
 
     if (!user) {
@@ -33,6 +38,7 @@ export function Topbar() {
                 borderBottom: '1px solid var(--af-border)',
             }}
         >
+            {devUsers && <DevUserSwitcher users={devUsers} />}
             {platform && <TenantSwitcher platform={platform} />}
 
             <Dropdown align="end">
