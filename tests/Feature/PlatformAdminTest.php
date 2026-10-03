@@ -103,6 +103,16 @@ class PlatformAdminTest extends TestCase
         $response->assertSee('Alpha Co', false);
         $response->assertSee('Beta Co', false);
 
+        $accounts = $response->viewData('page')['props']['accounts'];
+        $mergedRow = collect($accounts)->firstWhere('code', '1000');
+
+        $this->assertNotNull($mergedRow, 'Expected a merged row for code 1000.');
+        $this->assertCount(2, $mergedRow['tenants'], 'Expected one tenant entry per tenant sharing code 1000.');
+        $this->assertSame(
+            ['Alpha Co', 'Beta Co'],
+            collect($mergedRow['tenants'])->pluck('tenant_name')->sort()->values()->all(),
+        );
+
         $accountIds = Account::where('tenant_id', $tenantA->id)->pluck('id');
         $this->assertGreaterThan(0, $accountIds->count());
     }

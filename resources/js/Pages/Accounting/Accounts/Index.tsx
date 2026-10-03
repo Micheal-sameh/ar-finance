@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { ChevronDown, ChevronRight, Download, ListTree, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Building2, ChevronDown, ChevronRight, Download, ListTree, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { Fragment, FormEvent, useMemo, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
@@ -15,15 +15,44 @@ import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import type { Account, AccountType } from '@/types/finance';
+import type { Account, AccountType, NormalBalance } from '@/types/finance';
 
 interface CurrencyOption {
     code: string;
     name: string;
 }
 
+/** One tenant's own instance of a merged (same-code) account — see MergedAccount. */
+interface MergedAccountTenant {
+    tenant_id: number;
+    tenant_name: string;
+    account_id: number;
+    balance: number;
+    is_active: boolean;
+}
+
+/**
+ * A Platform Admin viewing "All tenants" sees one row per account *code*
+ * instead of one row per tenant's own account row — every tenant starts
+ * from the same seeded chart of accounts, so merging by code avoids
+ * showing e.g. "1000 Assets" once per tenant. `tenants` carries each
+ * tenant's own account/balance for the click-to-expand breakdown.
+ */
+interface MergedAccount {
+    code: string;
+    name: string;
+    type: AccountType;
+    normal_balance: NormalBalance;
+    currency: string;
+    parent_code: string | null;
+    is_active: boolean;
+    is_deletable: boolean;
+    balance: number;
+    tenants: MergedAccountTenant[];
+}
+
 interface Props {
-    accounts: Account[];
+    accounts: Account[] | MergedAccount[];
     filters: { type?: string; is_active?: string; search?: string };
     baseCurrency: string;
     currencyOptions: CurrencyOption[];
@@ -113,10 +142,9 @@ interface AccountTreeRowsProps {
     onEdit: (account: Account) => void;
     onDelete: (account: Account) => void;
     baseCurrency: string;
-    viewingAllTenants: boolean;
 }
 
-function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, baseCurrency, viewingAllTenants }: AccountTreeRowsProps) {
+function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, baseCurrency }: AccountTreeRowsProps) {
     const hasChildren = node.children.length > 0;
     const isExpanded = !collapsed.has(node.id);
 
@@ -144,7 +172,6 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                 </Table.Cell>
                 <Table.Cell style={{ textTransform: 'capitalize' }}>{node.normal_balance}</Table.Cell>
                 <Table.Cell>{node.currency}</Table.Cell>
-                {viewingAllTenants && <Table.Cell>{node.tenant_name}</Table.Cell>}
                 <Table.Cell className="text-end">
                     <MoneyDisplay
                         amount={hasChildren && !isExpanded ? subtreeBalance(node) : node.balance ?? 0}
@@ -154,32 +181,30 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                 <Table.Cell>
                     <Badge variant={node.is_active ? 'success' : 'neutral'}>{node.is_active ? 'Active' : 'Inactive'}</Badge>
                 </Table.Cell>
-                {!viewingAllTenants && (
-                    <Table.Cell className="text-end pe-3">
-                        <div className="d-flex justify-content-end gap-1">
+                <Table.Cell className="text-end pe-3">
+                    <div className="d-flex justify-content-end gap-1">
+                        <button
+                            type="button"
+                            className="btn btn-sm p-1"
+                            style={{ color: 'var(--af-label)' }}
+                            onClick={() => onEdit(node)}
+                            aria-label="Edit"
+                        >
+                            <Pencil size={15} />
+                        </button>
+                        {node.is_deletable && (
                             <button
                                 type="button"
                                 className="btn btn-sm p-1"
-                                style={{ color: 'var(--af-label)' }}
-                                onClick={() => onEdit(node)}
-                                aria-label="Edit"
+                                style={{ color: 'var(--af-danger)' }}
+                                onClick={() => onDelete(node)}
+                                aria-label="Delete"
                             >
-                                <Pencil size={15} />
+                                <Trash2 size={15} />
                             </button>
-                            {node.is_deletable && (
-                                <button
-                                    type="button"
-                                    className="btn btn-sm p-1"
-                                    style={{ color: 'var(--af-danger)' }}
-                                    onClick={() => onDelete(node)}
-                                    aria-label="Delete"
-                                >
-                                    <Trash2 size={15} />
-                                </button>
-                            )}
-                        </div>
-                    </Table.Cell>
-                )}
+                        )}
+                    </div>
+                </Table.Cell>
             </Table.Row>
             {hasChildren &&
                 isExpanded &&
@@ -193,7 +218,155 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                         onEdit={onEdit}
                         onDelete={onDelete}
                         baseCurrency={baseCurrency}
-                        viewingAllTenants={viewingAllTenants}
+                    />
+                ))}
+        </>
+    );
+}
+
+interface MergedAccountNode extends MergedAccount {
+    children: MergedAccountNode[];
+}
+
+/** Same nesting idea as buildForest(), but keyed by code since merged rows have no shared numeric id across tenants. */
+function buildMergedForest(accounts: MergedAccount[]): MergedAccountNode[] {
+    const byCode = new Map<string, MergedAccountNode>();
+    accounts.forEach((account) => byCode.set(account.code, { ...account, children: [] }));
+
+    const roots: MergedAccountNode[] = [];
+    byCode.forEach((node) => {
+        const parent = node.parent_code ? byCode.get(node.parent_code) : undefined;
+        if (parent) {
+            parent.children.push(node);
+        } else {
+            roots.push(node);
+        }
+    });
+
+    const sortByCode = (nodes: MergedAccountNode[]) => {
+        nodes.sort((a, b) => a.code.localeCompare(b.code));
+        nodes.forEach((node) => sortByCode(node.children));
+    };
+    sortByCode(roots);
+
+    return roots;
+}
+
+function mergedTypeSignedBalance(node: MergedAccountNode): number {
+    const own = node.balance ?? 0;
+    return node.normal_balance === TYPE_DEFAULT_NORMAL_BALANCE[node.type] ? own : -own;
+}
+
+function mergedSubtreeBalance(node: MergedAccountNode): number {
+    return node.children.reduce((sum, child) => sum + mergedSubtreeBalance(child), mergedTypeSignedBalance(node));
+}
+
+interface MergedAccountTreeRowsProps {
+    node: MergedAccountNode;
+    depth: number;
+    collapsedCodes: Set<string>;
+    onToggle: (code: string) => void;
+    expandedTenantsFor: Set<string>;
+    onToggleTenants: (code: string) => void;
+    baseCurrency: string;
+}
+
+/**
+ * Mirrors AccountTreeRows' code-hierarchy expand/collapse, plus a second,
+ * independent toggle (the tenant-count pill) that reveals each tenant's
+ * own account beneath this merged row — see MergedAccount.
+ */
+function MergedAccountTreeRows({
+    node,
+    depth,
+    collapsedCodes,
+    onToggle,
+    expandedTenantsFor,
+    onToggleTenants,
+    baseCurrency,
+}: MergedAccountTreeRowsProps) {
+    const hasChildren = node.children.length > 0;
+    const isExpanded = !collapsedCodes.has(node.code);
+    const tenantsExpanded = expandedTenantsFor.has(node.code);
+
+    return (
+        <>
+            <Table.Row>
+                <Table.Cell className="ps-3">{node.code}</Table.Cell>
+                <Table.Cell>
+                    <div className="d-flex align-items-center gap-1" style={{ paddingLeft: depth * 20 }}>
+                        {hasChildren ? (
+                            <button
+                                type="button"
+                                className="btn btn-sm p-0 d-flex align-items-center justify-content-center"
+                                style={{ color: 'var(--af-label)', width: '18px', height: '18px' }}
+                                onClick={() => onToggle(node.code)}
+                                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                            >
+                                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </button>
+                        ) : (
+                            <span style={{ width: '18px', display: 'inline-block' }} />
+                        )}
+                        <span>{node.name}</span>
+                    </div>
+                </Table.Cell>
+                <Table.Cell style={{ textTransform: 'capitalize' }}>{node.normal_balance}</Table.Cell>
+                <Table.Cell>{node.currency}</Table.Cell>
+                <Table.Cell>
+                    <button
+                        type="button"
+                        className="btn btn-sm d-inline-flex align-items-center gap-1 p-0"
+                        style={{ color: 'var(--af-primary)', fontSize: '13px' }}
+                        onClick={() => onToggleTenants(node.code)}
+                    >
+                        <Building2 size={13} />
+                        {node.tenants.length} tenant{node.tenants.length === 1 ? '' : 's'}
+                        {tenantsExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                    </button>
+                </Table.Cell>
+                <Table.Cell className="text-end">
+                    <MoneyDisplay
+                        amount={hasChildren && !isExpanded ? mergedSubtreeBalance(node) : node.balance ?? 0}
+                        currency={baseCurrency}
+                    />
+                </Table.Cell>
+                <Table.Cell>
+                    <Badge variant={node.is_active ? 'success' : 'neutral'}>{node.is_active ? 'Active' : 'Inactive'}</Badge>
+                </Table.Cell>
+            </Table.Row>
+            {tenantsExpanded &&
+                node.tenants.map((tenant) => (
+                    <Table.Row key={tenant.account_id} style={{ backgroundColor: 'var(--af-surface-alt, rgba(0,0,0,0.02))' }}>
+                        <Table.Cell className="ps-3" />
+                        <Table.Cell>
+                            <div className="d-flex align-items-center gap-1" style={{ paddingLeft: (depth + 1) * 20, fontSize: '13px', color: 'var(--af-label)' }}>
+                                {tenant.tenant_name}
+                            </div>
+                        </Table.Cell>
+                        <Table.Cell />
+                        <Table.Cell />
+                        <Table.Cell />
+                        <Table.Cell className="text-end">
+                            <MoneyDisplay amount={tenant.balance} currency={baseCurrency} />
+                        </Table.Cell>
+                        <Table.Cell>
+                            <Badge variant={tenant.is_active ? 'success' : 'neutral'}>{tenant.is_active ? 'Active' : 'Inactive'}</Badge>
+                        </Table.Cell>
+                    </Table.Row>
+                ))}
+            {hasChildren &&
+                isExpanded &&
+                node.children.map((child) => (
+                    <MergedAccountTreeRows
+                        key={child.code}
+                        node={child}
+                        depth={depth + 1}
+                        collapsedCodes={collapsedCodes}
+                        onToggle={onToggle}
+                        expandedTenantsFor={expandedTenantsFor}
+                        onToggleTenants={onToggleTenants}
+                        baseCurrency={baseCurrency}
                     />
                 ))}
         </>
@@ -215,9 +388,39 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Account | null>(null);
     const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+    const [collapsedCodes, setCollapsedCodes] = useState<Set<string>>(new Set());
+    const [expandedTenantsFor, setExpandedTenantsFor] = useState<Set<string>>(new Set());
     const [importOpen, setImportOpen] = useState(false);
 
-    const forest = useMemo(() => buildForest(accounts), [accounts]);
+    const forest = useMemo(() => (viewingAllTenants ? [] : buildForest(accounts as Account[])), [accounts, viewingAllTenants]);
+    const mergedForest = useMemo(
+        () => (viewingAllTenants ? buildMergedForest(accounts as MergedAccount[]) : []),
+        [accounts, viewingAllTenants],
+    );
+
+    function toggleCode(code: string) {
+        setCollapsedCodes((prev) => {
+            const next = new Set(prev);
+            if (next.has(code)) {
+                next.delete(code);
+            } else {
+                next.add(code);
+            }
+            return next;
+        });
+    }
+
+    function toggleTenantsFor(code: string) {
+        setExpandedTenantsFor((prev) => {
+            const next = new Set(prev);
+            if (next.has(code)) {
+                next.delete(code);
+            } else {
+                next.add(code);
+            }
+            return next;
+        });
+    }
 
     function toggle(id: number) {
         setCollapsed((prev) => {
@@ -404,6 +607,50 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                         description="Create your first account to start building the chart of accounts."
                         action={!viewingAllTenants && <Button onClick={openCreate}>New Account</Button>}
                     />
+                ) : viewingAllTenants ? (
+                    <Table>
+                        <Table.Head>
+                            <Table.HeadCell className="ps-3">Code</Table.HeadCell>
+                            <Table.HeadCell>Name</Table.HeadCell>
+                            <Table.HeadCell>Normal Balance</Table.HeadCell>
+                            <Table.HeadCell>Currency</Table.HeadCell>
+                            <Table.HeadCell>Tenants</Table.HeadCell>
+                            <Table.HeadCell className="text-end">Balance</Table.HeadCell>
+                            <Table.HeadCell>Status</Table.HeadCell>
+                        </Table.Head>
+                        <tbody>
+                            {ACCOUNT_TYPES.map(({ value, label }) => {
+                                const roots = mergedForest.filter((node) => node.type === value);
+                                if (roots.length === 0) return null;
+
+                                return (
+                                    <Fragment key={value}>
+                                        <tr>
+                                            <td
+                                                colSpan={7}
+                                                className="px-3 py-2"
+                                                style={{ backgroundColor: 'var(--af-surface-alt, rgba(0,0,0,0.02))', borderBottom: '1px solid var(--af-border)' }}
+                                            >
+                                                <Badge variant={typeBadgeVariant(value)}>{label}</Badge>
+                                            </td>
+                                        </tr>
+                                        {roots.map((node) => (
+                                            <MergedAccountTreeRows
+                                                key={node.code}
+                                                node={node}
+                                                depth={0}
+                                                collapsedCodes={collapsedCodes}
+                                                onToggle={toggleCode}
+                                                expandedTenantsFor={expandedTenantsFor}
+                                                onToggleTenants={toggleTenantsFor}
+                                                baseCurrency={baseCurrency}
+                                            />
+                                        ))}
+                                    </Fragment>
+                                );
+                            })}
+                        </tbody>
+                    </Table>
                 ) : (
                     <Table>
                         <Table.Head>
@@ -411,10 +658,9 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                             <Table.HeadCell>Name</Table.HeadCell>
                             <Table.HeadCell>Normal Balance</Table.HeadCell>
                             <Table.HeadCell>Currency</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
                             <Table.HeadCell className="text-end">Balance</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
-                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
+                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {ACCOUNT_TYPES.map(({ value, label }) => {
@@ -442,7 +688,6 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                                                 onEdit={openEdit}
                                                 onDelete={destroy}
                                                 baseCurrency={baseCurrency}
-                                                viewingAllTenants={viewingAllTenants}
                                             />
                                         ))}
                                     </Fragment>

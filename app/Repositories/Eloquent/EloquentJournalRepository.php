@@ -7,6 +7,7 @@ use App\Models\CostCenter;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Repositories\Contracts\JournalRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -17,9 +18,19 @@ class EloquentJournalRepository implements JournalRepositoryInterface
      */
     private array $postedLinesWithAccountsCache = [];
 
-    private ?Collection $accountsCache = null;
+    /**
+     * @var array<string, Collection>
+     */
+    private array $accountsCache = [];
 
-    private ?Collection $costCentersCache = null;
+    /**
+     * @var array<string, Collection>
+     */
+    private array $costCentersCache = [];
+
+    public function __construct(
+        private readonly TenantContext $tenantContext,
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -56,7 +67,7 @@ class EloquentJournalRepository implements JournalRepositoryInterface
 
     public function postedLinesWithAccounts(?string $from = null, ?string $to = null): Collection
     {
-        $key = ($from ?? '').'|'.($to ?? '');
+        $key = $this->tenantCacheKey().'|'.($from ?? '').'|'.($to ?? '');
 
         if (array_key_exists($key, $this->postedLinesWithAccountsCache)) {
             return $this->postedLinesWithAccountsCache[$key];
@@ -83,12 +94,27 @@ class EloquentJournalRepository implements JournalRepositoryInterface
 
     private function accounts(): Collection
     {
-        return $this->accountsCache ??= Account::all()->keyBy('id');
+        $key = $this->tenantCacheKey();
+
+        return $this->accountsCache[$key] ??= Account::all()->keyBy('id');
     }
 
     private function costCenters(): Collection
     {
-        return $this->costCentersCache ??= CostCenter::all()->keyBy('id');
+        $key = $this->tenantCacheKey();
+
+        return $this->costCentersCache[$key] ??= CostCenter::all()->keyBy('id');
+    }
+
+    /**
+     * Distinguishes per-tenant cached query results from one another so a
+     * platform admin looping over every tenant in a single request (see
+     * PlatformReportService::byTenant()) doesn't get tenant A's cached
+     * lines/accounts served back for tenant B.
+     */
+    private function tenantCacheKey(): string
+    {
+        return (string) $this->tenantContext->id();
     }
 
     public function postedLinesForAccount(int $accountId, ?string $from = null, ?string $to = null, int|string|null $costCenterFilter = null): Collection

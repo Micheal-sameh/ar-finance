@@ -17,6 +17,7 @@ use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -40,11 +41,14 @@ class AccountController extends Controller
 
         $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
         $balances = $this->reports->accountBalances();
-        $accounts = $this->accounts->filtered($request->only(['type', 'is_active', 'search']))
-            ->map(fn (Account $account) => [
+        $filtered = $this->accounts->filtered($request->only(['type', 'is_active', 'search']));
+
+        $accounts = $viewingAllTenants
+            ? $this->mergeAccountsAcrossTenants($filtered, $balances)
+            : $filtered->map(fn (Account $account) => [
                 ...$account->toArray(),
                 'balance' => $balances[$account->id] ?? 0.0,
-                'tenant_name' => $viewingAllTenants ? $account->tenant?->name : null,
+                'tenant_name' => null,
             ]);
 
         return Inertia::render('Accounting/Accounts/Index', [
@@ -54,6 +58,50 @@ class AccountController extends Controller
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
             'viewingAllTenants' => $viewingAllTenants,
         ]);
+    }
+
+    /**
+     * Collapses one row per account *code* across every tenant — every
+     * tenant starts from the same seeded chart of accounts (see
+     * ChartOfAccountsSeeder), so "1000 Assets" is the same conceptual
+     * account everywhere, just a separate row per tenant. The merged
+     * row's balance is the sum across tenants; each tenant's own account
+     * (id, balance, status) rides along in `tenants` for the UI to expand
+     * on click rather than guessing from the aggregate.
+     *
+     * @param  Collection<int, Account>  $accounts
+     * @param  array<int, float>  $balances
+     * @return array<int, array<string, mixed>>
+     */
+    private function mergeAccountsAcrossTenants(Collection $accounts, array $balances): array
+    {
+        $codeById = $accounts->pluck('code', 'id');
+
+        return $accounts->groupBy('code')
+            ->map(function ($group) use ($balances, $codeById) {
+                $first = $group->first();
+
+                return [
+                    'code' => $first->code,
+                    'name' => $first->name,
+                    'type' => $first->type->value,
+                    'normal_balance' => $first->normal_balance->value,
+                    'currency' => $first->currency,
+                    'parent_code' => $first->parent_id ? ($codeById[$first->parent_id] ?? null) : null,
+                    'is_active' => $group->contains('is_active', true),
+                    'is_deletable' => false,
+                    'balance' => round($group->sum(fn (Account $account) => $balances[$account->id] ?? 0.0), 2),
+                    'tenants' => $group->map(fn (Account $account) => [
+                        'tenant_id' => $account->tenant_id,
+                        'tenant_name' => $account->tenant?->name,
+                        'account_id' => $account->id,
+                        'balance' => $balances[$account->id] ?? 0.0,
+                        'is_active' => $account->is_active,
+                    ])->values()->all(),
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**
