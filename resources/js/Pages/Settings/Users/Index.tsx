@@ -14,17 +14,48 @@ import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import type { AppUser, Paginated, Tenant, UserStatus } from '@/types/finance';
 
+const PLATFORM_ROLES = ['Platform Admin', 'Portal Manager'];
+
+function RoleOptions({ roles }: { roles: string[] }) {
+    const platformRoles = roles.filter((role) => PLATFORM_ROLES.includes(role));
+    const tenantRoles = roles.filter((role) => !PLATFORM_ROLES.includes(role));
+
+    return (
+        <>
+            {platformRoles.length > 0 && (
+                <optgroup label="Platform">
+                    {platformRoles.map((role) => (
+                        <option key={role} value={role}>
+                            {role}
+                        </option>
+                    ))}
+                </optgroup>
+            )}
+            {tenantRoles.length > 0 && (
+                <optgroup label="Tenant">
+                    {tenantRoles.map((role) => (
+                        <option key={role} value={role}>
+                            {role}
+                        </option>
+                    ))}
+                </optgroup>
+            )}
+        </>
+    );
+}
+
 interface Props {
     users: Paginated<AppUser>;
     filters: { status?: string; role?: string; search?: string };
     canManage: boolean;
     canAssignTenant: boolean;
+    canAssignRole: boolean;
     availableRoles: string[];
     tenants: Pick<Tenant, 'id' | 'name'>[];
     viewingAllTenants: boolean;
 }
 
-export default function UsersIndex({ users, filters, canManage, canAssignTenant, availableRoles, tenants, viewingAllTenants }: Props) {
+export default function UsersIndex({ users, filters, canManage, canAssignTenant, canAssignRole, availableRoles, tenants, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [editing, setEditing] = useState<AppUser | null>(null);
     const { auth } = usePage<{ auth: { user: { id: number } | null } }>().props;
@@ -75,6 +106,10 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
         );
     }
 
+    function assignRole(user: AppUser, role: string) {
+        router.put(route('platform.users.assign-role', user.id), { role }, { preserveScroll: true, preserveState: true });
+    }
+
     return (
         <>
             <Head title="Users" />
@@ -101,11 +136,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                             style={{ maxWidth: '170px' }}
                         >
                             <option value="">All roles</option>
-                            {availableRoles.map((role) => (
-                                <option key={role} value={role}>
-                                    {role}
-                                </option>
-                            ))}
+                            <RoleOptions roles={availableRoles} />
                         </Select>
                         <Select
                             value={filters.status ?? ''}
@@ -148,17 +179,27 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                                     <Table.Cell label="Email">{user.email}</Table.Cell>
                                     <Table.Cell label="Membership Code">{user.membership_code ?? '—'}</Table.Cell>
                                     <Table.Cell label="Roles">
-                                        <div className="d-flex gap-1 flex-wrap">
-                                            {user.roles.length > 0 ? (
-                                                user.roles.map((role) => (
-                                                    <Badge key={role} variant="info">
-                                                        {role}
-                                                    </Badge>
-                                                ))
-                                            ) : (
-                                                <span style={{ fontSize: '13px', color: 'var(--af-label)' }}>—</span>
-                                            )}
-                                        </div>
+                                        {viewingAllTenants && canAssignRole && user.id !== auth.user?.id ? (
+                                            <Select
+                                                value={user.roles[0] ?? ''}
+                                                onChange={(e) => assignRole(user, e.target.value)}
+                                                style={{ maxWidth: '180px' }}
+                                            >
+                                                <RoleOptions roles={availableRoles} />
+                                            </Select>
+                                        ) : (
+                                            <div className="d-flex gap-1 flex-wrap">
+                                                {user.roles.length > 0 ? (
+                                                    user.roles.map((role) => (
+                                                        <Badge key={role} variant="info">
+                                                            {role}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <span style={{ fontSize: '13px', color: 'var(--af-label)' }}>—</span>
+                                                )}
+                                            </div>
+                                        )}
                                     </Table.Cell>
                                     <Table.Cell label="Status">
                                         <Badge variant={user.status === 'active' ? 'success' : 'danger'}>
@@ -230,11 +271,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                         error={form.errors.role}
                     >
                         <option value="">Select a role…</option>
-                        {availableRoles.map((role) => (
-                            <option key={role} value={role}>
-                                {role}
-                            </option>
-                        ))}
+                        <RoleOptions roles={availableRoles} />
                     </Select>
                     <Select
                         label="Status"

@@ -44,10 +44,13 @@ class User extends Authenticatable
     /**
      * A Platform Admin has no tenant of their own — they act across every
      * tenant, or inside whichever one they've switched into (see
-     * TenantContext). Their tenant_id column value is irrelevant.
+     * TenantContext). Their tenant_id column value is irrelevant. Portal
+     * Manager shares this cross-tenant access (same permission set) but is
+     * still barred from granting the Platform Admin role itself — see
+     * UpdateUserRequest.
      */
     public function isPlatformAdmin(): bool
     {
-        return $this->hasRole('Platform Admin');
+        return $this->hasAnyRole(['Platform Admin', 'Portal Manager']);
     }
 }

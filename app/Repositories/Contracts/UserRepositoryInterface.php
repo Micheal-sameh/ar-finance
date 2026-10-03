@@ -14,4 +14,6 @@ interface UserRepositoryInterface
     public function update(User $user, string $status, string $role): User;
 
     public function assignTenant(User $user, ?int $tenantId): User;
+
+    public function assignRole(User $user, string $role): User;
 }

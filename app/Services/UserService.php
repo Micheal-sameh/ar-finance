@@ -27,4 +27,9 @@ class UserService
     {
         return $this->users->assignTenant($user, $tenantId);
     }
+
+    public function assignRole(User $user, string $role): User
+    {
+        return $this->users->assignRole($user, $role);
+    }
 }

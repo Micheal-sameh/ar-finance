@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserStatus;
 use App\Http\Controllers\Concerns\ExportsExcel;
+use App\Http\Requests\Users\AssignUserRoleRequest;
 use App\Http\Requests\Users\AssignUserTenantRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Models\Tenant;
@@ -45,13 +46,19 @@ class UserController extends Controller
             ]);
 
         $canAssignTenant = $viewingAllTenants && $request->user()->can('tenants.manage');
+        $canAssignRole = $viewingAllTenants && $request->user()->can('users.manage');
+        $canGrantPlatformAdmin = $request->user()->hasRole('Platform Admin');
 
         return Inertia::render('Settings/Users/Index', [
             'users' => $users,
             'filters' => $request->only(['status', 'role', 'search']),
             'canManage' => $viewingAllTenants ? false : $request->user()->can('manage', User::class),
             'canAssignTenant' => $canAssignTenant,
-            'availableRoles' => Role::query()->where('guard_name', 'web')->orderBy('name')->pluck('name'),
+            'canAssignRole' => $canAssignRole,
+            'availableRoles' => Role::query()->where('guard_name', 'web')
+                ->when(! $canGrantPlatformAdmin, fn ($query) => $query->where('name', '!=', 'Platform Admin'))
+                ->orderBy('name')
+                ->pluck('name'),
             'tenants' => $canAssignTenant ? Tenant::query()->orderBy('name')->get(['id', 'name']) : [],
             'viewingAllTenants' => $viewingAllTenants,
         ]);
@@ -94,5 +101,16 @@ class UserController extends Controller
         $this->users->assignTenant($user, $request->validated('tenant_id'));
 
         return redirect()->route('users.index')->with('success', 'User reassigned.');
+    }
+
+    public function assignRole(AssignUserRoleRequest $request, User $user): RedirectResponse
+    {
+        if ($user->is($request->user())) {
+            return back()->with('error', "You can't change your own role.");
+        }
+
+        $this->users->assignRole($user, $request->validated('role'));
+
+        return redirect()->route('users.index')->with('success', 'User role updated.');
     }
 }

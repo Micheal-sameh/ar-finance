@@ -141,6 +141,14 @@ class RolePermissionSeeder extends Seeder
         $platformAdmin = Role::firstOrCreate(['name' => 'Platform Admin', 'guard_name' => 'web']);
         $platformAdmin->syncPermissions(self::PERMISSIONS);
 
+        // Portal Manager = same cross-tenant permissions as Platform Admin
+        // (including platform.access/tenants.manage), but the one carve-out
+        // doesn't fit the permission system: it must never be able to grant
+        // the Platform Admin role itself. That's enforced in
+        // UpdateUserRequest/UserController, not here.
+        $portalManager = Role::firstOrCreate(['name' => 'Portal Manager', 'guard_name' => 'web']);
+        $portalManager->syncPermissions(self::PERMISSIONS);
+
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
         $superAdmin->syncPermissions(array_diff(self::PERMISSIONS, ['platform.access', 'tenants.manage']));
 

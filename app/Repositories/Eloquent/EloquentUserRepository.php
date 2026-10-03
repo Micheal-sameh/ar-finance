@@ -49,4 +49,11 @@ class EloquentUserRepository implements UserRepositoryInterface
 
         return $user->fresh('tenant');
     }
+
+    public function assignRole(User $user, string $role): User
+    {
+        $user->syncRoles([$role]);
+
+        return $user->fresh('roles');
+    }
 }

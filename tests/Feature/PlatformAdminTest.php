@@ -30,6 +30,14 @@ class PlatformAdminTest extends TestCase
         return $user;
     }
 
+    private function portalManager(): User
+    {
+        $user = User::factory()->create(['tenant_id' => null]);
+        $user->assignRole('Portal Manager');
+
+        return $user;
+    }
+
     public function test_platform_admin_can_list_and_create_tenants_with_the_standard_chart_of_accounts(): void
     {
         $admin = $this->platformAdmin();
@@ -206,6 +214,136 @@ class PlatformAdminTest extends TestCase
 
         $this->actingAs($user)
             ->put(route('platform.users.assign-tenant', $target), ['tenant_id' => $other->id])
+            ->assertForbidden();
+    }
+
+    public function test_portal_manager_has_the_same_cross_tenant_access_as_platform_admin(): void
+    {
+        $manager = $this->portalManager();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+
+        $this->actingAs($manager)->get(route('platform.dashboard'))->assertOk();
+
+        $this->actingAs($manager)->get(route('users.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where('viewingAllTenants', true));
+
+        $this->actingAs($manager)->post(route('platform.switch-tenant', $tenant))
+            ->assertRedirect(route('dashboard'));
+
+        $this->actingAs($manager)->post(route('accounts.store'), [
+            'code' => '1000',
+            'name' => 'Cash',
+            'type' => AccountType::Asset->value,
+        ])->assertRedirect(route('accounts.index'));
+
+        $this->assertDatabaseHas('accounts', ['tenant_id' => $tenant->id, 'code' => '1000', 'name' => 'Cash']);
+    }
+
+    public function test_platform_admin_can_grant_the_platform_admin_role(): void
+    {
+        $admin = $this->platformAdmin();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+        $target = User::factory()->create(['tenant_id' => $tenant->id]);
+        $target->assignRole('Viewer');
+
+        $this->actingAs($admin)->post(route('platform.switch-tenant', $tenant));
+
+        $this->actingAs($admin)
+            ->put(route('users.update', $target), ['status' => 'active', 'role' => 'Platform Admin'])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertTrue($target->fresh()->hasRole('Platform Admin'));
+    }
+
+    public function test_portal_manager_cannot_grant_the_platform_admin_role_but_can_grant_portal_manager(): void
+    {
+        $manager = $this->portalManager();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+        $target = User::factory()->create(['tenant_id' => $tenant->id]);
+        $target->assignRole('Viewer');
+
+        $this->actingAs($manager)->post(route('platform.switch-tenant', $tenant));
+
+        $this->actingAs($manager)
+            ->put(route('users.update', $target), ['status' => 'active', 'role' => 'Platform Admin'])
+            ->assertInvalid(['role']);
+
+        $this->assertFalse($target->fresh()->hasRole('Platform Admin'));
+
+        $this->actingAs($manager)
+            ->put(route('users.update', $target), ['status' => 'active', 'role' => 'Portal Manager'])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertTrue($target->fresh()->hasRole('Portal Manager'));
+    }
+
+    public function test_platform_admin_role_is_hidden_from_non_platform_admins_in_the_role_picker(): void
+    {
+        $manager = $this->portalManager();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+        $this->actingAs($manager)->post(route('platform.switch-tenant', $tenant));
+
+        $this->actingAs($manager)->get(route('users.index'))
+            ->assertInertia(fn ($page) => $page->where(
+                'availableRoles',
+                fn ($roles) => ! collect($roles)->contains('Platform Admin') && collect($roles)->contains('Portal Manager'),
+            ));
+    }
+
+    public function test_platform_admin_can_grant_portal_manager_directly_from_the_all_tenants_view(): void
+    {
+        $admin = $this->platformAdmin();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+        $target = User::factory()->create(['tenant_id' => $tenant->id]);
+        $target->assignRole('Viewer');
+
+        $this->actingAs($admin)->get(route('users.index'))
+            ->assertInertia(fn ($page) => $page->where('canAssignRole', true));
+
+        $this->actingAs($admin)
+            ->put(route('platform.users.assign-role', $target), ['role' => 'Portal Manager'])
+            ->assertRedirect(route('users.index'));
+
+        $this->assertTrue($target->fresh()->hasRole('Portal Manager'));
+        $this->assertFalse($target->fresh()->hasRole('Viewer'));
+    }
+
+    public function test_portal_manager_cannot_grant_platform_admin_from_the_all_tenants_view(): void
+    {
+        $manager = $this->portalManager();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+        $target = User::factory()->create(['tenant_id' => $tenant->id]);
+        $target->assignRole('Viewer');
+
+        $this->actingAs($manager)
+            ->put(route('platform.users.assign-role', $target), ['role' => 'Platform Admin'])
+            ->assertInvalid(['role']);
+
+        $this->assertFalse($target->fresh()->hasRole('Platform Admin'));
+    }
+
+    public function test_platform_admin_cannot_change_their_own_role_from_the_all_tenants_view(): void
+    {
+        $admin = $this->platformAdmin();
+
+        $this->actingAs($admin)
+            ->put(route('platform.users.assign-role', $admin), ['role' => 'Viewer'])
+            ->assertRedirect();
+
+        $this->assertTrue($admin->fresh()->hasRole('Platform Admin'));
+    }
+
+    public function test_ordinary_user_cannot_assign_a_role_from_the_all_tenants_view(): void
+    {
+        $tenant = Tenant::create(['name' => 'Alpha Co', 'slug' => 'alpha-co', 'base_currency' => 'EGP']);
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $user->assignRole('Super Admin');
+        $target = User::factory()->create(['tenant_id' => $tenant->id]);
+        $target->assignRole('Viewer');
+
+        $this->actingAs($user)
+            ->put(route('platform.users.assign-role', $target), ['role' => 'Admin'])
             ->assertForbidden();
     }
 }
