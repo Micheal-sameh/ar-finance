@@ -64,14 +64,22 @@ export interface TrialBalanceRow {
     code: string;
     name: string;
     type: AccountType;
+    opening_debit: number;
+    opening_credit: number;
     debit: number;
     credit: number;
+    closing_debit: number;
+    closing_credit: number;
 }
 
 export interface TrialBalanceReport {
     rows: TrialBalanceRow[];
+    total_opening_debit: number;
+    total_opening_credit: number;
     total_debit: number;
     total_credit: number;
+    total_closing_debit: number;
+    total_closing_credit: number;
     is_balanced: boolean;
 }
 

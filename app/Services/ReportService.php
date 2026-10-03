@@ -44,34 +44,53 @@ class ReportService
 
     /**
      * @return array{
-     *     rows: array<int, array{account_id: int, code: string, name: string, type: string, debit: float, credit: float}>,
+     *     rows: array<int, array{account_id: int, code: string, name: string, type: string, opening_debit: float, opening_credit: float, debit: float, credit: float, closing_debit: float, closing_credit: float}>,
+     *     total_opening_debit: float,
+     *     total_opening_credit: float,
      *     total_debit: float,
      *     total_credit: float,
+     *     total_closing_debit: float,
+     *     total_closing_credit: float,
      *     is_balanced: bool,
      * }
      */
     public function trialBalance(?string $from = null, ?string $to = null): array
     {
-        $lines = $this->journals->postedLinesWithAccounts($from, $to);
+        $periodLinesByAccount = $this->journals->postedLinesWithAccounts($from, $to)->groupBy('account_id');
 
-        $rows = $lines
-            ->groupBy('account_id')
-            ->map(function ($accountLines) {
-                $account = $accountLines->first()->account;
-                $totalDebit = (float) $accountLines->sum('debit');
-                $totalCredit = (float) $accountLines->sum('credit');
-                $net = round($totalDebit - $totalCredit, 2);
+        $openingBalances = $from
+            ? $this->rawBalancesAsOf(Carbon::parse($from)->subDay()->toDateString())
+            : collect();
+
+        $accountIds = $periodLinesByAccount->keys()->merge($openingBalances->keys())->unique();
+
+        $rows = $accountIds
+            ->map(function ($accountId) use ($periodLinesByAccount, $openingBalances) {
+                $accountLines = $periodLinesByAccount->get($accountId);
+                $account = $accountLines ? $accountLines->first()->account : $openingBalances->get($accountId)['account'];
+
+                $periodDebit = $accountLines ? (float) $accountLines->sum('debit') : 0.0;
+                $periodCredit = $accountLines ? (float) $accountLines->sum('credit') : 0.0;
+                $periodNet = round($periodDebit - $periodCredit, 2);
+
+                $opening = $openingBalances->get($accountId)['balance'] ?? 0.0;
+                $closing = round($opening + $periodNet, 2);
 
                 return [
                     'account_id' => $account->id,
                     'code' => $account->code,
                     'name' => $account->name,
                     'type' => $account->type->value,
-                    'debit' => $net > 0 ? $net : 0.0,
-                    'credit' => $net < 0 ? abs($net) : 0.0,
+                    'opening_debit' => $opening > 0 ? $opening : 0.0,
+                    'opening_credit' => $opening < 0 ? abs($opening) : 0.0,
+                    'debit' => $periodNet > 0 ? $periodNet : 0.0,
+                    'credit' => $periodNet < 0 ? abs($periodNet) : 0.0,
+                    'closing_debit' => $closing > 0 ? $closing : 0.0,
+                    'closing_credit' => $closing < 0 ? abs($closing) : 0.0,
                 ];
             })
-            ->filter(fn ($row) => $row['debit'] !== 0.0 || $row['credit'] !== 0.0)
+            ->filter(fn ($row) => $row['debit'] !== 0.0 || $row['credit'] !== 0.0
+                || $row['opening_debit'] !== 0.0 || $row['opening_credit'] !== 0.0)
             ->sortBy('code')
             ->values()
             ->all();
@@ -81,8 +100,12 @@ class ReportService
 
         return [
             'rows' => $rows,
+            'total_opening_debit' => round(array_sum(array_column($rows, 'opening_debit')), 2),
+            'total_opening_credit' => round(array_sum(array_column($rows, 'opening_credit')), 2),
             'total_debit' => $totalDebit,
             'total_credit' => $totalCredit,
+            'total_closing_debit' => round(array_sum(array_column($rows, 'closing_debit')), 2),
+            'total_closing_credit' => round(array_sum(array_column($rows, 'closing_credit')), 2),
             'is_balanced' => abs($totalDebit - $totalCredit) < 0.005,
         ];
     }
@@ -144,6 +167,28 @@ class ReportService
                     : round($credit - $debit, 2);
 
                 return ['account' => $account, 'balance' => $balance];
+            });
+    }
+
+    /**
+     * Every account's cumulative debit-minus-credit balance through $asOf,
+     * unlike balancesAsOf() this is NOT flipped into the account's
+     * normal-balance direction — it stays a raw net so trialBalance() can
+     * bucket it into the debit/credit column by sign alone, the same way
+     * it already buckets period activity.
+     *
+     * @return Collection<int, array{account: Account, balance: float}>
+     */
+    private function rawBalancesAsOf(string $asOf): Collection
+    {
+        return $this->journals->postedLinesWithAccounts(null, $asOf)
+            ->groupBy('account_id')
+            ->map(function ($lines) {
+                $account = $lines->first()->account;
+                $debit = (float) $lines->sum('debit');
+                $credit = (float) $lines->sum('credit');
+
+                return ['account' => $account, 'balance' => round($debit - $credit, 2)];
             });
     }
 

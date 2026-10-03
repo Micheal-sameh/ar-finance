@@ -59,8 +59,12 @@ export default function TrialBalance({ report, filters }: Props) {
                         <Table.HeadCell className="ps-3">Code</Table.HeadCell>
                         <Table.HeadCell>Account</Table.HeadCell>
                         <Table.HeadCell>Type</Table.HeadCell>
+                        <Table.HeadCell className="text-end">Opening Debit</Table.HeadCell>
+                        <Table.HeadCell className="text-end">Opening Credit</Table.HeadCell>
                         <Table.HeadCell className="text-end">Debit</Table.HeadCell>
-                        <Table.HeadCell className="text-end pe-3">Credit</Table.HeadCell>
+                        <Table.HeadCell className="text-end">Credit</Table.HeadCell>
+                        <Table.HeadCell className="text-end">Closing Debit</Table.HeadCell>
+                        <Table.HeadCell className="text-end pe-3">Closing Credit</Table.HeadCell>
                     </Table.Head>
                     <tbody>
                         {report.rows.map((row) => (
@@ -68,15 +72,21 @@ export default function TrialBalance({ report, filters }: Props) {
                                 <Table.Cell className="ps-3">{row.code}</Table.Cell>
                                 <Table.Cell>{row.name}</Table.Cell>
                                 <Table.Cell style={{ textTransform: 'capitalize' }}>{row.type}</Table.Cell>
+                                <Table.Cell className="text-end">{row.opening_debit > 0 && <MoneyDisplay amount={row.opening_debit} />}</Table.Cell>
+                                <Table.Cell className="text-end">{row.opening_credit > 0 && <MoneyDisplay amount={row.opening_credit} />}</Table.Cell>
                                 <Table.Cell className="text-end">
                                     {row.debit > 0 && (
                                         <AmountLink accountId={row.account_id} from={filters.from} to={filters.to} amount={row.debit} />
                                     )}
                                 </Table.Cell>
-                                <Table.Cell className="text-end pe-3">
+                                <Table.Cell className="text-end">
                                     {row.credit > 0 && (
                                         <AmountLink accountId={row.account_id} from={filters.from} to={filters.to} amount={row.credit} />
                                     )}
+                                </Table.Cell>
+                                <Table.Cell className="text-end">{row.closing_debit > 0 && <MoneyDisplay amount={row.closing_debit} />}</Table.Cell>
+                                <Table.Cell className="text-end pe-3">
+                                    {row.closing_credit > 0 && <MoneyDisplay amount={row.closing_credit} />}
                                 </Table.Cell>
                             </Table.Row>
                         ))}
@@ -85,10 +95,22 @@ export default function TrialBalance({ report, filters }: Props) {
                                 Total
                             </Table.Cell>
                             <Table.Cell className="text-end">
+                                <MoneyDisplay amount={report.total_opening_debit} />
+                            </Table.Cell>
+                            <Table.Cell className="text-end">
+                                <MoneyDisplay amount={report.total_opening_credit} />
+                            </Table.Cell>
+                            <Table.Cell className="text-end">
                                 <MoneyDisplay amount={report.total_debit} />
                             </Table.Cell>
-                            <Table.Cell className="text-end pe-3">
+                            <Table.Cell className="text-end">
                                 <MoneyDisplay amount={report.total_credit} />
+                            </Table.Cell>
+                            <Table.Cell className="text-end">
+                                <MoneyDisplay amount={report.total_closing_debit} />
+                            </Table.Cell>
+                            <Table.Cell className="text-end pe-3">
+                                <MoneyDisplay amount={report.total_closing_credit} />
                             </Table.Cell>
                         </Table.Row>
                     </tbody>

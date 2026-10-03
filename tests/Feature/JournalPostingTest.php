@@ -109,6 +109,46 @@ class JournalPostingTest extends TestCase
         );
     }
 
+    public function test_trial_balance_shows_opening_balance_as_of_from_and_closing_balance_as_of_to(): void
+    {
+        $cash = $this->account('1000', 'Cash', AccountType::Asset, 'debit');
+        $revenue = $this->account('4000', 'Sales Revenue', AccountType::Revenue, 'credit');
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'cost']);
+
+        $this->actingAs($this->user)->post(route('journals.store'), [
+            'date' => now()->subDays(10)->toDateString(),
+            'description' => 'Earlier sale',
+            'lines' => [
+                ['account_id' => $cash->id, 'debit' => 500, 'credit' => 0, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 500, 'cost_center_id' => $center->id],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($this->user)->post(route('journals.store'), [
+            'date' => now()->toDateString(),
+            'description' => 'Cash sale in range',
+            'lines' => [
+                ['account_id' => $cash->id, 'debit' => 200, 'credit' => 0, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 200, 'cost_center_id' => $center->id],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $response = $this->actingAs($this->user)->get(route('reports.trial-balance', [
+            'from' => now()->subDays(2)->toDateString(),
+            'to' => now()->toDateString(),
+        ]));
+
+        $response->assertInertia(fn ($page) => $page
+            ->component('Accounting/Reports/TrialBalance')
+            ->where('report.total_opening_debit', 500)
+            ->where('report.total_opening_credit', 500)
+            ->where('report.total_debit', 200)
+            ->where('report.total_credit', 200)
+            ->where('report.total_closing_debit', 700)
+            ->where('report.total_closing_credit', 700)
+        );
+    }
+
     public function test_journal_line_with_an_amount_requires_a_cost_center(): void
     {
         $cash = $this->account('1000', 'Cash', AccountType::Asset, 'debit');

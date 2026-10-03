@@ -27,8 +27,8 @@ class ReportController extends Controller
     {
         $this->authorize('viewAny', Account::class);
 
-        $from = $request->string('from')->value() ?: null;
-        $to = $request->string('to')->value() ?: null;
+        $from = $request->string('from')->value() ?: now()->startOfYear()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
 
         return Inertia::render('Accounting/Reports/TrialBalance', [
             'report' => $this->reports->trialBalance($from, $to),
@@ -40,8 +40,8 @@ class ReportController extends Controller
     {
         $this->authorize('viewAny', Account::class);
 
-        $from = $request->string('from')->value() ?: null;
-        $to = $request->string('to')->value() ?: null;
+        $from = $request->string('from')->value() ?: now()->startOfYear()->toDateString();
+        $to = $request->string('to')->value() ?: now()->toDateString();
 
         return $this->downloadPdf('trial-balance.pdf', 'pdf.reports.trial-balance', [
             'tenant' => auth()->user()->tenant,
