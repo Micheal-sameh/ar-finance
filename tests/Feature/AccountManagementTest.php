@@ -63,6 +63,28 @@ class AccountManagementTest extends TestCase
         $this->assertDatabaseMissing('accounts', ['code' => '1000']);
     }
 
+    public function test_parent_account_cannot_already_have_a_balance(): void
+    {
+        $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1000',
+            'name' => 'Cash',
+            'type' => AccountType::Asset->value,
+            'opening_balance' => 500,
+        ])->assertSessionHasNoErrors();
+
+        $cash = Account::where('code', '1000')->firstOrFail();
+
+        $response = $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1010',
+            'name' => 'Petty Cash',
+            'type' => AccountType::Asset->value,
+            'parent_id' => $cash->id,
+        ]);
+
+        $response->assertSessionHasErrors('parent_id');
+        $this->assertDatabaseMissing('accounts', ['code' => '1010']);
+    }
+
     public function test_account_name_must_be_unique_within_its_type(): void
     {
         Account::create([
@@ -212,6 +234,36 @@ class AccountManagementTest extends TestCase
         );
     }
 
+    public function test_updating_an_account_cannot_assign_a_parent_that_already_has_a_balance(): void
+    {
+        $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1000',
+            'name' => 'Cash',
+            'type' => AccountType::Asset->value,
+            'opening_balance' => 500,
+        ])->assertSessionHasNoErrors();
+
+        $cash = Account::where('code', '1000')->firstOrFail();
+
+        $other = Account::create([
+            'tenant_id' => $this->tenant->id,
+            'code' => '1010',
+            'name' => 'Petty Cash',
+            'type' => AccountType::Asset,
+            'normal_balance' => 'debit',
+        ]);
+
+        $response = $this->actingAs($this->user)->put(route('accounts.update', $other), [
+            'code' => $other->code,
+            'name' => $other->name,
+            'type' => $other->type->value,
+            'parent_id' => $cash->id,
+        ]);
+
+        $response->assertSessionHasErrors('parent_id');
+        $this->assertDatabaseHas('accounts', ['id' => $other->id, 'parent_id' => null]);
+    }
+
     private function csvFile(string $contents, string $name = 'accounts.csv'): UploadedFile
     {
         return UploadedFile::fake()->createWithContent($name, $contents);
@@ -263,6 +315,26 @@ class AccountManagementTest extends TestCase
 
         $this->assertDatabaseHas('journal_lines', ['account_id' => $cash->id, 'debit' => 500, 'credit' => 0]);
         $this->assertDatabaseHas('journal_lines', ['account_id' => $equity->id, 'debit' => 0, 'credit' => 500]);
+    }
+
+    public function test_importing_accounts_rejects_a_parent_code_that_already_has_a_balance(): void
+    {
+        $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1000',
+            'name' => 'Cash',
+            'type' => AccountType::Asset->value,
+            'opening_balance' => 500,
+        ])->assertSessionHasNoErrors();
+
+        $csv = "code,name,type,parent_code\n"
+            ."1010,Petty Cash,asset,1000\n";
+
+        $response = $this->actingAs($this->user)->post(route('accounts.import'), [
+            'file' => $this->csvFile($csv),
+        ]);
+
+        $response->assertSessionHasErrors('file');
+        $this->assertDatabaseMissing('accounts', ['code' => '1010']);
     }
 
     public function test_importing_accounts_with_an_invalid_row_creates_nothing(): void

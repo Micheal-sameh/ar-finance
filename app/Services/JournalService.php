@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\DTOs\CreateJournalEntryData;
 use App\Enums\JournalSourceType;
+use App\Exceptions\NonPostableAccountException;
 use App\Exceptions\UnbalancedJournalEntryException;
+use App\Models\Account;
 use App\Models\JournalEntry;
 use App\Repositories\Contracts\JournalRepositoryInterface;
 use Carbon\Carbon;
@@ -28,10 +30,12 @@ class JournalService
      * Validate and post a balanced journal entry in one DB transaction.
      *
      * @throws UnbalancedJournalEntryException
+     * @throws NonPostableAccountException
      */
     public function postJournalEntry(CreateJournalEntryData $data): JournalEntry
     {
         $this->assertBalanced($data);
+        $this->assertPostable($data);
 
         return DB::transaction(function () use ($data) {
             $entry = $this->journals->create(
@@ -73,6 +77,27 @@ class JournalService
 
         if (! $this->isBalanced($totalDebit, $totalCredit)) {
             throw UnbalancedJournalEntryException::forTotals($totalDebit, $totalCredit);
+        }
+    }
+
+    /**
+     * A parent account (one with child accounts) is a label for grouping
+     * its children on reports — it never carries its own balance, so no
+     * journal line may post to it.
+     *
+     * @throws NonPostableAccountException
+     */
+    public function assertPostable(CreateJournalEntryData $data): void
+    {
+        $accountIds = array_unique(array_map(fn ($line) => $line->accountId, $data->lines));
+
+        $parentAccount = Account::query()
+            ->whereIn('id', $accountIds)
+            ->whereHas('children')
+            ->first();
+
+        if ($parentAccount) {
+            throw NonPostableAccountException::hasChildren($parentAccount->code);
         }
     }
 

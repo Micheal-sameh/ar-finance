@@ -503,6 +503,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                             error={form.errors.parent_id}
                             placeholder="No parent"
                             filterType={form.data.type}
+                            includeParents
                         />
                     </div>
                     {!editing && (

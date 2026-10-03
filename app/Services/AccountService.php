@@ -155,18 +155,23 @@ class AccountService
             $knownTypes = [];
             $usedCodes = [];
             $usedNames = [];
+            $codesWithBalance = [];
 
             foreach ($this->accounts->filtered() as $account) {
                 $knownTypes[$account->code] = $account->type;
                 $usedCodes[$account->code] = true;
                 $usedNames[$account->type->value.'|'.mb_strtolower($account->name)] = true;
+
+                if ($this->accounts->hasJournalLines($account)) {
+                    $codesWithBalance[$account->code] = true;
+                }
             }
 
             $errors = [];
             $valid = [];
 
             foreach ($sorted as $row) {
-                $rowErrors = $this->validateImportRow($row, $knownTypes, $usedCodes, $usedNames);
+                $rowErrors = $this->validateImportRow($row, $knownTypes, $usedCodes, $usedNames, $codesWithBalance);
 
                 if ($rowErrors !== []) {
                     foreach ($rowErrors as $message) {
@@ -179,6 +184,11 @@ class AccountService
                 $knownTypes[$row['code']] = $row['type'];
                 $usedCodes[$row['code']] = true;
                 $usedNames[$row['type']->value.'|'.mb_strtolower($row['name'])] = true;
+
+                if ($row['opening_balance'] !== null && round($row['opening_balance'], 2) !== 0.0) {
+                    $codesWithBalance[$row['code']] = true;
+                }
+
                 $valid[] = $row;
             }
 
@@ -214,9 +224,10 @@ class AccountService
      * @param  array<string, AccountType>  $knownTypes
      * @param  array<string, true>  $usedCodes
      * @param  array<string, true>  $usedNames
+     * @param  array<string, true>  $codesWithBalance
      * @return string[]
      */
-    private function validateImportRow(array $row, array $knownTypes, array $usedCodes, array $usedNames): array
+    private function validateImportRow(array $row, array $knownTypes, array $usedCodes, array $usedNames, array $codesWithBalance): array
     {
         $errors = [];
 
@@ -241,6 +252,8 @@ class AccountService
                 $errors[] = "parent code {$row['parent_code']} was not found (it must exist already or appear earlier in the file).";
             } elseif ($parentType !== $row['type']) {
                 $errors[] = "the parent account must be a {$row['type']->label()} account.";
+            } elseif (isset($codesWithBalance[$row['parent_code']])) {
+                $errors[] = "parent code {$row['parent_code']} already has a balance or postings — parent accounts are labels only.";
             }
         }
 

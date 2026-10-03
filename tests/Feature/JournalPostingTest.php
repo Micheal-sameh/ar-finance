@@ -167,6 +167,27 @@ class JournalPostingTest extends TestCase
         $this->assertDatabaseMissing('journal_entries', ['description' => 'Missing cost center']);
     }
 
+    public function test_journal_entry_cannot_post_to_a_parent_account(): void
+    {
+        $parent = $this->account('1100', 'Current Assets', AccountType::Asset, 'debit');
+        $cash = $this->account('1110', 'Cash', AccountType::Asset, 'debit');
+        $cash->update(['parent_id' => $parent->id]);
+        $revenue = $this->account('4000', 'Sales Revenue', AccountType::Revenue, 'credit');
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'cost']);
+
+        $response = $this->actingAs($this->user)->post(route('journals.store'), [
+            'date' => now()->toDateString(),
+            'description' => 'Posting to a parent account',
+            'lines' => [
+                ['account_id' => $parent->id, 'debit' => 100, 'credit' => 0, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 100, 'cost_center_id' => $center->id],
+            ],
+        ]);
+
+        $response->assertSessionHasErrors('lines');
+        $this->assertDatabaseMissing('journal_entries', ['description' => 'Posting to a parent account']);
+    }
+
     public function test_account_with_journal_lines_cannot_be_deleted(): void
     {
         $cash = $this->account('1000', 'Cash', AccountType::Asset, 'debit');

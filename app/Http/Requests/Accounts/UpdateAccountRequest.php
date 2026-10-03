@@ -62,6 +62,10 @@ class UpdateAccountRequest extends FormRequest
                     if ($type && $parent && $parent->type !== $type) {
                         $fail("The parent account must be a {$type->label()} account.");
                     }
+
+                    if ($parent && $parent->journalLines()->exists()) {
+                        $fail('The parent account must not already have a balance or postings — parent accounts are labels only.');
+                    }
                 },
             ],
             'is_active' => ['boolean'],

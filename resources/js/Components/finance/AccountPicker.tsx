@@ -4,6 +4,15 @@ import { useMemo, useState } from 'react';
 import { useAccounts } from '@/hooks/useAccounts';
 import type { AccountOption, AccountType } from '@/types/finance';
 
+const TYPE_LABELS: Record<AccountType, string> = {
+    asset: 'Asset',
+    liability: 'Liability',
+    equity: 'Equity',
+    revenue: 'Revenue',
+    expense: 'Expense',
+};
+const TYPE_ORDER: AccountType[] = ['asset', 'liability', 'equity', 'revenue', 'expense'];
+
 export interface AccountPickerProps {
     value: number | null;
     onChange: (accountId: number | null) => void;
@@ -14,6 +23,8 @@ export interface AccountPickerProps {
     filterAncestorCode?: string;
     /** Also include the account with filterAncestorCode's own code, not just its descendants (e.g. '5310' when that's itself a leaf account). */
     includeAncestor?: boolean;
+    /** Parent accounts (those with children) are label-only and can't be posted to, so they're hidden by default. Pass true when picking a parent for another account. */
+    includeParents?: boolean;
     dropUp?: boolean;
 }
 
@@ -30,10 +41,13 @@ export function AccountPicker({
     filterType,
     filterAncestorCode,
     includeAncestor = false,
+    includeParents = false,
     dropUp = false,
 }: AccountPickerProps) {
     const { accounts, loading } = useAccounts();
     const [query, setQuery] = useState('');
+
+    const parentIds = useMemo(() => new Set(accounts.filter((a) => a.parent_id).map((a) => a.parent_id)), [accounts]);
 
     const selected = accounts.find((a) => a.id === value) ?? null;
 
@@ -52,6 +66,10 @@ export function AccountPicker({
     const filtered = useMemo(() => {
         let scoped = filterType ? accounts.filter((a) => a.type === filterType) : accounts;
 
+        if (!includeParents) {
+            scoped = scoped.filter((a) => !parentIds.has(a.id));
+        }
+
         if (filterAncestorCode) {
             scoped = scoped.filter(
                 (a) => isDescendantOf(a, filterAncestorCode) || (includeAncestor && a.code === filterAncestorCode),
@@ -65,7 +83,14 @@ export function AccountPicker({
             (a) => a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q),
         );
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [accounts, filterType, filterAncestorCode, includeAncestor, query]);
+    }, [accounts, filterType, filterAncestorCode, includeAncestor, includeParents, parentIds, query]);
+
+    const groups = useMemo(() => {
+        return TYPE_ORDER.map((type) => ({
+            type,
+            accounts: filtered.filter((a) => a.type === type),
+        })).filter((group) => group.accounts.length > 0);
+    }, [filtered]);
 
     return (
         <Combobox value={selected} onChange={(account: AccountOption | null) => onChange(account?.id ?? null)}>
@@ -108,25 +133,43 @@ export function AccountPicker({
                             No matching accounts.
                         </div>
                     )}
-                    {filtered.map((account) => (
-                        <Combobox.Option key={account.id} value={account} as="div">
-                            {({ active, selected: isSelected }) => (
+                    {groups.map((group) => (
+                        <div key={group.type}>
+                            {!filterType && (
                                 <div
-                                    className="d-flex align-items-center justify-content-between px-3 py-2"
+                                    className="px-3 pt-2 pb-1"
                                     style={{
-                                        fontSize: '14px',
-                                        cursor: 'pointer',
-                                        backgroundColor: active ? '#EFF4FE' : 'transparent',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.04em',
+                                        color: 'var(--af-label)',
                                     }}
                                 >
-                                    <span>
-                                        <span style={{ color: 'var(--af-label)' }}>{account.code}</span>{' '}
-                                        {account.name}
-                                    </span>
-                                    {isSelected && <Check size={14} color="var(--af-primary)" />}
+                                    {TYPE_LABELS[group.type]}
                                 </div>
                             )}
-                        </Combobox.Option>
+                            {group.accounts.map((account) => (
+                                <Combobox.Option key={account.id} value={account} as="div">
+                                    {({ active, selected: isSelected }) => (
+                                        <div
+                                            className="d-flex align-items-center justify-content-between px-3 py-2"
+                                            style={{
+                                                fontSize: '14px',
+                                                cursor: 'pointer',
+                                                backgroundColor: active ? '#EFF4FE' : 'transparent',
+                                            }}
+                                        >
+                                            <span>
+                                                <span style={{ color: 'var(--af-label)' }}>{account.code}</span>{' '}
+                                                {account.name}
+                                            </span>
+                                            {isSelected && <Check size={14} color="var(--af-primary)" />}
+                                        </div>
+                                    )}
+                                </Combobox.Option>
+                            ))}
+                        </div>
                     ))}
                 </Combobox.Options>
             </div>
