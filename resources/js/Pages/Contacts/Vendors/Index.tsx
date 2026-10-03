@@ -15,9 +15,10 @@ import type { Paginated, Vendor } from '@/types/finance';
 interface Props {
     vendors: Paginated<Vendor>;
     filters: { search?: string };
+    viewingAllTenants: boolean;
 }
 
-export default function VendorsIndex({ vendors, filters }: Props) {
+export default function VendorsIndex({ vendors, filters, viewingAllTenants }: Props) {
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
@@ -81,14 +82,20 @@ export default function VendorsIndex({ vendors, filters }: Props) {
 
             <PageHeader
                 title="Vendors"
-                subtitle="Everyone you record expenses against."
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s vendors, combined. Switch into a tenant to manage one.'
+                        : 'Everyone you record expenses against.'
+                }
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('vendors.export', filters)} />
-                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                            New Vendor
-                        </Button>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('vendors.export', filters)} />
+                            <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                                New Vendor
+                            </Button>
+                        </div>
+                    )
                 }
             />
 
@@ -107,7 +114,7 @@ export default function VendorsIndex({ vendors, filters }: Props) {
                         icon={<Truck size={20} />}
                         title="No vendors yet"
                         description="Add a vendor to tag against expenses."
-                        action={<Button onClick={openCreate}>New Vendor</Button>}
+                        action={!viewingAllTenants && <Button onClick={openCreate}>New Vendor</Button>}
                     />
                 ) : (
                     <Table cards>
@@ -115,46 +122,50 @@ export default function VendorsIndex({ vendors, filters }: Props) {
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Email</Table.HeadCell>
                             <Table.HeadCell>Payment terms</Table.HeadCell>
-                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
                             {vendors.data.map((vendor) => (
                                 <Table.Row
                                     key={vendor.id}
-                                    style={{ cursor: 'pointer' }}
-                                    onClick={() => router.get(route('vendors.show', vendor.id))}
+                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
+                                    onClick={viewingAllTenants ? undefined : () => router.get(route('vendors.show', vendor.id))}
                                 >
                                     <Table.Cell className="ps-3" label="Name">{vendor.name}</Table.Cell>
                                     <Table.Cell label="Email">{vendor.email ?? '—'}</Table.Cell>
                                     <Table.Cell label="Payment terms">{vendor.payment_terms ?? '—'}</Table.Cell>
-                                    <Table.Cell className="text-end pe-3" label="Actions">
-                                        <div className="d-flex justify-content-end gap-1">
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm p-1"
-                                                style={{ color: 'var(--af-label)' }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openEdit(vendor);
-                                                }}
-                                                aria-label="Edit"
-                                            >
-                                                <Pencil size={15} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm p-1"
-                                                style={{ color: 'var(--af-danger)' }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    destroy(vendor);
-                                                }}
-                                                aria-label="Delete"
-                                            >
-                                                <Trash2 size={15} />
-                                            </button>
-                                        </div>
-                                    </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{vendor.tenant_name}</Table.Cell>}
+                                    {!viewingAllTenants && (
+                                        <Table.Cell className="text-end pe-3" label="Actions">
+                                            <div className="d-flex justify-content-end gap-1">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm p-1"
+                                                    style={{ color: 'var(--af-label)' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openEdit(vendor);
+                                                    }}
+                                                    aria-label="Edit"
+                                                >
+                                                    <Pencil size={15} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm p-1"
+                                                    style={{ color: 'var(--af-danger)' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        destroy(vendor);
+                                                    }}
+                                                    aria-label="Delete"
+                                                >
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        </Table.Cell>
+                                    )}
                                 </Table.Row>
                             ))}
                         </tbody>

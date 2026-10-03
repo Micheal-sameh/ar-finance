@@ -8,6 +8,7 @@ use App\Http\Requests\Expenses\StoreExpenseRequest;
 use App\Models\Expense;
 use App\Services\ExpenseService;
 use App\Services\VendorService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,15 +23,25 @@ class ExpenseController extends Controller
     public function __construct(
         private readonly ExpenseService $expenses,
         private readonly VendorService $vendors,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Expense::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $expenses = $this->expenses->paginate($request->only(['status', 'from', 'to', 'search']))
+            ->through(fn (Expense $expense) => [
+                ...$expense->toArray(),
+                'tenant_name' => $viewingAllTenants ? $expense->tenant?->name : null,
+            ]);
+
         return Inertia::render('Purchases/Expenses/Index', [
-            'expenses' => $this->expenses->paginate($request->only(['status', 'from', 'to', 'search'])),
+            'expenses' => $expenses,
             'filters' => $request->only(['status', 'from', 'to', 'search']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

@@ -10,6 +10,7 @@ use App\Models\Invoice;
 use App\Services\ClientService;
 use App\Services\ExchangeRateService;
 use App\Services\InvoiceService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,15 +27,25 @@ class InvoiceController extends Controller
         private readonly InvoiceService $invoices,
         private readonly ClientService $clients,
         private readonly ExchangeRateService $exchangeRates,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Invoice::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $invoices = $this->invoices->paginate($request->only(['status', 'from', 'to', 'search']))
+            ->through(fn (Invoice $invoice) => [
+                ...$invoice->toArray(),
+                'tenant_name' => $viewingAllTenants ? $invoice->tenant?->name : null,
+            ]);
+
         return Inertia::render('Sales/Invoices/Index', [
-            'invoices' => $this->invoices->paginate($request->only(['status', 'from', 'to', 'search'])),
+            'invoices' => $invoices,
             'filters' => $request->only(['status', 'from', 'to', 'search']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

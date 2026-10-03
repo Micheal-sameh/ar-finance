@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Bills;
 
 use App\DTOs\CreateBillData;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ class StoreBillRequest extends FormRequest
             'purchase_order_id' => ['nullable', 'exists:purchase_orders,id'],
             'bill_number' => [
                 'required', 'string', 'max:50',
-                Rule::unique('bills', 'bill_number')->where('tenant_id', $this->user()->tenant_id),
+                Rule::unique('bills', 'bill_number')->where('tenant_id', app(TenantContext::class)->id()),
             ],
             'bill_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:bill_date'],

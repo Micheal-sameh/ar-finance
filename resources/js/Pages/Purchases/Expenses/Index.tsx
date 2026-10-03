@@ -18,6 +18,7 @@ import { expenseStatusVariant, formatDate } from '@/utils/finance';
 interface Props {
     expenses: Paginated<Expense>;
     filters: { status?: string; from?: string; to?: string; search?: string };
+    viewingAllTenants: boolean;
 }
 
 const EXPENSE_STATUSES = [
@@ -26,7 +27,7 @@ const EXPENSE_STATUSES = [
     { value: 'paid', label: 'Paid' },
 ];
 
-export default function ExpensesIndex({ expenses, filters }: Props) {
+export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
 
     function runSearch(e: FormEvent) {
@@ -49,14 +50,20 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
 
             <PageHeader
                 title="Expenses"
-                subtitle="Spend recorded against the business."
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s expenses, combined. Switch into a tenant to manage one.'
+                        : 'Spend recorded against the business.'
+                }
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('expenses.export', filters)} />
-                        <Link href={route('expenses.create')}>
-                            <Button leadingIcon={<Plus size={16} />}>New Expense</Button>
-                        </Link>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('expenses.export', filters)} />
+                            <Link href={route('expenses.create')}>
+                                <Button leadingIcon={<Plus size={16} />}>New Expense</Button>
+                            </Link>
+                        </div>
+                    )
                 }
             />
 
@@ -116,9 +123,11 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
                         title="No expenses yet"
                         description="Record your first expense."
                         action={
-                            <Link href={route('expenses.create')}>
-                                <Button>New Expense</Button>
-                            </Link>
+                            !viewingAllTenants && (
+                                <Link href={route('expenses.create')}>
+                                    <Button>New Expense</Button>
+                                </Link>
+                            )
                         }
                     />
                 ) : (
@@ -129,11 +138,16 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
                             <Table.HeadCell>Category</Table.HeadCell>
                             <Table.HeadCell>Vendor</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Amount</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {expenses.data.map((expense) => (
-                                <Table.Row key={expense.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('expenses.show', expense.id))}>
+                                <Table.Row
+                                    key={expense.id}
+                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
+                                    onClick={viewingAllTenants ? undefined : () => router.get(route('expenses.show', expense.id))}
+                                >
                                     <Table.Cell className="ps-3" label="Date">{formatDate(expense.date)}</Table.Cell>
                                     <Table.Cell label="Description">{expense.description}</Table.Cell>
                                     <Table.Cell label="Category">{expense.account?.name ?? '—'}</Table.Cell>
@@ -141,6 +155,7 @@ export default function ExpensesIndex({ expenses, filters }: Props) {
                                     <Table.Cell label="Status">
                                         <Badge variant={expenseStatusVariant(expense.status)}>{expense.status}</Badge>
                                     </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{expense.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Amount">
                                         <MoneyDisplay amount={expense.amount} />
                                     </Table.Cell>

@@ -9,6 +9,7 @@ use App\Models\BankAccount;
 use App\Services\BankAccountService;
 use App\Services\BankReconciliationService;
 use App\Services\ExchangeRateService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,16 +25,26 @@ class BankAccountController extends Controller
         private readonly BankAccountService $bankAccounts,
         private readonly BankReconciliationService $reconciliation,
         private readonly ExchangeRateService $exchangeRates,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', BankAccount::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $bankAccounts = $this->bankAccounts->paginate($request->only(['currency', 'search']))
+            ->through(fn (BankAccount $bankAccount) => [
+                ...$bankAccount->toArray(),
+                'tenant_name' => $viewingAllTenants ? $bankAccount->tenant?->name : null,
+            ]);
+
         return Inertia::render('Banking/BankAccounts/Index', [
-            'bankAccounts' => $this->bankAccounts->paginate($request->only(['currency', 'search'])),
+            'bankAccounts' => $bankAccounts,
             'filters' => $request->only(['currency', 'search']),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

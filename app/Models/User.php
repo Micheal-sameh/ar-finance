@@ -40,4 +40,14 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Tenant::class);
     }
+
+    /**
+     * A Platform Admin has no tenant of their own — they act across every
+     * tenant, or inside whichever one they've switched into (see
+     * TenantContext). Their tenant_id column value is irrelevant.
+     */
+    public function isPlatformAdmin(): bool
+    {
+        return $this->hasRole('Platform Admin');
+    }
 }

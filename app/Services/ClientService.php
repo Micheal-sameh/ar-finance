@@ -7,6 +7,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Repositories\Contracts\ClientRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use RuntimeException;
@@ -33,7 +34,7 @@ class ClientService
     public function create(CreateClientData $data): Client
     {
         return $this->clients->create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => app(TenantContext::class)->id(),
             'name' => $data->name,
             'email' => $data->email,
             'phone' => $data->phone,

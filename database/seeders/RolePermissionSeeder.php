@@ -56,6 +56,8 @@ class RolePermissionSeeder extends Seeder
         'exchange_rates.manage',
         'users.view',
         'users.manage',
+        'platform.access',
+        'tenants.manage',
     ];
 
     /**
@@ -132,13 +134,20 @@ class RolePermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
+        // Platform Admin = cross-tenant access (see TenantContext) — every
+        // module permission plus the platform-only ones. Distinct from the
+        // tenant-scoped Super Admin below, which is still confined to its
+        // own tenant.
+        $platformAdmin = Role::firstOrCreate(['name' => 'Platform Admin', 'guard_name' => 'web']);
+        $platformAdmin->syncPermissions(self::PERMISSIONS);
+
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
-        $superAdmin->syncPermissions(self::PERMISSIONS);
+        $superAdmin->syncPermissions(array_diff(self::PERMISSIONS, ['platform.access', 'tenants.manage']));
 
         // Admin = all modules except Users — user management (status,
         // role visibility) is reserved for Super Admin.
         $admin = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
-        $admin->syncPermissions(array_diff(self::PERMISSIONS, ['users.view', 'users.manage']));
+        $admin->syncPermissions(array_diff(self::PERMISSIONS, ['users.view', 'users.manage', 'platform.access', 'tenants.manage']));
 
         $accountant = Role::firstOrCreate(['name' => 'Accountant', 'guard_name' => 'web']);
         $accountant->syncPermissions(self::ACCOUNTANT_PERMISSIONS);

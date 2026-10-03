@@ -9,6 +9,7 @@ use App\DTOs\PayslipData;
 use App\Enums\JournalSourceType;
 use App\Models\PayrollRun;
 use App\Repositories\Contracts\PayrollRunRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -23,8 +24,7 @@ class PayrollRunService
     public function __construct(
         private readonly PayrollRunRepositoryInterface $payrollRuns,
         private readonly JournalService $journals,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -43,7 +43,7 @@ class PayrollRunService
     {
         return $this->payrollRuns->create(
             attributes: [
-                'tenant_id' => auth()->user()->tenant_id,
+                'tenant_id' => app(TenantContext::class)->id(),
                 'period_start' => $data->periodStart,
                 'period_end' => $data->periodEnd,
                 'pay_date' => $data->payDate,

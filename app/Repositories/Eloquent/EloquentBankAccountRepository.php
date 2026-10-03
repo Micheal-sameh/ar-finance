@@ -12,7 +12,7 @@ class EloquentBankAccountRepository implements BankAccountRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return BankAccount::query()
-            ->with('account')
+            ->with(['account', 'tenant:id,name'])
             ->when($filters['currency'] ?? null, fn ($query, $currency) => $query->where('currency', $currency))
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')

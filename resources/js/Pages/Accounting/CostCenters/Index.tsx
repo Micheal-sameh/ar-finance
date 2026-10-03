@@ -21,9 +21,10 @@ interface Props {
     costCenters: Paginated<CostCenter>;
     summary: CostCenterSummaryRow[];
     filters: { type?: string; search?: string; from: string; to: string };
+    viewingAllTenants: boolean;
 }
 
-export default function CostCentersIndex({ costCenters, summary, filters }: Props) {
+export default function CostCentersIndex({ costCenters, summary, filters, viewingAllTenants }: Props) {
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
@@ -103,14 +104,20 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
 
             <PageHeader
                 title="P&C Centers"
-                subtitle={`Budget vs actual, ${filters.from} to ${filters.to}.`}
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s cost/profit centers, combined. Switch into a tenant to manage one.'
+                        : `Budget vs actual, ${filters.from} to ${filters.to}.`
+                }
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('cost-centers.export', filters)} />
-                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                            New Center
-                        </Button>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('cost-centers.export', filters)} />
+                            <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                                New Center
+                            </Button>
+                        </div>
+                    )
                 }
             />
 
@@ -150,7 +157,7 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
                         icon={<PiggyBank size={20} />}
                         title="No centers yet"
                         description="Create a cost or profit center to start tagging expenses and journal lines."
-                        action={<Button onClick={openCreate}>New Center</Button>}
+                        action={!viewingAllTenants && <Button onClick={openCreate}>New Center</Button>}
                     />
                 ) : (
                     <Table cards>
@@ -159,7 +166,8 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
                             <Table.HeadCell>Type</Table.HeadCell>
                             <Table.HeadCell style={{ width: '260px' }}>Budget vs Actual</Table.HeadCell>
                             <Table.HeadCell className="text-end">Net</Table.HeadCell>
-                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
                             {costCenters.data.map((costCenter) => {
@@ -189,16 +197,19 @@ export default function CostCentersIndex({ costCenters, summary, filters }: Prop
                                         >
                                             {(row?.net ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </Table.Cell>
-                                        <Table.Cell className="text-end pe-3" label="Actions">
-                                            <div className="d-flex justify-content-end gap-1">
-                                                <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(costCenter)} aria-label="Edit">
-                                                    <Pencil size={15} />
-                                                </button>
-                                                <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => destroy(costCenter)} aria-label="Delete">
-                                                    <Trash2 size={15} />
-                                                </button>
-                                            </div>
-                                        </Table.Cell>
+                                        {viewingAllTenants && <Table.Cell label="Tenant">{costCenter.tenant_name}</Table.Cell>}
+                                        {!viewingAllTenants && (
+                                            <Table.Cell className="text-end pe-3" label="Actions">
+                                                <div className="d-flex justify-content-end gap-1">
+                                                    <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(costCenter)} aria-label="Edit">
+                                                        <Pencil size={15} />
+                                                    </button>
+                                                    <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => destroy(costCenter)} aria-label="Delete">
+                                                        <Trash2 size={15} />
+                                                    </button>
+                                                </div>
+                                            </Table.Cell>
+                                        )}
                                     </Table.Row>
                                 );
                             })}

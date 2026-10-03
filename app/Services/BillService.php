@@ -10,6 +10,7 @@ use App\Enums\JournalSourceType;
 use App\Models\Bill;
 use App\Models\PurchaseOrder;
 use App\Repositories\Contracts\BillRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -28,8 +29,7 @@ class BillService
     public function __construct(
         private readonly BillRepositoryInterface $bills,
         private readonly JournalService $journals,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -48,7 +48,7 @@ class BillService
     {
         return $this->bills->create(
             attributes: [
-                'tenant_id' => auth()->user()->tenant_id,
+                'tenant_id' => app(TenantContext::class)->id(),
                 'vendor_id' => $data->vendorId,
                 'purchase_order_id' => $data->purchaseOrderId,
                 'bill_number' => $data->billNumber,

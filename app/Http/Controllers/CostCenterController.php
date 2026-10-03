@@ -9,6 +9,7 @@ use App\Http\Resources\CostCenterOptionResource;
 use App\Models\CostCenter;
 use App\Services\CostCenterService;
 use App\Services\ReportService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -23,6 +24,7 @@ class CostCenterController extends Controller
     public function __construct(
         private readonly CostCenterService $costCenters,
         private readonly ReportService $reports,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
@@ -31,11 +33,19 @@ class CostCenterController extends Controller
 
         $from = $request->string('from')->value() ?: now()->startOfMonth()->toDateString();
         $to = $request->string('to')->value() ?: now()->toDateString();
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $costCenters = $this->costCenters->paginate($request->only(['type', 'search']))
+            ->through(fn (CostCenter $costCenter) => [
+                ...$costCenter->toArray(),
+                'tenant_name' => $viewingAllTenants ? $costCenter->tenant?->name : null,
+            ]);
 
         return Inertia::render('Accounting/CostCenters/Index', [
-            'costCenters' => $this->costCenters->paginate($request->only(['type', 'search'])),
+            'costCenters' => $costCenters,
             'summary' => $this->reports->costCenterSummary($from, $to),
             'filters' => array_merge($request->only(['type', 'search']), ['from' => $from, 'to' => $to]),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

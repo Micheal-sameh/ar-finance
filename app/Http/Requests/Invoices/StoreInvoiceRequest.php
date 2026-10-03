@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Invoices;
 
 use App\DTOs\CreateInvoiceData;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +20,7 @@ class StoreInvoiceRequest extends FormRequest
             'client_id' => ['required', 'exists:clients,id'],
             'invoice_number' => [
                 'required', 'string', 'max:50',
-                Rule::unique('invoices', 'invoice_number')->where('tenant_id', $this->user()->tenant_id),
+                Rule::unique('invoices', 'invoice_number')->where('tenant_id', app(TenantContext::class)->id()),
             ],
             'issue_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:issue_date'],

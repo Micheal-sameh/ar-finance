@@ -8,6 +8,7 @@ use App\Models\Bill;
 use App\Models\PurchaseOrder;
 use App\Models\Vendor;
 use App\Repositories\Contracts\VendorRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use RuntimeException;
@@ -34,7 +35,7 @@ class VendorService
     public function create(CreateVendorData $data): Vendor
     {
         return $this->vendors->create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => app(TenantContext::class)->id(),
             'name' => $data->name,
             'email' => $data->email,
             'tax_number' => $data->taxNumber,

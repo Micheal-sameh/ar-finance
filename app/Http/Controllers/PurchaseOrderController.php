@@ -8,6 +8,7 @@ use App\Http\Requests\PurchaseOrders\StorePurchaseOrderRequest;
 use App\Models\PurchaseOrder;
 use App\Services\PurchaseOrderService;
 use App\Services\VendorService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,15 +23,25 @@ class PurchaseOrderController extends Controller
     public function __construct(
         private readonly PurchaseOrderService $purchaseOrders,
         private readonly VendorService $vendors,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', PurchaseOrder::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $purchaseOrders = $this->purchaseOrders->paginate($request->only(['status', 'from', 'to', 'search']))
+            ->through(fn (PurchaseOrder $purchaseOrder) => [
+                ...$purchaseOrder->toArray(),
+                'tenant_name' => $viewingAllTenants ? $purchaseOrder->tenant?->name : null,
+            ]);
+
         return Inertia::render('Purchases/PurchaseOrders/Index', [
-            'purchaseOrders' => $this->purchaseOrders->paginate($request->only(['status', 'from', 'to', 'search'])),
+            'purchaseOrders' => $purchaseOrders,
             'filters' => $request->only(['status', 'from', 'to', 'search']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

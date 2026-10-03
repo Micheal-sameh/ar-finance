@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -20,6 +22,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $tenantContext = app(TenantContext::class);
 
         return array_merge(parent::share($request), [
             'name' => config('app.name'),
@@ -32,6 +35,11 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'platform' => $user?->isPlatformAdmin() ? [
+                'tenants' => Tenant::query()->orderBy('name')->get(['id', 'name', 'is_active']),
+                'activeTenantId' => $tenantContext->id(),
+                'isImpersonating' => $tenantContext->isImpersonating(),
+            ] : null,
         ]);
     }
 }

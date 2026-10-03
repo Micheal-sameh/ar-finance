@@ -9,6 +9,7 @@ use App\Http\Requests\Bills\StoreBillRequest;
 use App\Models\Bill;
 use App\Services\BillService;
 use App\Services\VendorService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,15 +25,25 @@ class BillController extends Controller
     public function __construct(
         private readonly BillService $bills,
         private readonly VendorService $vendors,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Bill::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $bills = $this->bills->paginate($request->only(['status', 'from', 'to', 'search']))
+            ->through(fn (Bill $bill) => [
+                ...$bill->toArray(),
+                'tenant_name' => $viewingAllTenants ? $bill->tenant?->name : null,
+            ]);
+
         return Inertia::render('Purchases/Bills/Index', [
-            'bills' => $this->bills->paginate($request->only(['status', 'from', 'to', 'search'])),
+            'bills' => $bills,
             'filters' => $request->only(['status', 'from', 'to', 'search']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

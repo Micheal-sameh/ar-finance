@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\NonPostableAccountException;
+use App\Http\Middleware\EnsureTenantContext;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'active' => EnsureUserIsActive::class,
+            'tenant' => EnsureTenantContext::class,
         ]);
 
         // Laravel's default Authenticate middleware redirects guests to

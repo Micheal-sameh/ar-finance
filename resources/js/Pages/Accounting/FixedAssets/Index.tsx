@@ -16,13 +16,14 @@ import { formatDate } from '@/utils/finance';
 interface Props {
     fixedAssets: Paginated<FixedAsset>;
     filters: { search?: string };
+    viewingAllTenants: boolean;
 }
 
 function netBookValue(asset: FixedAsset): number {
     return parseFloat(asset.cost) - parseFloat(asset.accumulated_depreciation);
 }
 
-export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
+export default function FixedAssetsIndex({ fixedAssets, filters, viewingAllTenants }: Props) {
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
 
@@ -48,17 +49,23 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
 
             <PageHeader
                 title="Fixed Assets"
-                subtitle="Depreciation register — straight-line, posted monthly."
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s fixed assets, combined. Switch into a tenant to manage one.'
+                        : 'Depreciation register — straight-line, posted monthly.'
+                }
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('fixed-assets.export', filters)} />
-                        <Button variant="outline" leadingIcon={<Zap size={16} />} onClick={runDepreciation}>
-                            Run This Month's Depreciation
-                        </Button>
-                        <Link href={route('fixed-assets.create')}>
-                            <Button leadingIcon={<Plus size={16} />}>New Asset</Button>
-                        </Link>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('fixed-assets.export', filters)} />
+                            <Button variant="outline" leadingIcon={<Zap size={16} />} onClick={runDepreciation}>
+                                Run This Month's Depreciation
+                            </Button>
+                            <Link href={route('fixed-assets.create')}>
+                                <Button leadingIcon={<Plus size={16} />}>New Asset</Button>
+                            </Link>
+                        </div>
+                    )
                 }
             />
 
@@ -78,9 +85,11 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
                         title="No fixed assets yet"
                         description="Add an asset to start tracking its depreciation."
                         action={
-                            <Link href={route('fixed-assets.create')}>
-                                <Button>New Asset</Button>
-                            </Link>
+                            !viewingAllTenants && (
+                                <Link href={route('fixed-assets.create')}>
+                                    <Button>New Asset</Button>
+                                </Link>
+                            )
                         }
                     />
                 ) : (
@@ -90,11 +99,16 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
                             <Table.HeadCell>Purchase date</Table.HeadCell>
                             <Table.HeadCell className="text-end">Cost</Table.HeadCell>
                             <Table.HeadCell className="text-end">Accumulated Depr.</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Net Book Value</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {fixedAssets.data.map((asset) => (
-                                <Table.Row key={asset.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('fixed-assets.show', asset.id))}>
+                                <Table.Row
+                                    key={asset.id}
+                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
+                                    onClick={viewingAllTenants ? undefined : () => router.get(route('fixed-assets.show', asset.id))}
+                                >
                                     <Table.Cell className="ps-3" label="Name">{asset.name}</Table.Cell>
                                     <Table.Cell label="Purchase date">{formatDate(asset.purchase_date)}</Table.Cell>
                                     <Table.Cell className="text-end" label="Cost">
@@ -103,6 +117,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters }: Props) {
                                     <Table.Cell className="text-end" label="Accumulated Depr.">
                                         <MoneyDisplay amount={asset.accumulated_depreciation} />
                                     </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{asset.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Net Book Value">
                                         <MoneyDisplay amount={netBookValue(asset)} />
                                     </Table.Cell>

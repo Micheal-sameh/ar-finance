@@ -3,6 +3,7 @@
 namespace App\Http\Requests\PurchaseOrders;
 
 use App\DTOs\CreatePurchaseOrderData;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,7 +20,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'vendor_id' => ['required', 'exists:vendors,id'],
             'po_number' => [
                 'required', 'string', 'max:50',
-                Rule::unique('purchase_orders', 'po_number')->where('tenant_id', $this->user()->tenant_id),
+                Rule::unique('purchase_orders', 'po_number')->where('tenant_id', app(TenantContext::class)->id()),
             ],
             'order_date' => ['required', 'date'],
             'expected_date' => ['nullable', 'date', 'after_or_equal:order_date'],

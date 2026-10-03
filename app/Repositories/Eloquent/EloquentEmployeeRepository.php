@@ -12,6 +12,7 @@ class EloquentEmployeeRepository implements EmployeeRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return Employee::query()
+            ->with('tenant:id,name')
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->paginate($perPage)

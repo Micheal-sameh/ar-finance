@@ -24,9 +24,10 @@ interface Props {
     bankAccounts: Paginated<BankAccount>;
     filters: { currency?: string; search?: string };
     currencyOptions: CurrencyOption[];
+    viewingAllTenants: boolean;
 }
 
-export default function BankAccountsIndex({ bankAccounts, filters, currencyOptions }: Props) {
+export default function BankAccountsIndex({ bankAccounts, filters, currencyOptions, viewingAllTenants }: Props) {
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
@@ -107,14 +108,20 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
 
             <PageHeader
                 title="Bank Accounts"
-                subtitle="Each links to a Chart of Accounts cash/bank account for reconciliation."
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s bank accounts, combined. Switch into a tenant to manage one.'
+                        : 'Each links to a Chart of Accounts cash/bank account for reconciliation.'
+                }
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('bank-accounts.export', filters)} />
-                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                            New Bank Account
-                        </Button>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('bank-accounts.export', filters)} />
+                            <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                                New Bank Account
+                            </Button>
+                        </div>
+                    )
                 }
             />
 
@@ -157,7 +164,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                         icon={<Landmark size={20} />}
                         title="No bank accounts yet"
                         description="Add a bank account to start importing and reconciling transactions."
-                        action={<Button onClick={openCreate}>New Bank Account</Button>}
+                        action={!viewingAllTenants && <Button onClick={openCreate}>New Bank Account</Button>}
                     />
                 ) : (
                     <Table cards>
@@ -165,24 +172,32 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>GL Account</Table.HeadCell>
                             <Table.HeadCell>Bank</Table.HeadCell>
-                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
                             {bankAccounts.data.map((bankAccount) => (
-                                <Table.Row key={bankAccount.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('bank-accounts.show', bankAccount.id))}>
+                                <Table.Row
+                                    key={bankAccount.id}
+                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
+                                    onClick={viewingAllTenants ? undefined : () => router.get(route('bank-accounts.show', bankAccount.id))}
+                                >
                                     <Table.Cell className="ps-3" label="Name">{bankAccount.name}</Table.Cell>
                                     <Table.Cell label="GL Account">{bankAccount.account ? `${bankAccount.account.code} · ${bankAccount.account.name}` : '—'}</Table.Cell>
                                     <Table.Cell label="Bank">{bankAccount.bank_name ?? '—'}</Table.Cell>
-                                    <Table.Cell className="text-end pe-3" label="Actions" onClick={(e) => e.stopPropagation()}>
-                                        <div className="d-flex justify-content-end gap-1">
-                                            <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(bankAccount)} aria-label="Edit">
-                                                <Pencil size={15} />
-                                            </button>
-                                            <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => destroy(bankAccount)} aria-label="Delete">
-                                                <Trash2 size={15} />
-                                            </button>
-                                        </div>
-                                    </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{bankAccount.tenant_name}</Table.Cell>}
+                                    {!viewingAllTenants && (
+                                        <Table.Cell className="text-end pe-3" label="Actions" onClick={(e) => e.stopPropagation()}>
+                                            <div className="d-flex justify-content-end gap-1">
+                                                <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(bankAccount)} aria-label="Edit">
+                                                    <Pencil size={15} />
+                                                </button>
+                                                <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => destroy(bankAccount)} aria-label="Delete">
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        </Table.Cell>
+                                    )}
                                 </Table.Row>
                             ))}
                         </tbody>

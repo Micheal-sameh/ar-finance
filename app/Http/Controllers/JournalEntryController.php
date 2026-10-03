@@ -8,6 +8,7 @@ use App\Http\Requests\Journals\StoreJournalEntryRequest;
 use App\Models\JournalEntry;
 use App\Models\User;
 use App\Services\JournalService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,13 +27,21 @@ class JournalEntryController extends Controller
     {
         $this->authorize('viewAny', JournalEntry::class);
 
+        $viewingAllTenants = app(TenantContext::class)->isViewingAllTenants();
+
+        $entries = $this->journals->paginate($request->only(['source_type', 'created_by', 'from', 'to', 'search']))
+            ->through(fn (JournalEntry $entry) => [
+                ...$entry->toArray(),
+                'tenant_name' => $viewingAllTenants ? $entry->tenant?->name : null,
+            ]);
+
         return Inertia::render('Accounting/Journals/Index', [
-            'entries' => $this->journals->paginate($request->only(['source_type', 'created_by', 'from', 'to', 'search'])),
+            'entries' => $entries,
             'filters' => $request->only(['source_type', 'created_by', 'from', 'to', 'search']),
-            'authorOptions' => User::query()
-                ->where('tenant_id', $request->user()->tenant_id)
-                ->orderBy('name')
-                ->get(['id', 'name']),
+            'authorOptions' => $viewingAllTenants
+                ? []
+                : User::query()->where('tenant_id', app(TenantContext::class)->id())->orderBy('name')->get(['id', 'name']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

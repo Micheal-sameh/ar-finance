@@ -9,6 +9,7 @@ use App\Exceptions\UnbalancedJournalEntryException;
 use App\Models\Account;
 use App\Models\JournalEntry;
 use App\Repositories\Contracts\JournalRepositoryInterface;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +24,7 @@ class JournalService
 {
     public function __construct(
         private readonly JournalRepositoryInterface $journals,
-    ) {
-    }
+    ) {}
 
     /**
      * Validate and post a balanced journal entry in one DB transaction.
@@ -40,7 +40,7 @@ class JournalService
         return DB::transaction(function () use ($data) {
             $entry = $this->journals->create(
                 attributes: [
-                    'tenant_id' => auth()->user()->tenant_id,
+                    'tenant_id' => app(TenantContext::class)->id(),
                     'date' => $data->date,
                     'description' => $data->description,
                     'reference' => $data->reference,

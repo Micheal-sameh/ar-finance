@@ -7,6 +7,7 @@ use App\Services\ExchangeRates\ExchangeRateProviderInterface;
 use App\Services\ExchangeRates\FreeCurrencyApiProvider;
 use App\Support\Carbon;
 use App\Support\ResilientVite;
+use App\Support\TenantContext;
 use Avarewase\SsoClient\Events\AvarewaseUserAuthenticated;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Vite;
@@ -23,11 +24,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        if ( app()->environment('production')) {
+        if (app()->environment('production')) {
             URL::forceHttps();
         }
         $this->app->singleton(Vite::class, ResilientVite::class);
         $this->app->bind(ExchangeRateProviderInterface::class, FreeCurrencyApiProvider::class);
+        $this->app->singleton(TenantContext::class);
 
         Date::use(Carbon::class);
     }

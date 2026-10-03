@@ -12,7 +12,7 @@ class EloquentBillRepository implements BillRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return Bill::query()
-            ->with(['vendor', 'lines'])
+            ->with(['vendor', 'lines', 'tenant:id,name'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('bill_date', '>=', $from))
             ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('bill_date', '<=', $to))

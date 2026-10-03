@@ -13,6 +13,7 @@ use App\Models\Account;
 use App\Services\AccountService;
 use App\Services\ExchangeRateService;
 use App\Services\ReportService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -30,17 +31,20 @@ class AccountController extends Controller
         private readonly AccountService $accounts,
         private readonly ReportService $reports,
         private readonly ExchangeRateService $exchangeRates,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Account::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
         $balances = $this->reports->accountBalances();
         $accounts = $this->accounts->filtered($request->only(['type', 'is_active', 'search']))
             ->map(fn (Account $account) => [
                 ...$account->toArray(),
                 'balance' => $balances[$account->id] ?? 0.0,
+                'tenant_name' => $viewingAllTenants ? $account->tenant?->name : null,
             ]);
 
         return Inertia::render('Accounting/Accounts/Index', [
@@ -48,6 +52,7 @@ class AccountController extends Controller
             'filters' => $request->only(['type', 'is_active', 'search']),
             'baseCurrency' => $this->exchangeRates->baseCurrency(),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

@@ -6,6 +6,7 @@ use App\DTOs\CreateAccountData;
 use App\Enums\AccountType;
 use App\Enums\NormalBalance;
 use App\Models\Account;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -26,7 +27,7 @@ class UpdateAccountRequest extends FormRequest
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('accounts', 'code')->where('tenant_id', $this->user()->tenant_id)->ignore($accountId),
+                Rule::unique('accounts', 'code')->where('tenant_id', app(TenantContext::class)->id())->ignore($accountId),
                 function (string $attribute, mixed $value, \Closure $fail): void {
                     $type = AccountType::tryFrom((string) $this->input('type'));
 
@@ -40,7 +41,7 @@ class UpdateAccountRequest extends FormRequest
                 'string',
                 'max:255',
                 Rule::unique('accounts', 'name')
-                    ->where('tenant_id', $this->user()->tenant_id)
+                    ->where('tenant_id', app(TenantContext::class)->id())
                     ->where('type', $this->input('type'))
                     ->ignore($accountId),
             ],

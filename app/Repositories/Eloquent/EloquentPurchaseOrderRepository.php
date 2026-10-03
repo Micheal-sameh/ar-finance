@@ -11,7 +11,7 @@ class EloquentPurchaseOrderRepository implements PurchaseOrderRepositoryInterfac
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return PurchaseOrder::query()
-            ->with(['vendor', 'lines'])
+            ->with(['vendor', 'lines', 'tenant:id,name'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('order_date', '>=', $from))
             ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('order_date', '<=', $to))

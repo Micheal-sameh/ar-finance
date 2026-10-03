@@ -12,7 +12,7 @@ class EloquentFixedAssetRepository implements FixedAssetRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return FixedAsset::query()
-            ->with(['assetAccount', 'depreciationAccount', 'accumulatedDepreciationAccount'])
+            ->with(['assetAccount', 'depreciationAccount', 'accumulatedDepreciationAccount', 'tenant:id,name'])
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->paginate($perPage)

@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Vendors\SaveVendorRequest;
 use App\Models\Vendor;
 use App\Services\VendorService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,15 +20,25 @@ class VendorController extends Controller
 
     public function __construct(
         private readonly VendorService $vendors,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Vendor::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $vendors = $this->vendors->paginate($request->only(['search']))
+            ->through(fn (Vendor $vendor) => [
+                ...$vendor->toArray(),
+                'tenant_name' => $viewingAllTenants ? $vendor->tenant?->name : null,
+            ]);
+
         return Inertia::render('Contacts/Vendors/Index', [
-            'vendors' => $this->vendors->paginate($request->only(['search'])),
+            'vendors' => $vendors,
             'filters' => $request->only(['search']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

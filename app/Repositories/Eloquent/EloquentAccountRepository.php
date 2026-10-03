@@ -38,7 +38,7 @@ class EloquentAccountRepository implements AccountRepositoryInterface
     public function filtered(array $filters = []): Collection
     {
         return Account::query()
-            ->with('parent')
+            ->with(['parent', 'tenant:id,name'])
             ->when($filters['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
             ->when($filters['is_active'] ?? null, fn ($query, $active) => $query->where('is_active', $active))
             ->when($filters['search'] ?? null, function ($query, $search) {

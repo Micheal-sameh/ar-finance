@@ -9,6 +9,7 @@ use App\DTOs\JournalLineData;
 use App\Enums\JournalSourceType;
 use App\Models\Invoice;
 use App\Repositories\Contracts\InvoiceRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -18,8 +19,7 @@ class InvoiceService
     public function __construct(
         private readonly InvoiceRepositoryInterface $invoices,
         private readonly JournalService $journals,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -39,7 +39,7 @@ class InvoiceService
     {
         return $this->invoices->create(
             attributes: [
-                'tenant_id' => auth()->user()->tenant_id,
+                'tenant_id' => app(TenantContext::class)->id(),
                 'client_id' => $data->clientId,
                 'invoice_number' => $data->invoiceNumber,
                 'issue_date' => $data->issueDate,

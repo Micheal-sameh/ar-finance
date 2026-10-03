@@ -1,9 +1,11 @@
+import { usePage } from '@inertiajs/react';
 import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import { Offcanvas } from 'react-bootstrap';
 import { navConfig } from './navConfig';
 import { NavGroup } from './NavGroup';
 import { NavItem } from './NavItem';
+import type { PlatformShare } from './TenantSwitcher';
 
 const brand = (
     <>
@@ -13,6 +15,14 @@ const brand = (
 
 export function Sidebar() {
     const [show, setShow] = useState(false);
+    const { platform } = usePage<{ platform: PlatformShare | null }>().props;
+    // Two entirely separate sidebars, switched by whether a Platform Admin
+    // is currently impersonating a tenant: viewing "All tenants" (no active
+    // tenant) shows only the Platform section; impersonating a tenant (or
+    // being an ordinary tenant user, who never has a `platform` share at
+    // all) shows only the ordinary tenant-scoped sections.
+    const isPlatformAdminViewingAllTenants = Boolean(platform) && !platform?.isImpersonating;
+    const visibleGroups = navConfig.filter((group) => Boolean(group.platformOnly) === isPlatformAdminViewingAllTenants);
 
     return (
         <>
@@ -77,7 +87,7 @@ export function Sidebar() {
                     </div>
 
                     <div className="af-sidebar-nav">
-                        {navConfig.map((group) => (
+                        {visibleGroups.map((group) => (
                             <NavGroup key={group.label} label={group.label}>
                                 {group.items.map((item) => (
                                     <NavItem

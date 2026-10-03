@@ -7,6 +7,7 @@ use App\DTOs\PurchaseOrderLineData;
 use App\Models\Bill;
 use App\Models\PurchaseOrder;
 use App\Repositories\Contracts\PurchaseOrderRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Pagination\LengthAwarePaginator;
 use RuntimeException;
 
@@ -20,8 +21,7 @@ class PurchaseOrderService
     public function __construct(
         private readonly PurchaseOrderRepositoryInterface $purchaseOrders,
         private readonly BillService $bills,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -37,7 +37,7 @@ class PurchaseOrderService
     {
         return $this->purchaseOrders->create(
             attributes: [
-                'tenant_id' => auth()->user()->tenant_id,
+                'tenant_id' => app(TenantContext::class)->id(),
                 'vendor_id' => $data->vendorId,
                 'po_number' => $data->poNumber,
                 'order_date' => $data->orderDate,

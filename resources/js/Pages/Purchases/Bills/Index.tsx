@@ -18,6 +18,7 @@ import { formatDate } from '@/utils/finance';
 interface Props {
     bills: Paginated<Bill>;
     filters: { status?: string; from?: string; to?: string; search?: string };
+    viewingAllTenants: boolean;
 }
 
 const BILL_STATUSES: { value: BillStatus; label: string }[] = [
@@ -34,7 +35,7 @@ function statusVariant(status: BillStatus) {
     return { draft: 'neutral', approved: 'warning', paid: 'success' }[status] as 'neutral' | 'warning' | 'success';
 }
 
-export default function BillsIndex({ bills, filters }: Props) {
+export default function BillsIndex({ bills, filters, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
 
     function runSearch(e: FormEvent) {
@@ -57,14 +58,20 @@ export default function BillsIndex({ bills, filters }: Props) {
 
             <PageHeader
                 title="Bills"
-                subtitle="Vendor bills — approving posts spend to the ledger."
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s bills, combined. Switch into a tenant to manage one.'
+                        : 'Vendor bills — approving posts spend to the ledger.'
+                }
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('bills.export', filters)} />
-                        <Link href={route('bills.create')}>
-                            <Button leadingIcon={<Plus size={16} />}>New Bill</Button>
-                        </Link>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('bills.export', filters)} />
+                            <Link href={route('bills.create')}>
+                                <Button leadingIcon={<Plus size={16} />}>New Bill</Button>
+                            </Link>
+                        </div>
+                    )
                 }
             />
 
@@ -120,9 +127,11 @@ export default function BillsIndex({ bills, filters }: Props) {
                         title="No bills yet"
                         description="Create a bill directly, or convert a purchase order into one."
                         action={
-                            <Link href={route('bills.create')}>
-                                <Button>New Bill</Button>
-                            </Link>
+                            !viewingAllTenants && (
+                                <Link href={route('bills.create')}>
+                                    <Button>New Bill</Button>
+                                </Link>
+                            )
                         }
                     />
                 ) : (
@@ -132,17 +141,23 @@ export default function BillsIndex({ bills, filters }: Props) {
                             <Table.HeadCell>Vendor</Table.HeadCell>
                             <Table.HeadCell>Due date</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Total</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {bills.data.map((bill) => (
-                                <Table.Row key={bill.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('bills.show', bill.id))}>
+                                <Table.Row
+                                    key={bill.id}
+                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
+                                    onClick={viewingAllTenants ? undefined : () => router.get(route('bills.show', bill.id))}
+                                >
                                     <Table.Cell className="ps-3" label="Bill Number">{bill.bill_number}</Table.Cell>
                                     <Table.Cell label="Vendor">{bill.vendor?.name ?? '—'}</Table.Cell>
                                     <Table.Cell label="Due date">{formatDate(bill.due_date)}</Table.Cell>
                                     <Table.Cell label="Status">
                                         <Badge variant={statusVariant(bill.status)}>{bill.status}</Badge>
                                     </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{bill.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Total">
                                         <MoneyDisplay amount={billTotal(bill)} />
                                     </Table.Cell>

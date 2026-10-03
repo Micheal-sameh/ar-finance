@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Employees\SaveEmployeeRequest;
 use App\Models\Employee;
 use App\Services\EmployeeService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,15 +20,25 @@ class EmployeeController extends Controller
 
     public function __construct(
         private readonly EmployeeService $employees,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Employee::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $employees = $this->employees->paginate($request->only(['search']))
+            ->through(fn (Employee $employee) => [
+                ...$employee->toArray(),
+                'tenant_name' => $viewingAllTenants ? $employee->tenant?->name : null,
+            ]);
+
         return Inertia::render('Payroll/Employees/Index', [
-            'employees' => $this->employees->paginate($request->only(['search'])),
+            'employees' => $employees,
             'filters' => $request->only(['search']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

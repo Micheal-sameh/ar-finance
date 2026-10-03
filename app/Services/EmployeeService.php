@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\CreateEmployeeData;
 use App\Models\Employee;
 use App\Repositories\Contracts\EmployeeRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use RuntimeException;
@@ -13,8 +14,7 @@ class EmployeeService
 {
     public function __construct(
         private readonly EmployeeRepositoryInterface $employees,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -29,7 +29,7 @@ class EmployeeService
     public function create(CreateEmployeeData $data): Employee
     {
         return $this->employees->create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => app(TenantContext::class)->id(),
             'name' => $data->name,
             'email' => $data->email,
             'job_title' => $data->jobTitle,

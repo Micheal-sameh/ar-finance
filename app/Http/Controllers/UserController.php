@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Models\User;
 use App\Services\UserService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,11 +21,14 @@ class UserController extends Controller
 
     public function __construct(
         private readonly UserService $users,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', User::class);
+
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
 
         $users = $this->users->paginate($request->only(['status', 'role', 'search']))
             ->through(fn (User $user) => [
@@ -34,13 +38,15 @@ class UserController extends Controller
                 'membership_code' => $user->avarewase_membership_code,
                 'status' => $user->status->value,
                 'roles' => $user->roles->pluck('name')->all(),
+                'tenant_name' => $viewingAllTenants ? $user->tenant?->name : null,
             ]);
 
         return Inertia::render('Settings/Users/Index', [
             'users' => $users,
             'filters' => $request->only(['status', 'role', 'search']),
-            'canManage' => $request->user()->can('manage', User::class),
+            'canManage' => $viewingAllTenants ? false : $request->user()->can('manage', User::class),
             'availableRoles' => Role::query()->where('guard_name', 'web')->orderBy('name')->pluck('name'),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

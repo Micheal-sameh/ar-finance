@@ -7,6 +7,7 @@ use App\Http\Requests\Clients\SaveClientRequest;
 use App\Models\Client;
 use App\Services\ClientService;
 use App\Services\ExchangeRateService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,16 +22,26 @@ class ClientController extends Controller
     public function __construct(
         private readonly ClientService $clients,
         private readonly ExchangeRateService $exchangeRates,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', Client::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $clients = $this->clients->paginate($request->only(['currency', 'search']))
+            ->through(fn (Client $client) => [
+                ...$client->toArray(),
+                'tenant_name' => $viewingAllTenants ? $client->tenant?->name : null,
+            ]);
+
         return Inertia::render('Contacts/Clients/Index', [
-            'clients' => $this->clients->paginate($request->only(['currency', 'search'])),
+            'clients' => $clients,
             'filters' => $request->only(['currency', 'search']),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

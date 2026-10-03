@@ -12,7 +12,7 @@ class EloquentCostCenterRepository implements CostCenterRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return CostCenter::query()
-            ->with('parent')
+            ->with(['parent', 'tenant:id,name'])
             ->when($filters['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')

@@ -18,6 +18,7 @@ import { formatDate, invoiceStatusVariant } from '@/utils/finance';
 interface Props {
     invoices: Paginated<Invoice>;
     filters: { status?: string; from?: string; to?: string; search?: string };
+    viewingAllTenants: boolean;
 }
 
 const INVOICE_STATUSES: { value: InvoiceStatus; label: string }[] = [
@@ -38,7 +39,7 @@ function invoiceTotal(invoice: Invoice): number {
     }, 0);
 }
 
-export default function InvoicesIndex({ invoices, filters }: Props) {
+export default function InvoicesIndex({ invoices, filters, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
 
     function runSearch(e: FormEvent) {
@@ -61,14 +62,20 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
 
             <PageHeader
                 title="Invoices"
-                subtitle="Revenue recognized against clients."
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s invoices, combined. Switch into a tenant to manage one.'
+                        : 'Revenue recognized against clients.'
+                }
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('invoices.export', filters)} />
-                        <Link href={route('invoices.create')}>
-                            <Button leadingIcon={<Plus size={16} />}>New Invoice</Button>
-                        </Link>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('invoices.export', filters)} />
+                            <Link href={route('invoices.create')}>
+                                <Button leadingIcon={<Plus size={16} />}>New Invoice</Button>
+                            </Link>
+                        </div>
+                    )
                 }
             />
 
@@ -124,9 +131,11 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
                         title="No invoices yet"
                         description="Create your first invoice to start billing clients."
                         action={
-                            <Link href={route('invoices.create')}>
-                                <Button>New Invoice</Button>
-                            </Link>
+                            !viewingAllTenants && (
+                                <Link href={route('invoices.create')}>
+                                    <Button>New Invoice</Button>
+                                </Link>
+                            )
                         }
                     />
                 ) : (
@@ -137,11 +146,16 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
                             <Table.HeadCell>Issue date</Table.HeadCell>
                             <Table.HeadCell>Due date</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Total</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {invoices.data.map((invoice) => (
-                                <Table.Row key={invoice.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('invoices.show', invoice.id))}>
+                                <Table.Row
+                                    key={invoice.id}
+                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
+                                    onClick={viewingAllTenants ? undefined : () => router.get(route('invoices.show', invoice.id))}
+                                >
                                     <Table.Cell className="ps-3" label="Number">{invoice.invoice_number}</Table.Cell>
                                     <Table.Cell label="Client">{invoice.client?.name ?? '—'}</Table.Cell>
                                     <Table.Cell label="Issue date">{formatDate(invoice.issue_date)}</Table.Cell>
@@ -149,6 +163,7 @@ export default function InvoicesIndex({ invoices, filters }: Props) {
                                     <Table.Cell label="Status">
                                         <Badge variant={invoiceStatusVariant(invoice.status)}>{invoice.status}</Badge>
                                     </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{invoice.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Total">
                                         <MoneyDisplay amount={invoiceTotal(invoice)} currency={invoice.currency} />
                                     </Table.Cell>

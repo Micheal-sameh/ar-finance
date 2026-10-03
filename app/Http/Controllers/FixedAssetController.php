@@ -8,6 +8,7 @@ use App\Http\Requests\FixedAssets\StoreFixedAssetRequest;
 use App\Models\Account;
 use App\Models\FixedAsset;
 use App\Services\FixedAssetService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,15 +22,25 @@ class FixedAssetController extends Controller
 
     public function __construct(
         private readonly FixedAssetService $fixedAssets,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', FixedAsset::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $fixedAssets = $this->fixedAssets->paginate($request->only(['search']))
+            ->through(fn (FixedAsset $asset) => [
+                ...$asset->toArray(),
+                'tenant_name' => $viewingAllTenants ? $asset->tenant?->name : null,
+            ]);
+
         return Inertia::render('Accounting/FixedAssets/Index', [
-            'fixedAssets' => $this->fixedAssets->paginate($request->only(['search'])),
+            'fixedAssets' => $fixedAssets,
             'filters' => $request->only(['search']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

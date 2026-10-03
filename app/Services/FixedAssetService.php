@@ -10,6 +10,7 @@ use App\Exceptions\DepreciationAlreadyPostedException;
 use App\Models\FixedAsset;
 use App\Models\JournalEntry;
 use App\Repositories\Contracts\FixedAssetRepositoryInterface;
+use App\Support\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -21,8 +22,7 @@ class FixedAssetService
     public function __construct(
         private readonly FixedAssetRepositoryInterface $fixedAssets,
         private readonly JournalService $journals,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -42,7 +42,7 @@ class FixedAssetService
     public function create(CreateFixedAssetData $data): FixedAsset
     {
         return $this->fixedAssets->create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => app(TenantContext::class)->id(),
             'name' => $data->name,
             'purchase_date' => $data->purchaseDate,
             'cost' => $data->cost,

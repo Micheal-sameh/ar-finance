@@ -4,15 +4,18 @@ namespace App\Repositories\Eloquent;
 
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class EloquentUserRepository implements UserRepositoryInterface
 {
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
+        $tenantId = app(TenantContext::class)->id();
+
         return User::query()
-            ->with('roles')
-            ->where('tenant_id', auth()->user()?->tenant_id)
+            ->with(['roles', 'tenant:id,name'])
+            ->when($tenantId !== null, fn ($query) => $query->where('tenant_id', $tenantId))
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['role'] ?? null, fn ($query, $role) => $query->whereHas('roles', fn ($q) => $q->where('name', $role)))
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(
@@ -25,7 +28,11 @@ class EloquentUserRepository implements UserRepositoryInterface
 
     public function find(int $id): ?User
     {
-        return User::where('tenant_id', auth()->user()?->tenant_id)->find($id);
+        $tenantId = app(TenantContext::class)->id();
+
+        return User::query()
+            ->when($tenantId !== null, fn ($query) => $query->where('tenant_id', $tenantId))
+            ->find($id);
     }
 
     public function update(User $user, string $status, string $role): User

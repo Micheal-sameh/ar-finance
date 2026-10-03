@@ -2,6 +2,14 @@ export type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expens
 export type NormalBalance = 'debit' | 'credit';
 export type JournalSourceType = 'invoice' | 'expense' | 'payroll' | 'manual' | 'depreciation' | 'revaluation';
 
+export interface Tenant {
+    id: number;
+    name: string;
+    slug: string;
+    base_currency: string;
+    is_active: boolean;
+}
+
 export interface Account {
     id: number;
     code: string;
@@ -15,6 +23,8 @@ export interface Account {
     parent?: Account | null;
     /** Cumulative balance in the account's own normal-balance direction — only present on the Chart of Accounts list. */
     balance?: number;
+    /** Owning tenant's name — only present when a Platform Admin is viewing the combined "All tenants" list. */
+    tenant_name?: string | null;
 }
 
 /** Lightweight shape returned by /accounts/options for pickers. */
@@ -48,6 +58,8 @@ export interface JournalEntry {
     created_by: number;
     posted_at: string | null;
     lines: JournalLine[];
+    /** Owning tenant's name — only present when a Platform Admin is viewing the combined "All tenants" list. */
+    tenant_name?: string | null;
 }
 
 export interface Paginated<T> {
@@ -108,6 +120,7 @@ export interface Client {
     tax_number: string | null;
     address: string | null;
     currency: string;
+    tenant_name?: string | null;
 }
 
 export interface Vendor {
@@ -116,6 +129,7 @@ export interface Vendor {
     email: string | null;
     tax_number: string | null;
     payment_terms: string | null;
+    tenant_name?: string | null;
 }
 
 export interface InvoiceLine {
@@ -144,6 +158,7 @@ export interface Invoice {
     tax_payable_account?: Account | null;
     paid_at: string | null;
     lines: InvoiceLine[];
+    tenant_name?: string | null;
 }
 
 export interface Expense {
@@ -161,6 +176,7 @@ export interface Expense {
     receipt_path: string | null;
     status: ExpenseStatus;
     paid_at: string | null;
+    tenant_name?: string | null;
 }
 
 export interface ProfitLossRow {
@@ -287,6 +303,8 @@ export interface CostCenter {
     parent_id: number | null;
     is_active: boolean;
     parent?: CostCenter | null;
+    /** Owning tenant's name — only present when a Platform Admin is viewing the combined "All tenants" list. */
+    tenant_name?: string | null;
 }
 
 /** Lightweight shape returned by /cost-centers/options for pickers. */
@@ -328,6 +346,7 @@ export interface PurchaseOrder {
     expected_date: string | null;
     status: PurchaseOrderStatus;
     lines: PurchaseOrderLine[];
+    tenant_name?: string | null;
 }
 
 export interface BillLine {
@@ -357,6 +376,7 @@ export interface Bill {
     cost_center_id: number | null;
     paid_at: string | null;
     lines: BillLine[];
+    tenant_name?: string | null;
 }
 
 export type DepreciationMethod = 'straight_line';
@@ -376,6 +396,7 @@ export interface FixedAsset {
     accumulated_depreciation_account_id: number;
     accumulated_depreciation_account?: Account;
     accumulated_depreciation: string;
+    tenant_name?: string | null;
 }
 
 export interface DepreciationScheduleRow {
@@ -394,6 +415,7 @@ export interface Employee {
     salary: string;
     hire_date: string;
     is_active: boolean;
+    tenant_name?: string | null;
 }
 
 export type UserStatus = 'active' | 'suspended';
@@ -405,6 +427,7 @@ export interface AppUser {
     membership_code: string | null;
     status: UserStatus;
     roles: string[];
+    tenant_name?: string | null;
 }
 
 export type PayrollRunStatus = 'draft' | 'approved' | 'paid';
@@ -442,6 +465,7 @@ export interface BankAccount {
     bank_name: string | null;
     account_number: string | null;
     currency: string;
+    tenant_name?: string | null;
 }
 
 export interface BankTransactionMatchedLine {

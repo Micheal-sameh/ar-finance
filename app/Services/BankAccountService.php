@@ -5,6 +5,7 @@ namespace App\Services;
 use App\DTOs\CreateBankAccountData;
 use App\Models\BankAccount;
 use App\Repositories\Contracts\BankAccountRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use RuntimeException;
@@ -13,8 +14,7 @@ class BankAccountService
 {
     public function __construct(
         private readonly BankAccountRepositoryInterface $bankAccounts,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -34,7 +34,7 @@ class BankAccountService
     public function create(CreateBankAccountData $data): BankAccount
     {
         return $this->bankAccounts->create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => app(TenantContext::class)->id(),
             'name' => $data->name,
             'account_id' => $data->accountId,
             'bank_name' => $data->bankName,

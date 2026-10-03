@@ -6,6 +6,7 @@ use App\DTOs\CreateCostCenterData;
 use App\Exceptions\CostCenterInUseException;
 use App\Models\CostCenter;
 use App\Repositories\Contracts\CostCenterRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -13,8 +14,7 @@ class CostCenterService
 {
     public function __construct(
         private readonly CostCenterRepositoryInterface $costCenters,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -29,7 +29,7 @@ class CostCenterService
     public function create(CreateCostCenterData $data): CostCenter
     {
         return $this->costCenters->create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => app(TenantContext::class)->id(),
             'name' => $data->name,
             'type' => $data->type,
             'budget' => $data->budget,

@@ -8,6 +8,7 @@ use App\DTOs\JournalLineData;
 use App\Enums\JournalSourceType;
 use App\Models\Expense;
 use App\Repositories\Contracts\ExpenseRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -22,8 +23,7 @@ class ExpenseService
     public function __construct(
         private readonly ExpenseRepositoryInterface $expenses,
         private readonly JournalService $journals,
-    ) {
-    }
+    ) {}
 
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
@@ -41,7 +41,7 @@ class ExpenseService
     public function create(CreateExpenseData $data): Expense
     {
         return $this->expenses->create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => app(TenantContext::class)->id(),
             'description' => $data->description,
             'account_id' => $data->accountId,
             'amount' => $data->amount,

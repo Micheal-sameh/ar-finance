@@ -27,6 +27,7 @@ interface Props {
     filters: { type?: string; is_active?: string; search?: string };
     baseCurrency: string;
     currencyOptions: CurrencyOption[];
+    viewingAllTenants: boolean;
 }
 
 interface AccountNode extends Account {
@@ -112,9 +113,10 @@ interface AccountTreeRowsProps {
     onEdit: (account: Account) => void;
     onDelete: (account: Account) => void;
     baseCurrency: string;
+    viewingAllTenants: boolean;
 }
 
-function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, baseCurrency }: AccountTreeRowsProps) {
+function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, baseCurrency, viewingAllTenants }: AccountTreeRowsProps) {
     const hasChildren = node.children.length > 0;
     const isExpanded = !collapsed.has(node.id);
 
@@ -142,6 +144,7 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                 </Table.Cell>
                 <Table.Cell style={{ textTransform: 'capitalize' }}>{node.normal_balance}</Table.Cell>
                 <Table.Cell>{node.currency}</Table.Cell>
+                {viewingAllTenants && <Table.Cell>{node.tenant_name}</Table.Cell>}
                 <Table.Cell className="text-end">
                     <MoneyDisplay
                         amount={hasChildren && !isExpanded ? subtreeBalance(node) : node.balance ?? 0}
@@ -151,30 +154,32 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                 <Table.Cell>
                     <Badge variant={node.is_active ? 'success' : 'neutral'}>{node.is_active ? 'Active' : 'Inactive'}</Badge>
                 </Table.Cell>
-                <Table.Cell className="text-end pe-3">
-                    <div className="d-flex justify-content-end gap-1">
-                        <button
-                            type="button"
-                            className="btn btn-sm p-1"
-                            style={{ color: 'var(--af-label)' }}
-                            onClick={() => onEdit(node)}
-                            aria-label="Edit"
-                        >
-                            <Pencil size={15} />
-                        </button>
-                        {node.is_deletable && (
+                {!viewingAllTenants && (
+                    <Table.Cell className="text-end pe-3">
+                        <div className="d-flex justify-content-end gap-1">
                             <button
                                 type="button"
                                 className="btn btn-sm p-1"
-                                style={{ color: 'var(--af-danger)' }}
-                                onClick={() => onDelete(node)}
-                                aria-label="Delete"
+                                style={{ color: 'var(--af-label)' }}
+                                onClick={() => onEdit(node)}
+                                aria-label="Edit"
                             >
-                                <Trash2 size={15} />
+                                <Pencil size={15} />
                             </button>
-                        )}
-                    </div>
-                </Table.Cell>
+                            {node.is_deletable && (
+                                <button
+                                    type="button"
+                                    className="btn btn-sm p-1"
+                                    style={{ color: 'var(--af-danger)' }}
+                                    onClick={() => onDelete(node)}
+                                    aria-label="Delete"
+                                >
+                                    <Trash2 size={15} />
+                                </button>
+                            )}
+                        </div>
+                    </Table.Cell>
+                )}
             </Table.Row>
             {hasChildren &&
                 isExpanded &&
@@ -188,6 +193,7 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                         onEdit={onEdit}
                         onDelete={onDelete}
                         baseCurrency={baseCurrency}
+                        viewingAllTenants={viewingAllTenants}
                     />
                 ))}
         </>
@@ -203,7 +209,7 @@ function typeBadgeVariant(type: AccountType) {
         | 'danger';
 }
 
-export default function AccountsIndex({ accounts, filters, baseCurrency, currencyOptions }: Props) {
+export default function AccountsIndex({ accounts, filters, baseCurrency, currencyOptions, viewingAllTenants }: Props) {
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
@@ -328,17 +334,23 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
 
             <PageHeader
                 title="Chart of Accounts"
-                subtitle="Every posting account in the ledger, grouped by type."
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s chart of accounts, combined. Switch into a tenant to manage it.'
+                        : 'Every posting account in the ledger, grouped by type.'
+                }
                 action={
-                    <div className="d-flex flex-wrap gap-2">
-                        <ExportButton href={route('accounts.export', filters)} />
-                        <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={openImport}>
-                            Import from Excel
-                        </Button>
-                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                            New Account
-                        </Button>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex flex-wrap gap-2">
+                            <ExportButton href={route('accounts.export', filters)} />
+                            <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={openImport}>
+                                Import from Excel
+                            </Button>
+                            <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                                New Account
+                            </Button>
+                        </div>
+                    )
                 }
             />
 
@@ -390,7 +402,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                         icon={<ListTree size={20} />}
                         title="No accounts yet"
                         description="Create your first account to start building the chart of accounts."
-                        action={<Button onClick={openCreate}>New Account</Button>}
+                        action={!viewingAllTenants && <Button onClick={openCreate}>New Account</Button>}
                     />
                 ) : (
                     <Table>
@@ -399,9 +411,10 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                             <Table.HeadCell>Name</Table.HeadCell>
                             <Table.HeadCell>Normal Balance</Table.HeadCell>
                             <Table.HeadCell>Currency</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
                             <Table.HeadCell className="text-end">Balance</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
-                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
+                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
                             {ACCOUNT_TYPES.map(({ value, label }) => {
@@ -429,6 +442,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                                                 onEdit={openEdit}
                                                 onDelete={destroy}
                                                 baseCurrency={baseCurrency}
+                                                viewingAllTenants={viewingAllTenants}
                                             />
                                         ))}
                                     </Fragment>

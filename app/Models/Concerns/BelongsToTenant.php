@@ -4,6 +4,7 @@ namespace App\Models\Concerns;
 
 use App\Models\Scopes\TenantScope;
 use App\Models\Tenant;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -16,8 +17,8 @@ trait BelongsToTenant
     protected static function bootBelongsToTenant(): void
     {
         static::creating(function ($model) {
-            if (empty($model->tenant_id) && auth()->check()) {
-                $model->tenant_id = auth()->user()->tenant_id;
+            if (empty($model->tenant_id)) {
+                $model->tenant_id = app(TenantContext::class)->id();
             }
         });
 

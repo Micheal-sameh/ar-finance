@@ -11,7 +11,7 @@ class EloquentExpenseRepository implements ExpenseRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return Expense::query()
-            ->with(['account', 'vendor', 'costCenter'])
+            ->with(['account', 'vendor', 'costCenter', 'tenant:id,name'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('date', '>=', $from))
             ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('date', '<=', $to))

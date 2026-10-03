@@ -11,6 +11,7 @@ use App\Exceptions\AccountImportException;
 use App\Exceptions\AccountInUseException;
 use App\Models\Account;
 use App\Repositories\Contracts\AccountRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -51,7 +52,7 @@ class AccountService
     public function create(CreateAccountData $data, int $createdBy): Account
     {
         $account = $this->accounts->create([
-            'tenant_id' => auth()->user()->tenant_id,
+            'tenant_id' => app(TenantContext::class)->id(),
             'code' => $data->code,
             'name' => $data->name,
             'type' => $data->type,
@@ -104,7 +105,7 @@ class AccountService
     {
         return $this->accounts->findByCode(self::OPENING_BALANCE_EQUITY_CODE)
             ?? $this->accounts->create([
-                'tenant_id' => auth()->user()->tenant_id,
+                'tenant_id' => app(TenantContext::class)->id(),
                 'code' => self::OPENING_BALANCE_EQUITY_CODE,
                 'name' => 'Opening Balance Equity',
                 'type' => AccountType::Equity,

@@ -6,6 +6,7 @@ use App\Exceptions\ExchangeRateProviderException;
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Models\ExchangeRate;
 use App\Services\ExchangeRateService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,17 +19,20 @@ class ExchangeRateController extends Controller
 
     public function __construct(
         private readonly ExchangeRateService $exchangeRates,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', ExchangeRate::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
         $date = $request->string('date')->value() ?: now()->toDateString();
 
         return Inertia::render('Tools/ExchangeRates/Index', [
             'report' => $this->exchangeRates->ratesForDate($date),
-            'canManage' => $request->user()->can('manage', ExchangeRate::class),
+            'canManage' => $viewingAllTenants ? false : $request->user()->can('manage', ExchangeRate::class),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

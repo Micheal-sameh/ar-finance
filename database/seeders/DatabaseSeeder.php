@@ -48,5 +48,20 @@ class DatabaseSeeder extends Seeder
         $devUser->syncRoles(['Super Admin']);
 
         $this->callWith(ChartOfAccountsSeeder::class, ['tenantId' => $tenant->id]);
+
+        // Platform Admin dev-login account — cross-tenant, no tenant_id of
+        // its own (see TenantContext). Recreated on every seed/migrate:fresh
+        // like the tenant dev-login account above.
+        $platformAdmin = User::updateOrCreate(
+            ['email' => 'platform-admin@avarewase.com'],
+            [
+                'name' => 'Platform Admin',
+                'tenant_id' => null,
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ],
+        );
+
+        $platformAdmin->syncRoles(['Platform Admin']);
     }
 }

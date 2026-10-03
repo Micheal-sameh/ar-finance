@@ -12,7 +12,7 @@ class EloquentInvoiceRepository implements InvoiceRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return Invoice::query()
-            ->with(['client', 'lines'])
+            ->with(['client', 'lines', 'tenant:id,name'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('issue_date', '>=', $from))
             ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('issue_date', '<=', $to))

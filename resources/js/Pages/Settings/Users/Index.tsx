@@ -19,9 +19,10 @@ interface Props {
     filters: { status?: string; role?: string; search?: string };
     canManage: boolean;
     availableRoles: string[];
+    viewingAllTenants: boolean;
 }
 
-export default function UsersIndex({ users, filters, canManage, availableRoles }: Props) {
+export default function UsersIndex({ users, filters, canManage, availableRoles, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [editing, setEditing] = useState<AppUser | null>(null);
     const { auth } = usePage<{ auth: { user: { id: number } | null } }>().props;
@@ -70,8 +71,8 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
 
             <PageHeader
                 title="Users"
-                subtitle="Everyone with access to this tenant."
-                action={<ExportButton href={route('users.export', filters)} />}
+                subtitle={viewingAllTenants ? 'Every tenant’s users, combined. Switch into a tenant to manage one.' : 'Everyone with access to this tenant.'}
+                action={!viewingAllTenants && <ExportButton href={route('users.export', filters)} />}
             />
 
             <Card padded={false}>
@@ -127,6 +128,7 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
                             <Table.HeadCell>Membership Code</Table.HeadCell>
                             <Table.HeadCell>Roles</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
                             {canManage && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
@@ -153,6 +155,7 @@ export default function UsersIndex({ users, filters, canManage, availableRoles }
                                             {user.status === 'active' ? 'Active' : 'Suspended'}
                                         </Badge>
                                     </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{user.tenant_name}</Table.Cell>}
                                     {canManage && (
                                         <Table.Cell className="text-end pe-3" label="Actions">
                                             {user.id !== auth.user?.id && (

@@ -31,6 +31,7 @@ interface ExchangeRateReport {
 interface Props {
     report: ExchangeRateReport;
     canManage: boolean;
+    viewingAllTenants: boolean;
 }
 
 function formatRate(value: number): string {
@@ -49,7 +50,7 @@ function sourceLabel(source: string | null): string {
     return '';
 }
 
-export default function ExchangeRatesIndex({ report, canManage }: Props) {
+export default function ExchangeRatesIndex({ report, canManage, viewingAllTenants }: Props) {
     const [date, setDate] = useState(report.requested_date);
     const [syncing, setSyncing] = useState(false);
     const hasBuySell = report.rows.some((row) => row.buy !== null);
@@ -78,7 +79,7 @@ export default function ExchangeRatesIndex({ report, canManage }: Props) {
             <PageHeader
                 title="Exchange Rates"
                 subtitle={`All rates quoted as ${report.base_currency} per 1 unit of foreign currency — the same convention the Central Bank of Egypt uses for its own buy/sell quotes.`}
-                action={<ExportButton href={route('exchange-rates.export', { date: report.requested_date })} />}
+                action={!viewingAllTenants && <ExportButton href={route('exchange-rates.export', { date: report.requested_date })} />}
             />
 
             <Card>

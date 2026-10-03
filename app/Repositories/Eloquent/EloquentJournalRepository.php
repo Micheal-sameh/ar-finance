@@ -24,7 +24,7 @@ class EloquentJournalRepository implements JournalRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return JournalEntry::query()
-            ->with(['createdBy', 'lines.account'])
+            ->with(['createdBy', 'lines.account', 'tenant:id,name'])
             ->when($filters['source_type'] ?? null, fn ($query, $type) => $query->where('source_type', $type))
             ->when($filters['created_by'] ?? null, fn ($query, $createdBy) => $query->where('created_by', $createdBy))
             ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('date', '>=', $from))

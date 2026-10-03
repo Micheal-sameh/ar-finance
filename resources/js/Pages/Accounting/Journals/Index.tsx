@@ -24,6 +24,7 @@ interface Props {
     entries: Paginated<JournalEntry>;
     filters: { source_type?: string; created_by?: string; from?: string; to?: string; search?: string };
     authorOptions: AuthorOption[];
+    viewingAllTenants: boolean;
 }
 
 const SOURCE_TYPES = [
@@ -40,7 +41,7 @@ function entryTotal(entry: JournalEntry): number {
     return entry.lines.reduce((sum, line) => sum + parseFloat(line.debit), 0);
 }
 
-export default function JournalsIndex({ entries, filters, authorOptions }: Props) {
+export default function JournalsIndex({ entries, filters, authorOptions, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
 
     function runSearch(e: FormEvent) {
@@ -63,14 +64,20 @@ export default function JournalsIndex({ entries, filters, authorOptions }: Props
 
             <PageHeader
                 title="Journal Entries"
-                subtitle="Every posted transaction in the general ledger."
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s posted transactions, combined. Switch into a tenant to post or view one.'
+                        : 'Every posted transaction in the general ledger.'
+                }
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('journals.export', filters)} />
-                        <Link href={route('journals.create')}>
-                            <Button leadingIcon={<Plus size={16} />}>New Entry</Button>
-                        </Link>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('journals.export', filters)} />
+                            <Link href={route('journals.create')}>
+                                <Button leadingIcon={<Plus size={16} />}>New Entry</Button>
+                            </Link>
+                        </div>
+                    )
                 }
             />
 
@@ -142,9 +149,11 @@ export default function JournalsIndex({ entries, filters, authorOptions }: Props
                         title="No journal entries yet"
                         description="Post your first manual journal entry to see it here."
                         action={
-                            <Link href={route('journals.create')}>
-                                <Button>New Entry</Button>
-                            </Link>
+                            !viewingAllTenants && (
+                                <Link href={route('journals.create')}>
+                                    <Button>New Entry</Button>
+                                </Link>
+                            )
                         }
                     />
                 ) : (
@@ -154,17 +163,23 @@ export default function JournalsIndex({ entries, filters, authorOptions }: Props
                             <Table.HeadCell>Description</Table.HeadCell>
                             <Table.HeadCell>Reference</Table.HeadCell>
                             <Table.HeadCell>Source</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Amount</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {entries.data.map((entry) => (
-                                <Table.Row key={entry.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('journals.show', entry.id))}>
+                                <Table.Row
+                                    key={entry.id}
+                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
+                                    onClick={viewingAllTenants ? undefined : () => router.get(route('journals.show', entry.id))}
+                                >
                                     <Table.Cell className="ps-3" label="Date">{formatDate(entry.date)}</Table.Cell>
                                     <Table.Cell label="Description">{entry.description}</Table.Cell>
                                     <Table.Cell label="Reference">{entry.reference ?? '—'}</Table.Cell>
                                     <Table.Cell label="Source">
                                         <Badge variant="neutral">{entry.source_type}</Badge>
                                     </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{entry.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Amount">
                                         <MoneyDisplay amount={entryTotal(entry)} />
                                     </Table.Cell>

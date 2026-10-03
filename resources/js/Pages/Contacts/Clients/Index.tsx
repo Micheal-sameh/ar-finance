@@ -23,9 +23,10 @@ interface Props {
     clients: Paginated<Client>;
     filters: { currency?: string; search?: string };
     currencyOptions: CurrencyOption[];
+    viewingAllTenants: boolean;
 }
 
-export default function ClientsIndex({ clients, filters, currencyOptions }: Props) {
+export default function ClientsIndex({ clients, filters, currencyOptions, viewingAllTenants }: Props) {
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
@@ -102,14 +103,16 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
 
             <PageHeader
                 title="Clients"
-                subtitle="Everyone you invoice."
+                subtitle={viewingAllTenants ? 'Every tenant’s clients, combined. Switch into a tenant to manage one.' : 'Everyone you invoice.'}
                 action={
-                    <div className="d-flex gap-2">
-                        <ExportButton href={route('clients.export', filters)} />
-                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                            New Client
-                        </Button>
-                    </div>
+                    !viewingAllTenants && (
+                        <div className="d-flex gap-2">
+                            <ExportButton href={route('clients.export', filters)} />
+                            <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                                New Client
+                            </Button>
+                        </div>
+                    )
                 }
             />
 
@@ -152,7 +155,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
                         icon={<Users size={20} />}
                         title="No clients yet"
                         description="Add a client before creating your first invoice."
-                        action={<Button onClick={openCreate}>New Client</Button>}
+                        action={!viewingAllTenants && <Button onClick={openCreate}>New Client</Button>}
                     />
                 ) : (
                     <Table cards>
@@ -161,47 +164,51 @@ export default function ClientsIndex({ clients, filters, currencyOptions }: Prop
                             <Table.HeadCell>Email</Table.HeadCell>
                             <Table.HeadCell>Phone</Table.HeadCell>
                             <Table.HeadCell>Currency</Table.HeadCell>
-                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
                             {clients.data.map((client) => (
                                 <Table.Row
                                     key={client.id}
-                                    style={{ cursor: 'pointer' }}
-                                    onClick={() => router.get(route('clients.show', client.id))}
+                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
+                                    onClick={viewingAllTenants ? undefined : () => router.get(route('clients.show', client.id))}
                                 >
                                     <Table.Cell className="ps-3" label="Name">{client.name}</Table.Cell>
                                     <Table.Cell label="Email">{client.email ?? '—'}</Table.Cell>
                                     <Table.Cell label="Phone">{client.phone ?? '—'}</Table.Cell>
                                     <Table.Cell label="Currency">{client.currency}</Table.Cell>
-                                    <Table.Cell className="text-end pe-3" label="Actions">
-                                        <div className="d-flex justify-content-end gap-1">
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm p-1"
-                                                style={{ color: 'var(--af-label)' }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    openEdit(client);
-                                                }}
-                                                aria-label="Edit"
-                                            >
-                                                <Pencil size={15} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn btn-sm p-1"
-                                                style={{ color: 'var(--af-danger)' }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    destroy(client);
-                                                }}
-                                                aria-label="Delete"
-                                            >
-                                                <Trash2 size={15} />
-                                            </button>
-                                        </div>
-                                    </Table.Cell>
+                                    {viewingAllTenants && <Table.Cell label="Tenant">{client.tenant_name}</Table.Cell>}
+                                    {!viewingAllTenants && (
+                                        <Table.Cell className="text-end pe-3" label="Actions">
+                                            <div className="d-flex justify-content-end gap-1">
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm p-1"
+                                                    style={{ color: 'var(--af-label)' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openEdit(client);
+                                                    }}
+                                                    aria-label="Edit"
+                                                >
+                                                    <Pencil size={15} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm p-1"
+                                                    style={{ color: 'var(--af-danger)' }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        destroy(client);
+                                                    }}
+                                                    aria-label="Delete"
+                                                >
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        </Table.Cell>
+                                    )}
                                 </Table.Row>
                             ))}
                         </tbody>
