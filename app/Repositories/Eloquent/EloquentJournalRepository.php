@@ -120,7 +120,7 @@ class EloquentJournalRepository implements JournalRepositoryInterface
     public function postedLinesForAccount(int $accountId, ?string $from = null, ?string $to = null, int|string|null $costCenterFilter = null): Collection
     {
         return JournalLine::query()
-            ->with('journalEntry')
+            ->with(['journalEntry', 'costCenter'])
             ->where('account_id', $accountId)
             ->when(
                 $costCenterFilter === 'unassigned',

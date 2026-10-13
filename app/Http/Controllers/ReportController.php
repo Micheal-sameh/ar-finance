@@ -76,6 +76,64 @@ class ReportController extends Controller
         ]);
     }
 
+    public function generalLedgerExport(Request $request): StreamedResponse
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $account = $this->accounts->find($request->integer('account_id')) ?? abort(404);
+        $ledger = $this->reports->generalLedger(
+            $account,
+            $request->string('from')->value() ?: null,
+            $request->string('to')->value() ?: null,
+            $this->costCenterFilter($request),
+        );
+
+        $columns = $this->generalLedgerColumns($request);
+
+        $rows = collect($ledger['lines'])->map(fn (array $line): array => array_map(
+            fn (string $key) => $line[$key] ?? '',
+            array_keys($columns),
+        ));
+
+        $totalRow = array_fill(0, count($columns), '');
+        $balanceIndex = array_search('balance', array_keys($columns), true);
+
+        if ($balanceIndex === false) {
+            $totalRow[0] = 'Ending balance: '.$ledger['ending_balance'];
+        } else {
+            $totalRow[0] = 'Ending balance';
+            $totalRow[$balanceIndex] = $balanceIndex === 0 ? 'Ending balance: '.$ledger['ending_balance'] : $ledger['ending_balance'];
+        }
+        $rows->push($totalRow);
+
+        return $this->exportXlsx("general-ledger-{$account->code}.xlsx", array_values($columns), $rows);
+    }
+
+    /**
+     * Resolves the `columns` query param (comma-separated line keys) to the
+     * ordered key => heading map to export. Unknown keys are ignored and an
+     * empty selection falls back to every column.
+     *
+     * @return array<string, string>
+     */
+    private function generalLedgerColumns(Request $request): array
+    {
+        $all = [
+            'date' => 'Date',
+            'description' => 'Description',
+            'reference' => 'Reference',
+            'cost_center' => 'Center',
+            'debit' => 'Debit',
+            'credit' => 'Credit',
+            'balance' => 'Balance',
+        ];
+
+        $requested = array_filter(explode(',', $request->string('columns')->value()));
+        $selected = array_intersect_key($all, array_flip($requested));
+
+        return $selected ?: $all;
+    }
+
     /**
      * Reads `cost_center_id` as an int, the literal string 'unassigned',
      * or null — the same convention ReportService's cost-center filtering

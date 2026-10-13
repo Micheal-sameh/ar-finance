@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AccountType;
+use App\Enums\CostCenterType;
 use App\Models\Account;
 use App\Repositories\Contracts\BankAccountRepositoryInterface;
 use App\Repositories\Contracts\BillRepositoryInterface;
@@ -296,7 +297,7 @@ class ReportService
      * convention.
      *
      * @return array{
-     *     lines: array<int, array{date: string, description: string, reference: ?string, debit: float, credit: float, balance: float}>,
+     *     lines: array<int, array{date: string, description: string, reference: ?string, cost_center: ?string, debit: float, credit: float, balance: float}>,
      *     ending_balance: float,
      * }
      */
@@ -318,6 +319,7 @@ class ReportService
                 'date' => $line->journalEntry->date->toDateString(),
                 'description' => $line->description ?? $line->journalEntry->description,
                 'reference' => $line->journalEntry->reference,
+                'cost_center' => $line->costCenter ? "{$line->costCenter->name} (".($line->costCenter->type === CostCenterType::Profit ? 'P' : 'C').')' : null,
                 'debit' => $debit,
                 'credit' => $credit,
                 'balance' => round($balance, 2),
