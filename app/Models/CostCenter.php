@@ -6,6 +6,7 @@ use App\Enums\CostCenterType;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\Concerns\HasMoney;
+use App\Modules\Booking\Models\BookableItem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -51,5 +52,10 @@ class CostCenter extends Model
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class);
+    }
+
+    public function bookableItems(): HasMany
+    {
+        return $this->hasMany(BookableItem::class);
     }
 }

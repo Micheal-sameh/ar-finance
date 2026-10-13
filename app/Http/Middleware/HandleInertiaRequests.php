@@ -6,7 +6,6 @@ use App\Enums\UserStatus;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\TenantContext;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -25,6 +24,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $user?->loadMissing('roles.permissions');
         $tenantContext = app(TenantContext::class);
 
         return array_merge(parent::share($request), [
@@ -62,18 +62,19 @@ class HandleInertiaRequests extends Middleware
     {
         $tenantId = $tenantContext->id();
 
-        $tenantUsers = $tenantId
-            ? User::query()->where('tenant_id', $tenantId)->where('status', UserStatus::Active)->with('roles')->get()
-            : new Collection;
-
-        $adminUsers = User::query()
-            ->whereHas('roles', fn ($query) => $query->whereIn('name', ['Platform Admin', 'Portal Manager']))
+        $users = User::query()
             ->where('status', UserStatus::Active)
+            ->where(function ($query) use ($tenantId) {
+                if ($tenantId) {
+                    $query->where('tenant_id', $tenantId);
+                }
+
+                $query->orWhereHas('roles', fn ($roleQuery) => $roleQuery->whereIn('name', ['Platform Admin', 'Portal Manager']));
+            })
             ->with('roles')
             ->get();
 
-        return $tenantUsers->concat($adminUsers)
-            ->unique('id')
+        return $users
             ->sortBy('name')
             ->map(fn (User $user) => [
                 'id' => $user->id,

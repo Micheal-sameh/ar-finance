@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Enums\AccountType;
 use App\Models\Account;
+use App\Models\CostCenter;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Modules\Booking\Models\BookableItem;
+use App\Modules\Booking\Models\Booking;
 use Database\Seeders\ChartOfAccountsSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -345,5 +348,124 @@ class PlatformAdminTest extends TestCase
         $this->actingAs($user)
             ->put(route('platform.users.assign-role', $target), ['role' => 'Admin'])
             ->assertForbidden();
+    }
+
+    public function test_platform_admin_sees_combined_bookable_items_without_impersonating(): void
+    {
+        $admin = $this->platformAdmin();
+
+        $tenant = Tenant::create(['name' => 'Alpha Co', 'slug' => 'alpha-co', 'base_currency' => 'EGP']);
+        $account = Account::create([
+            'tenant_id' => $tenant->id,
+            'code' => '4000',
+            'name' => 'Booking Revenue',
+            'type' => AccountType::Revenue,
+            'normal_balance' => 'credit',
+        ]);
+        $costCenter = CostCenter::create(['tenant_id' => $tenant->id, 'name' => 'Front Desk', 'type' => 'profit']);
+        BookableItem::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Treatment Room',
+            'rate_type' => 'hourly',
+            'price' => 100,
+            'account_id' => $account->id,
+            'cost_center_id' => $costCenter->id,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('bookable-items.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Booking/BookableItems/Index')
+            ->where('viewingAllTenants', true)
+        );
+        $response->assertSee('Alpha Co', false);
+    }
+
+    public function test_platform_admin_sees_the_combined_calendar_read_only_without_impersonating(): void
+    {
+        $admin = $this->platformAdmin();
+
+        $tenant = Tenant::create(['name' => 'Alpha Co', 'slug' => 'alpha-co', 'base_currency' => 'EGP']);
+        $account = Account::create([
+            'tenant_id' => $tenant->id,
+            'code' => '4000',
+            'name' => 'Booking Revenue',
+            'type' => AccountType::Revenue,
+            'normal_balance' => 'credit',
+        ]);
+        $costCenter = CostCenter::create(['tenant_id' => $tenant->id, 'name' => 'Front Desk', 'type' => 'profit']);
+        $item = BookableItem::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Treatment Room',
+            'rate_type' => 'hourly',
+            'price' => 100,
+            'account_id' => $account->id,
+            'cost_center_id' => $costCenter->id,
+        ]);
+        $bookingUser = User::factory()->create(['tenant_id' => $tenant->id]);
+        $booking = Booking::create([
+            'tenant_id' => $tenant->id,
+            'bookable_item_id' => $item->id,
+            'user_id' => $bookingUser->id,
+            'starts_at' => '2026-10-10 10:00:00',
+            'ends_at' => '2026-10-10 12:00:00',
+            'price' => 200,
+            'status' => 'confirmed',
+        ]);
+
+        $this->actingAs($admin)->get(route('bookings.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Booking/Calendar/Index')
+                ->where('viewingAllTenants', true)
+            );
+
+        $calendarResponse = $this->actingAs($admin)->getJson(route('bookings.calendar', [
+            'from' => '2026-10-01',
+            'to' => '2026-10-20',
+        ]));
+
+        $calendarResponse->assertOk();
+        $calendarResponse->assertJsonCount(1);
+        $calendarResponse->assertJsonFragment([
+            'id' => $booking->id,
+            'tenant_name' => 'Alpha Co',
+            'can_cancel' => false,
+            'can_mark_paid' => false,
+            'can_pay_deposit' => false,
+        ]);
+    }
+
+    public function test_platform_admin_without_an_active_tenant_cannot_create_a_booking(): void
+    {
+        $admin = $this->platformAdmin();
+
+        $tenant = Tenant::create(['name' => 'Alpha Co', 'slug' => 'alpha-co', 'base_currency' => 'EGP']);
+        $account = Account::create([
+            'tenant_id' => $tenant->id,
+            'code' => '4000',
+            'name' => 'Booking Revenue',
+            'type' => AccountType::Revenue,
+            'normal_balance' => 'credit',
+        ]);
+        $costCenter = CostCenter::create(['tenant_id' => $tenant->id, 'name' => 'Front Desk', 'type' => 'profit']);
+        $item = BookableItem::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Treatment Room',
+            'rate_type' => 'hourly',
+            'price' => 100,
+            'account_id' => $account->id,
+            'cost_center_id' => $costCenter->id,
+        ]);
+
+        $response = $this->actingAs($admin)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'starts_at' => '2026-10-10 10:00:00',
+            'ends_at' => '2026-10-10 12:00:00',
+        ]);
+
+        $response->assertRedirect(route('platform.dashboard'));
+        $this->assertDatabaseCount('bookings', 0);
     }
 }

@@ -58,6 +58,11 @@ class RolePermissionSeeder extends Seeder
         'users.manage',
         'platform.access',
         'tenants.manage',
+        'bookable_items.view',
+        'bookable_items.manage',
+        'bookings.view',
+        'bookings.create',
+        'bookings.manage',
     ];
 
     /**
@@ -162,5 +167,11 @@ class RolePermissionSeeder extends Seeder
 
         $viewer = Role::firstOrCreate(['name' => 'Viewer', 'guard_name' => 'web']);
         $viewer->syncPermissions(self::VIEWER_PERMISSIONS);
+
+        // Booking Agent = can browse the calendar and book bookable items,
+        // and see what's bookable (read-only), but not define it or
+        // oversee other users' bookings.
+        $bookingAgent = Role::firstOrCreate(['name' => 'Booking Agent', 'guard_name' => 'web']);
+        $bookingAgent->syncPermissions(['bookings.view', 'bookings.create', 'bookable_items.view']);
     }
 }

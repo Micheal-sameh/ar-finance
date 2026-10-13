@@ -1,0 +1,611 @@
+import type { DateSelectArg, EventClickArg } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction';
+import FullCalendar from '@fullcalendar/react';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import { Head, router } from '@inertiajs/react';
+import { CalendarClock } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { AccountPicker } from '@/Components/finance/AccountPicker';
+import { PageHeader } from '@/Components/layout/PageHeader';
+import { Badge } from '@/Components/ui/Badge';
+import { Button } from '@/Components/ui/Button';
+import { Card } from '@/Components/ui/Card';
+import { EmptyState } from '@/Components/ui/EmptyState';
+import { Input } from '@/Components/ui/Input';
+import { Modal } from '@/Components/ui/Modal';
+import { Select } from '@/Components/ui/Select';
+import { useBookableItems } from '@/hooks/useBookableItems';
+import api from '@/lib/api';
+import type { BookingEvent } from '@/types/booking';
+
+const STATUS_VARIANT: Record<BookingEvent['status'], 'info' | 'success' | 'neutral'> = {
+    confirmed: 'info',
+    paid: 'success',
+    cancelled: 'neutral',
+};
+
+/** Local wall-clock value for an <input type="datetime-local">, e.g. "2026-10-06T09:00". */
+function toInputValue(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+interface Props {
+    viewingAllTenants: boolean;
+}
+
+export default function CalendarIndex({ viewingAllTenants }: Props) {
+    const calendarRef = useRef<FullCalendar>(null);
+    const { items, loading: itemsLoading } = useBookableItems(!viewingAllTenants);
+
+    const [selection, setSelection] = useState<{ start: string; end: string } | null>(null);
+    const [bookableItemId, setBookableItemId] = useState<number | null>(null);
+    const [notes, setNotes] = useState('');
+    const [bookingDepositAmount, setBookingDepositAmount] = useState('');
+    const [bookingDepositDueAt, setBookingDepositDueAt] = useState('');
+    const [bookingError, setBookingError] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    const [selectedEvent, setSelectedEvent] = useState<BookingEvent | null>(null);
+    const [paymentAccountId, setPaymentAccountId] = useState<number | null>(null);
+    const [payMode, setPayMode] = useState(false);
+    const [payAmount, setPayAmount] = useState('');
+    const [depositMode, setDepositMode] = useState(false);
+    const [depositDueAt, setDepositDueAt] = useState('');
+
+    const [dayViewDate, setDayViewDate] = useState<string | null>(null);
+    const [dayViewBookings, setDayViewBookings] = useState<BookingEvent[]>([]);
+    const [dayViewLoading, setDayViewLoading] = useState(false);
+
+    const selectedItem = items.find((item) => item.id === bookableItemId) ?? null;
+
+    function estimatedPrice(): number | null {
+        if (!selectedItem || !selection) return null;
+
+        if (selectedItem.rate_type === 'flat') return Number(selectedItem.price);
+
+        const hours = (new Date(selection.end).getTime() - new Date(selection.start).getTime()) / 3_600_000;
+
+        return Math.round(Number(selectedItem.price) * hours * 100) / 100;
+    }
+
+    function estimatedDeposit(): number | null {
+        const price = estimatedPrice();
+
+        if (!selectedItem?.deposit_percent || price === null) return null;
+
+        return Math.round(price * (Number(selectedItem.deposit_percent) / 100) * 100) / 100;
+    }
+
+    /** What actually gets submitted — the person's override if they typed one and it's valid, otherwise the item's minimum. */
+    function depositToCollect(): number | null {
+        const minimum = estimatedDeposit();
+
+        if (bookingDepositAmount === '') return minimum;
+
+        const entered = Number(bookingDepositAmount);
+
+        return Number.isFinite(entered) ? entered : minimum;
+    }
+
+    function depositAmountError(): string | undefined {
+        if (bookingDepositAmount === '') return undefined;
+
+        const entered = Number(bookingDepositAmount);
+        const minimum = estimatedDeposit();
+        const price = estimatedPrice();
+
+        if (!Number.isFinite(entered) || entered <= 0) return 'Enter a valid amount.';
+        if (minimum !== null && entered < minimum) return `Must be at least the minimum deposit (${minimum}).`;
+        if (price !== null && entered > price) return `Can't be more than the price (${price}).`;
+
+        return undefined;
+    }
+
+    function handleSelect(info: DateSelectArg) {
+        setBookableItemId(null);
+        setNotes('');
+        setBookingDepositAmount('');
+        setBookingDepositDueAt('');
+        setBookingError(null);
+
+        // A month-view (or any all-day) selection spans the whole day(s)
+        // clicked, not an actual time slot — default to a 1-hour slot
+        // starting at 9am instead, and let the time fields below be edited.
+        if (info.allDay) {
+            const start = new Date(info.start);
+            start.setHours(9, 0, 0, 0);
+            const end = new Date(start);
+            end.setHours(start.getHours() + 1);
+            setSelection({ start: toInputValue(start), end: toInputValue(end) });
+        } else {
+            setSelection({ start: toInputValue(info.start), end: toInputValue(info.end) });
+        }
+
+        info.view.calendar.unselect();
+    }
+
+    function closeBookingModal() {
+        setSelection(null);
+        setBookingDepositAmount('');
+        setBookingDepositDueAt('');
+    }
+
+    /** A Platform Admin's view is read-only, so a day click opens that day's bookings grouped by tenant instead of starting a new booking. */
+    function openDayView(info: DateClickArg) {
+        const date = info.dateStr.slice(0, 10);
+        const from = `${date}T00:00:00`;
+        const to = new Date(`${date}T00:00:00`);
+        to.setDate(to.getDate() + 1);
+
+        setDayViewDate(date);
+        setDayViewBookings([]);
+        setDayViewLoading(true);
+
+        api
+            .get<BookingEvent[]>(route('bookings.calendar'), { params: { from, to: toInputValue(to) } })
+            .then((response) => {
+                if (Array.isArray(response.data)) setDayViewBookings(response.data);
+            })
+            .finally(() => setDayViewLoading(false));
+    }
+
+    function closeDayView() {
+        setDayViewDate(null);
+        setDayViewBookings([]);
+    }
+
+    function submitBooking() {
+        if (!selection || !bookableItemId) return;
+        if (selectedItem?.deposit_percent && (!bookingDepositDueAt || depositAmountError())) return;
+
+        setSubmitting(true);
+        setBookingError(null);
+
+        router.post(
+            route('bookings.store'),
+            {
+                bookable_item_id: bookableItemId,
+                starts_at: selection.start,
+                ends_at: selection.end,
+                notes: notes || null,
+                payment_due_at: bookingDepositDueAt || null,
+                deposit_amount: selectedItem?.deposit_percent ? depositToCollect() : null,
+            },
+            {
+                // Without this, Inertia fully remounts the page on this
+                // POST's redirect-back response — tearing down the live
+                // FullCalendar instance (and this component's state) before
+                // the refetchEvents() call below can run against it.
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: (page) => {
+                    const error = (page.props.flash as { error?: string } | undefined)?.error;
+
+                    if (error) {
+                        setBookingError(error);
+                    } else {
+                        setSelection(null);
+                        setBookingDepositAmount('');
+                        setBookingDepositDueAt('');
+                        calendarRef.current?.getApi().refetchEvents();
+                    }
+                },
+                onFinish: () => setSubmitting(false),
+            },
+        );
+    }
+
+    function closeEventModal() {
+        setSelectedEvent(null);
+        setPayMode(false);
+        setPayAmount('');
+        setDepositMode(false);
+        setPaymentAccountId(null);
+        setDepositDueAt('');
+    }
+
+    /** What actually gets submitted — the person's partial amount if they typed one and it's valid, otherwise the full remaining balance. */
+    function amountToCollect(): number | null {
+        if (!selectedEvent) return null;
+        if (payAmount === '') return selectedEvent.balance_due;
+
+        const entered = Number(payAmount);
+
+        return Number.isFinite(entered) ? entered : selectedEvent.balance_due;
+    }
+
+    function payAmountError(): string | undefined {
+        if (!selectedEvent || payAmount === '') return undefined;
+
+        const entered = Number(payAmount);
+
+        if (!Number.isFinite(entered) || entered <= 0) return 'Enter a valid amount.';
+        if (entered > selectedEvent.balance_due) return `Can't exceed the balance due (${selectedEvent.balance_due}).`;
+
+        return undefined;
+    }
+
+    function cancelBooking() {
+        if (!selectedEvent) return;
+
+        router.post(route('bookings.cancel', selectedEvent.id), {}, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                closeEventModal();
+                calendarRef.current?.getApi().refetchEvents();
+            },
+        });
+    }
+
+    function markPaid() {
+        if (!selectedEvent || !paymentAccountId || payAmountError()) return;
+
+        router.post(
+            route('bookings.mark-paid', selectedEvent.id),
+            { payment_account_id: paymentAccountId, amount: amountToCollect() },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    closeEventModal();
+                    calendarRef.current?.getApi().refetchEvents();
+                },
+            },
+        );
+    }
+
+    function payDeposit() {
+        if (!selectedEvent || !paymentAccountId || !depositDueAt) return;
+
+        router.post(
+            route('bookings.pay-deposit', selectedEvent.id),
+            { payment_account_id: paymentAccountId, payment_due_at: depositDueAt },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    closeEventModal();
+                    calendarRef.current?.getApi().refetchEvents();
+                },
+            },
+        );
+    }
+
+    return (
+        <>
+            <Head title="Booking Calendar" />
+
+            <PageHeader
+                title="Booking Calendar"
+                subtitle={
+                    viewingAllTenants
+                        ? 'Every tenant’s bookings, combined and read-only. Switch into a tenant to book, cancel, or collect payment.'
+                        : 'Select a time slot on the calendar to book it.'
+                }
+            />
+
+            <Card padded={false}>
+                <div className="p-3">
+                    <FullCalendar
+                        ref={calendarRef}
+                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                        initialView="timeGridWeek"
+                        headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
+                        selectable={!viewingAllTenants}
+                        select={viewingAllTenants ? undefined : handleSelect}
+                        dateClick={viewingAllTenants ? openDayView : undefined}
+                        eventClick={(info: EventClickArg) => setSelectedEvent(info.event.extendedProps as BookingEvent)}
+                        height="auto"
+                        slotMinTime="06:00:00"
+                        slotMaxTime="22:00:00"
+                        events={(fetchInfo, successCallback, failureCallback) => {
+                            api
+                                .get<Array<{ id: number } & BookingEvent>>(route('bookings.calendar'), {
+                                    params: { from: fetchInfo.startStr, to: fetchInfo.endStr },
+                                })
+                                .then((response) => {
+                                    const rows = response.data;
+
+                                    if (!Array.isArray(rows)) {
+                                        failureCallback(new Error('Unexpected response loading the calendar.'));
+                                        return;
+                                    }
+
+                                    successCallback(
+                                        rows.map((event) => ({
+                                            id: String(event.id),
+                                            title: event.tenant_name ? `${event.tenant_name} · ${event.title}` : event.title,
+                                            start: event.start,
+                                            end: event.end,
+                                            backgroundColor: event.status === 'cancelled'
+                                                ? 'var(--af-label)'
+                                                : event.is_overdue
+                                                  ? 'var(--af-danger)'
+                                                  : undefined,
+                                            extendedProps: event,
+                                        })),
+                                    );
+                                })
+                                .catch((error) => failureCallback(error));
+                        }}
+                    />
+                </div>
+            </Card>
+
+            <Modal
+                open={Boolean(selection)}
+                onClose={closeBookingModal}
+                title="New Booking"
+                footer={
+                    <>
+                        <Button variant="outline" onClick={closeBookingModal}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={submitBooking}
+                            loading={submitting}
+                            disabled={
+                                !bookableItemId ||
+                                !selection ||
+                                selection.end <= selection.start ||
+                                Boolean(selectedItem?.deposit_percent && (!bookingDepositDueAt || depositAmountError()))
+                            }
+                        >
+                            Book
+                        </Button>
+                    </>
+                }
+            >
+                <div className="d-flex flex-column gap-3">
+                    {bookingError && <div style={{ color: 'var(--af-danger)', fontSize: '13px' }}>{bookingError}</div>}
+
+                    <Select
+                        label="What are you booking?"
+                        value={bookableItemId ?? ''}
+                        onChange={(e) => setBookableItemId(e.target.value ? Number(e.target.value) : null)}
+                    >
+                        <option value="">{itemsLoading ? 'Loading…' : 'Select an item'}</option>
+                        {items.map((item) => (
+                            <option key={item.id} value={item.id}>
+                                {item.name} {item.is_exclusive ? '' : '(shared)'}
+                            </option>
+                        ))}
+                    </Select>
+
+                    {selection && (
+                        <div className="d-flex gap-3">
+                            <Input
+                                type="datetime-local"
+                                label="Starts"
+                                value={selection.start}
+                                onChange={(e) => setSelection({ ...selection, start: e.target.value })}
+                            />
+                            <Input
+                                type="datetime-local"
+                                label="Ends"
+                                value={selection.end}
+                                onChange={(e) => setSelection({ ...selection, end: e.target.value })}
+                                error={selection.end <= selection.start ? 'Must be after the start time.' : undefined}
+                            />
+                        </div>
+                    )}
+
+                    {estimatedPrice() !== null && (
+                        <div style={{ fontSize: '14px' }}>
+                            Estimated price: <strong>{estimatedPrice()}</strong>
+                        </div>
+                    )}
+
+                    {selectedItem?.deposit_percent && (
+                        <div className="d-flex flex-column gap-3" style={{ borderTop: '1px solid var(--af-border)', paddingTop: '12px' }}>
+                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                This item requires a minimum {selectedItem.deposit_percent}% deposit
+                                {estimatedDeposit() !== null && (
+                                    <>
+                                        {' '}
+                                        — <strong>{estimatedDeposit()}</strong>
+                                    </>
+                                )}{' '}
+                                — collected now into the account the admin set up for this item. The person booking can pay more upfront if they want.
+                            </div>
+
+                            <Input
+                                type="number"
+                                step="0.01"
+                                min={estimatedDeposit() ?? 0.01}
+                                label="Deposit to collect"
+                                placeholder={estimatedDeposit() !== null ? String(estimatedDeposit()) : undefined}
+                                value={bookingDepositAmount}
+                                onChange={(e) => setBookingDepositAmount(e.target.value)}
+                                error={depositAmountError()}
+                            />
+
+                            <Input
+                                type="datetime-local"
+                                label="Balance due by"
+                                value={bookingDepositDueAt}
+                                onChange={(e) => setBookingDepositDueAt(e.target.value)}
+                            />
+                        </div>
+                    )}
+
+                    <Input label="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                </div>
+            </Modal>
+
+            <Modal
+                open={Boolean(selectedEvent)}
+                onClose={closeEventModal}
+                title="Booking"
+                footer={
+                    selectedEvent && (
+                        <>
+                            {selectedEvent.can_cancel && selectedEvent.status === 'confirmed' && !payMode && !depositMode && (
+                                <Button variant="outline" onClick={cancelBooking}>
+                                    Cancel booking
+                                </Button>
+                            )}
+                            {selectedEvent.can_pay_deposit &&
+                                selectedEvent.accepts_deposits &&
+                                selectedEvent.status === 'confirmed' &&
+                                !selectedEvent.deposit_paid_at &&
+                                !payMode &&
+                                !depositMode && <Button variant="outline" onClick={() => setDepositMode(true)}>Pay deposit</Button>}
+                            {selectedEvent.can_mark_paid && selectedEvent.status === 'confirmed' && !payMode && !depositMode && (
+                                <Button onClick={() => setPayMode(true)}>
+                                    {selectedEvent.balance_due < Number(selectedEvent.price) ? 'Collect balance' : 'Mark paid'}
+                                </Button>
+                            )}
+                            {payMode && (
+                                <Button onClick={markPaid} disabled={!paymentAccountId || Boolean(payAmountError())}>
+                                    Confirm payment
+                                </Button>
+                            )}
+                            {depositMode && (
+                                <Button onClick={payDeposit} disabled={!paymentAccountId || !depositDueAt}>
+                                    Confirm deposit
+                                </Button>
+                            )}
+                        </>
+                    )
+                }
+            >
+                {selectedEvent && (
+                    <div className="d-flex flex-column gap-3">
+                        <div className="d-flex align-items-center gap-2">
+                            <Badge variant={STATUS_VARIANT[selectedEvent.status]}>{selectedEvent.status}</Badge>
+                            <Badge variant={selectedEvent.is_exclusive ? 'warning' : 'info'}>
+                                {selectedEvent.is_exclusive ? 'Exclusive' : 'Shared'}
+                            </Badge>
+                            {selectedEvent.is_overdue && <Badge variant="danger">Overdue</Badge>}
+                        </div>
+
+                        {selectedEvent.tenant_name && (
+                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>Tenant: {selectedEvent.tenant_name}</div>
+                        )}
+
+                        <div style={{ fontSize: '14px' }}>Price: {selectedEvent.price}</div>
+
+                        {selectedEvent.deposit_paid_at && (
+                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                Deposit of {selectedEvent.deposit_amount} paid {new Date(selectedEvent.deposit_paid_at).toLocaleString()}.
+                            </div>
+                        )}
+
+                        {selectedEvent.status === 'confirmed' && selectedEvent.balance_due < Number(selectedEvent.price) && (
+                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                Collected so far: {Math.round((Number(selectedEvent.price) - selectedEvent.balance_due) * 100) / 100}.
+                            </div>
+                        )}
+
+                        {selectedEvent.status === 'confirmed' && (
+                            <div style={{ fontSize: '14px' }}>
+                                Balance due: <strong>{selectedEvent.balance_due}</strong>
+                                {selectedEvent.payment_due_at && <> by {new Date(selectedEvent.payment_due_at).toLocaleString()}.</>}
+                            </div>
+                        )}
+
+                        {payMode && (
+                            <div className="d-flex flex-column gap-3">
+                                <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    max={selectedEvent.balance_due}
+                                    label="Amount to collect"
+                                    placeholder={String(selectedEvent.balance_due)}
+                                    help="Defaults to the full balance due — enter less to record a partial payment."
+                                    value={payAmount}
+                                    onChange={(e) => setPayAmount(e.target.value)}
+                                    error={payAmountError()}
+                                />
+                                <div>
+                                    <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                        Received into
+                                    </label>
+                                    <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" />
+                                </div>
+                            </div>
+                        )}
+
+                        {depositMode && (
+                            <div className="d-flex flex-column gap-3">
+                                <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                    Deposit ({selectedEvent.deposit_percent}%):{' '}
+                                    <strong>
+                                        {Math.round(Number(selectedEvent.price) * (Number(selectedEvent.deposit_percent) / 100) * 100) / 100}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                        Received into
+                                    </label>
+                                    <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" />
+                                </div>
+                                <Input
+                                    type="datetime-local"
+                                    label="Complete payment by"
+                                    value={depositDueAt}
+                                    onChange={(e) => setDepositDueAt(e.target.value)}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+            </Modal>
+
+            <Modal
+                open={Boolean(dayViewDate)}
+                onClose={closeDayView}
+                title={dayViewDate ? `Bookings on ${dayViewDate}` : 'Bookings'}
+            >
+                {dayViewLoading ? (
+                    <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>Loading…</div>
+                ) : dayViewBookings.length === 0 ? (
+                    <EmptyState icon={<CalendarClock size={20} />} title="No bookings that day" />
+                ) : (
+                    <div className="d-flex flex-column gap-3">
+                        {Object.entries(
+                            dayViewBookings.reduce<Record<string, BookingEvent[]>>((groups, booking) => {
+                                const tenant = booking.tenant_name ?? 'Unknown tenant';
+                                (groups[tenant] ??= []).push(booking);
+                                return groups;
+                            }, {}),
+                        ).map(([tenant, bookings]) => (
+                            <Card key={tenant} padded={false}>
+                                <div
+                                    className="px-3 py-2"
+                                    style={{ borderBottom: '1px solid var(--af-border)', fontWeight: 600, fontSize: '14px', color: 'var(--af-navy)' }}
+                                >
+                                    {tenant}
+                                </div>
+                                <div className="d-flex flex-column">
+                                    {bookings.map((booking, index) => (
+                                        <div
+                                            key={booking.id}
+                                            className="px-3 py-2 d-flex align-items-center justify-content-between gap-2"
+                                            style={index < bookings.length - 1 ? { borderBottom: '1px solid var(--af-border)' } : undefined}
+                                        >
+                                            <div>
+                                                <div style={{ fontSize: '13px' }}>{booking.title}</div>
+                                                <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>
+                                                    {new Date(booking.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} –{' '}
+                                                    {new Date(booking.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                            <Badge variant={STATUS_VARIANT[booking.status]}>{booking.status}</Badge>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </Modal>
+        </>
+    );
+}

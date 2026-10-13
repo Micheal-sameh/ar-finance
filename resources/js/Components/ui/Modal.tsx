@@ -32,16 +32,17 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 
                 <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3">
                     <Dialog.Panel
-                        className="w-100"
+                        className="w-100 d-flex flex-column"
                         style={{
                             maxWidth: '520px',
+                            maxHeight: 'calc(100vh - 2rem)',
                             backgroundColor: 'var(--af-surface)',
                             borderRadius: 'var(--af-radius)',
                             boxShadow: '0 20px 25px -5px rgb(15 23 42 / 0.15)',
                         }}
                     >
                         <div
-                            className="d-flex align-items-center justify-content-between px-4 py-3"
+                            className="d-flex align-items-center justify-content-between px-4 py-3 flex-shrink-0"
                             style={{ borderBottom: '1px solid var(--af-border)' }}
                         >
                             <Dialog.Title style={{ fontSize: '16px', fontWeight: 600, color: 'var(--af-navy)' }}>
@@ -58,11 +59,13 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
                             </button>
                         </div>
 
-                        <div className="px-4 py-3">{children}</div>
+                        <div className="px-4 py-3" style={{ overflowY: 'auto' }}>
+                            {children}
+                        </div>
 
                         {footer && (
                             <div
-                                className="d-flex justify-content-end gap-2 px-4 py-3"
+                                className="d-flex justify-content-end gap-2 px-4 py-3 flex-shrink-0"
                                 style={{ borderTop: '1px solid var(--af-border)' }}
                             >
                                 {footer}
