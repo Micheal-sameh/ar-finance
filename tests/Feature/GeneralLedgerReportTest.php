@@ -98,6 +98,23 @@ class GeneralLedgerReportTest extends TestCase
         );
     }
 
+    public function test_general_ledger_can_be_exported_to_excel(): void
+    {
+        auth()->login($this->user);
+
+        $this->postManualEntry('2026-01-10', [
+            ['accountId' => $this->cash->id, 'debit' => 300, 'credit' => 0],
+            ['accountId' => $this->revenue->id, 'debit' => 0, 'credit' => 300],
+        ]);
+
+        $response = $this->actingAs($this->user)->get(
+            route('reports.general-ledger.export', ['account_id' => $this->cash->id, 'from' => '2026-01-01', 'to' => '2026-01-31']),
+        );
+
+        $response->assertOk();
+        $response->assertDownload("general-ledger-{$this->cash->code}.xlsx");
+    }
+
     public function test_general_ledger_can_be_filtered_to_a_cost_center(): void
     {
         auth()->login($this->user);

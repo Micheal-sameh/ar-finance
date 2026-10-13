@@ -112,6 +112,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('exchange-rates', [ExchangeRateController::class, 'index'])->name('exchange-rates.index');
     Route::get('reports/general-ledger', [ReportController::class, 'generalLedger'])->name('reports.general-ledger');
+    Route::get('reports/general-ledger/export', [ReportController::class, 'generalLedgerExport'])->name('reports.general-ledger.export');
 });
 
 Route::middleware(['auth', 'active', 'tenant'])->group(function () {

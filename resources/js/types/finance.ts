@@ -99,6 +99,7 @@ export interface GeneralLedgerLine {
     date: string;
     description: string;
     reference: string | null;
+    cost_center: string | null;
     debit: number;
     credit: number;
     balance: number;
