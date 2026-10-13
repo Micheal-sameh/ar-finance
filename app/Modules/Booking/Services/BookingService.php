@@ -8,16 +8,20 @@ use App\Enums\JournalSourceType;
 use App\Models\Tenant;
 use App\Modules\Booking\DTOs\CreateBookingData;
 use App\Modules\Booking\Enums\BookingRateType;
+use App\Modules\Booking\Enums\BookingRecurrence;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Exceptions\BookingConflictException;
 use App\Modules\Booking\Models\BookableItem;
 use App\Modules\Booking\Models\Booking;
+use App\Modules\Booking\Models\BookingType;
 use App\Modules\Booking\Repositories\Contracts\BookingRepositoryInterface;
 use App\Services\JournalService;
 use App\Support\TenantContext;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -27,6 +31,12 @@ use RuntimeException;
  */
 class BookingService
 {
+    /**
+     * Safety cap so a daily booking with a far-off end date cannot create
+     * thousands of rows in one request.
+     */
+    private const MAX_OCCURRENCES = 366;
+
     public function __construct(
         private readonly BookingRepositoryInterface $bookings,
         private readonly JournalService $journals,
@@ -38,50 +48,136 @@ class BookingService
     }
 
     /**
+     * Books the slot — and, for a repeating booking, every repeat of it up to
+     * the end date. Each occurrence is an ordinary booking of its own (own
+     * conflict check, price, deposit and payments), created all-or-nothing:
+     * if any date is taken or fails, none are booked.
+     *
+     * @return Booking the first booking of the series
+     *
      * @throws BookingConflictException
      */
     public function create(CreateBookingData $data, BookableItem $item, int $userId): Booking
     {
-        if ($item->is_exclusive && $this->bookings->hasConflict($item->id, $data->startsAt, $data->endsAt)) {
-            throw BookingConflictException::slotTaken($item->name);
+        $type = $data->bookingTypeId !== null
+            ? $item->bookingTypes()->find($data->bookingTypeId)
+            : null;
+
+        if ($data->bookingTypeId !== null && $type === null) {
+            throw new RuntimeException("That booking type is not offered for \"{$item->name}\".");
         }
 
-        return DB::transaction(function () use ($data, $item, $userId) {
-            $booking = $this->bookings->create([
-                'tenant_id' => app(TenantContext::class)->id(),
-                'bookable_item_id' => $item->id,
-                'user_id' => $userId,
-                'starts_at' => $data->startsAt,
-                'ends_at' => $data->endsAt,
-                'price' => $this->priceFor($item, $data->startsAt, $data->endsAt),
-                'status' => BookingStatus::Confirmed,
-                'notes' => $data->notes,
-            ]);
+        $occurrences = $this->occurrences($data);
 
-            // The item's deposit percentage and payment account are set by
-            // the admin; the request layer only requires a due date once
-            // the item accepts deposits, so collect it immediately.
-            if ($item->acceptsDeposits() && $data->paymentDueAt !== null) {
-                if ($item->deposit_payment_account_id === null) {
-                    throw new RuntimeException("\"{$item->name}\" has no deposit payment account configured — set one on the item before booking it.");
+        if ($item->is_exclusive) {
+            foreach ($occurrences as [$startsAt, $endsAt]) {
+                if ($this->bookings->hasConflict($item->id, $startsAt, $endsAt)) {
+                    throw BookingConflictException::slotTaken(count($occurrences) > 1 ? "{$item->name} on {$startsAt}" : $item->name);
                 }
+            }
+        }
 
-                $booking = $this->payDeposit($booking, $item->deposit_payment_account_id, $data->paymentDueAt, $data->depositAmount);
+        $groupId = count($occurrences) > 1 ? (string) Str::uuid() : null;
+
+        return DB::transaction(function () use ($data, $item, $type, $userId, $occurrences, $groupId) {
+            $first = null;
+
+            foreach ($occurrences as [$startsAt, $endsAt]) {
+                $booking = $this->createOccurrence($data, $item, $type, $userId, $startsAt, $endsAt, $groupId);
+                $first ??= $booking;
             }
 
-            return $booking;
+            return $first;
         });
     }
 
-    private function priceFor(BookableItem $item, string $startsAt, string $endsAt): float
+    /**
+     * Start/end pairs for the booking and each repeat up to the end date.
+     *
+     * @return array<int, array{0: string, 1: string}>
+     */
+    private function occurrences(CreateBookingData $data): array
     {
-        if ($item->rate_type === BookingRateType::Flat) {
-            return (float) $item->price;
+        if ($data->recurrence === BookingRecurrence::None || $data->recurrenceUntil === null) {
+            return [[$data->startsAt, $data->endsAt]];
+        }
+
+        $start = CarbonImmutable::parse($data->startsAt);
+        $end = CarbonImmutable::parse($data->endsAt);
+        $until = CarbonImmutable::parse($data->recurrenceUntil)->endOfDay();
+        $occurrences = [];
+
+        for ($i = 0; ; $i++) {
+            $occurrenceStart = $data->recurrence->shift($start, $i);
+
+            if ($occurrenceStart->greaterThan($until)) {
+                break;
+            }
+
+            if ($i >= self::MAX_OCCURRENCES) {
+                throw new RuntimeException('This would create more than '.self::MAX_OCCURRENCES.' bookings — choose an earlier end date.');
+            }
+
+            $occurrences[] = [
+                $occurrenceStart->toDateTimeString(),
+                $occurrenceStart->add($start->diff($end))->toDateTimeString(),
+            ];
+        }
+
+        return $occurrences;
+    }
+
+    private function createOccurrence(CreateBookingData $data, BookableItem $item, ?BookingType $type, int $userId, string $startsAt, string $endsAt, ?string $groupId): Booking
+    {
+        $booking = $this->bookings->create([
+            'tenant_id' => app(TenantContext::class)->id(),
+            'bookable_item_id' => $item->id,
+            'booking_type_id' => $type?->id,
+            'user_id' => $userId,
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'price' => $this->priceFor($item, $type, $startsAt, $endsAt),
+            'status' => BookingStatus::Confirmed,
+            'notes' => $data->notes,
+            'recurrence' => $groupId !== null ? $data->recurrence : BookingRecurrence::None,
+            'recurrence_until' => $groupId !== null ? $data->recurrenceUntil : null,
+            'recurrence_group_id' => $groupId,
+        ]);
+
+        // The item's deposit percentage and payment account are set by the
+        // admin; the request layer only requires a due date once the item
+        // accepts deposits, so collect it immediately. For a repeat, the
+        // balance deadline moves out with the occurrence.
+        if ($item->acceptsDeposits() && $data->paymentDueAt !== null) {
+            if ($item->deposit_payment_account_id === null) {
+                throw new RuntimeException("\"{$item->name}\" has no deposit payment account configured — set one on the item before booking it.");
+            }
+
+            $dueAt = CarbonImmutable::parse($data->paymentDueAt)->add(CarbonImmutable::parse($data->startsAt)->diff(CarbonImmutable::parse($startsAt)));
+
+            $booking = $this->payDeposit($booking, $item->deposit_payment_account_id, $dueAt->toDateTimeString(), $data->depositAmount);
+        }
+
+        return $booking;
+    }
+
+    /**
+     * Each booking type is priced on its own per item, with its own rate
+     * type (per hour or flat). The item's own price/rate only matter for
+     * older items that predate booking types and have none attached.
+     */
+    private function priceFor(BookableItem $item, ?BookingType $type, string $startsAt, string $endsAt): float
+    {
+        $rate = (float) ($type?->pivot->price ?? $item->price);
+        $rateType = $type ? BookingRateType::from($type->pivot->rate_type) : ($item->rate_type ?? BookingRateType::Flat);
+
+        if ($rateType === BookingRateType::Flat) {
+            return $rate;
         }
 
         $hours = Carbon::parse($startsAt)->diffInMinutes(Carbon::parse($endsAt)) / 60;
 
-        return round((float) $item->price * $hours, 2);
+        return round($rate * $hours, 2);
     }
 
     public function cancel(Booking $booking): Booking

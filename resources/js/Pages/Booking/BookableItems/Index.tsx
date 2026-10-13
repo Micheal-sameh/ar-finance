@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { CalendarClock, Pencil, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
@@ -16,14 +16,21 @@ import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import type { BookableItem, BookableItemsPage, BookingRateType } from '@/types/booking';
 
+interface BookingTypeRow {
+    booking_type_id: number | null;
+    rate_type: BookingRateType;
+    price: string;
+}
+
 interface Props {
     items: BookableItemsPage;
+    bookingTypeOptions: { id: number; name: string }[];
     filters: { search?: string };
     viewingAllTenants: boolean;
     canManage: boolean;
 }
 
-export default function BookableItemsIndex({ items, filters, viewingAllTenants, canManage }: Props) {
+export default function BookableItemsIndex({ items, bookingTypeOptions, filters, viewingAllTenants, canManage }: Props) {
     const canWrite = canManage && !viewingAllTenants;
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
@@ -34,24 +41,22 @@ export default function BookableItemsIndex({ items, filters, viewingAllTenants, 
         name: string;
         description: string;
         is_exclusive: boolean;
-        rate_type: BookingRateType;
-        price: string;
         deposit_percent: string;
         account_id: number | null;
         deferred_revenue_account_id: number | null;
         deposit_payment_account_id: number | null;
         cost_center_id: number | null;
+        booking_types: BookingTypeRow[];
     }>({
         name: '',
         description: '',
         is_exclusive: true,
-        rate_type: 'hourly',
-        price: '',
         deposit_percent: '',
         account_id: null,
         deferred_revenue_account_id: null,
         deposit_payment_account_id: null,
         cost_center_id: null,
+        booking_types: [],
     });
 
     function openCreate() {
@@ -67,16 +72,29 @@ export default function BookableItemsIndex({ items, filters, viewingAllTenants, 
             name: item.name,
             description: item.description ?? '',
             is_exclusive: item.is_exclusive,
-            rate_type: item.rate_type,
-            price: item.price,
             deposit_percent: item.deposit_percent ?? '',
             account_id: item.account_id,
             deferred_revenue_account_id: item.deferred_revenue_account_id,
             deposit_payment_account_id: item.deposit_payment_account_id,
             cost_center_id: item.cost_center_id,
+            booking_types: (item.booking_types ?? []).map((type) => ({ booking_type_id: type.id, rate_type: type.rate_type, price: type.price })),
         });
         form.clearErrors();
         setModalOpen(true);
+    }
+
+    function updateType(index: number, changes: Partial<BookingTypeRow>) {
+        form.setData(
+            'booking_types',
+            form.data.booking_types.map((type, i) => (i === index ? { ...type, ...changes } : type)),
+        );
+    }
+
+    function removeType(index: number) {
+        form.setData(
+            'booking_types',
+            form.data.booking_types.filter((_, i) => i !== index),
+        );
     }
 
     function submit(e: FormEvent) {
@@ -174,7 +192,17 @@ export default function BookableItemsIndex({ items, filters, viewingAllTenants, 
                                         </Badge>
                                     </Table.Cell>
                                     <Table.Cell label="Rate">
-                                        {item.price} {item.rate_type === 'hourly' ? '/ hour' : 'flat'}
+                                        {item.booking_types && item.booking_types.length > 0 ? (
+                                            <div className="d-flex flex-column">
+                                                {item.booking_types.map((type) => (
+                                                    <span key={type.id}>
+                                                        {type.name}: {type.price} {type.rate_type === 'hourly' ? '/ hour' : 'flat'}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            '—'
+                                        )}
                                         {item.deposit_percent && (
                                             <span style={{ color: 'var(--af-label)', fontSize: '12px' }}> · {item.deposit_percent}% deposit</span>
                                         )}
@@ -237,25 +265,67 @@ export default function BookableItemsIndex({ items, filters, viewingAllTenants, 
                         </label>
                     </div>
 
-                    <div className="d-flex gap-3">
-                        <Select
-                            label="Rate type"
-                            value={form.data.rate_type}
-                            onChange={(e) => form.setData('rate_type', e.target.value as BookingRateType)}
-                            error={form.errors.rate_type}
-                        >
-                            <option value="hourly">Per hour</option>
-                            <option value="flat">Flat rate</option>
-                        </Select>
-                        <Input
-                            type="number"
-                            step="0.01"
-                            min="0.01"
-                            label="Price"
-                            value={form.data.price}
-                            onChange={(e) => form.setData('price', e.target.value)}
-                            error={form.errors.price}
-                        />
+                    <div>
+                        <div className="d-flex align-items-center justify-content-between mb-1">
+                            <label style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                Booking types offered here — each with its own rate type and price.
+                            </label>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                leadingIcon={<Plus size={14} />}
+                                onClick={() => form.setData('booking_types', [...form.data.booking_types, { booking_type_id: null, rate_type: 'hourly', price: '' }])}
+                            >
+                                Add type
+                            </Button>
+                        </div>
+                        {bookingTypeOptions.length === 0 && (
+                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                No booking types yet — <Link href={route('booking-types.index')}>create some first</Link>.
+                            </div>
+                        )}
+                        <div className="d-flex flex-column gap-2">
+                            {form.data.booking_types.map((row, index) => (
+                                <div key={index} className="d-flex gap-2 align-items-start">
+                                    <Select
+                                        value={row.booking_type_id ?? ''}
+                                        onChange={(e) => updateType(index, { booking_type_id: e.target.value ? Number(e.target.value) : null })}
+                                        error={(form.errors as Record<string, string>)[`booking_types.${index}.booking_type_id`]}
+                                    >
+                                        <option value="">Select a type</option>
+                                        {bookingTypeOptions.map((option) => (
+                                            <option
+                                                key={option.id}
+                                                value={option.id}
+                                                disabled={form.data.booking_types.some((other, i) => i !== index && other.booking_type_id === option.id)}
+                                            >
+                                                {option.name}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                    <Select
+                                        value={row.rate_type}
+                                        onChange={(e) => updateType(index, { rate_type: e.target.value as BookingRateType })}
+                                        error={(form.errors as Record<string, string>)[`booking_types.${index}.rate_type`]}
+                                    >
+                                        <option value="hourly">Per hour</option>
+                                        <option value="flat">Flat rate</option>
+                                    </Select>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        placeholder="Price"
+                                        value={row.price}
+                                        onChange={(e) => updateType(index, { price: e.target.value })}
+                                        error={(form.errors as Record<string, string>)[`booking_types.${index}.price`]}
+                                    />
+                                    <button type="button" className="btn btn-sm p-1 mt-2" style={{ color: 'var(--af-danger)' }} onClick={() => removeType(index)} aria-label="Remove type">
+                                        <Trash2 size={15} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
 
                     <Input

@@ -5,6 +5,7 @@ namespace App\Modules\Booking\Models;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\User;
+use App\Modules\Booking\Enums\BookingRecurrence;
 use App\Modules\Booking\Enums\BookingStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,7 @@ class Booking extends Model
     protected $fillable = [
         'tenant_id',
         'bookable_item_id',
+        'booking_type_id',
         'user_id',
         'starts_at',
         'ends_at',
@@ -30,6 +32,9 @@ class Booking extends Model
         'payment_due_at',
         'status',
         'notes',
+        'recurrence',
+        'recurrence_until',
+        'recurrence_group_id',
         'paid_at',
         'revenue_recognized_at',
     ];
@@ -43,6 +48,8 @@ class Booking extends Model
         'deposit_paid_at' => 'datetime',
         'payment_due_at' => 'datetime',
         'status' => BookingStatus::class,
+        'recurrence' => BookingRecurrence::class,
+        'recurrence_until' => 'date',
         'paid_at' => 'datetime',
         'revenue_recognized_at' => 'datetime',
     ];
@@ -50,6 +57,11 @@ class Booking extends Model
     public function bookableItem(): BelongsTo
     {
         return $this->belongsTo(BookableItem::class);
+    }
+
+    public function bookingType(): BelongsTo
+    {
+        return $this->belongsTo(BookingType::class);
     }
 
     public function user(): BelongsTo

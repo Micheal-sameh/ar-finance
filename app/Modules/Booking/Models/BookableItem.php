@@ -10,6 +10,7 @@ use App\Modules\Booking\Enums\BookingRateType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class BookableItem extends Model
@@ -60,6 +61,18 @@ class BookableItem extends Model
     public function acceptsDeposits(): bool
     {
         return (float) ($this->deposit_percent ?? 0) > 0;
+    }
+
+    /**
+     * The booking types offered on this item; $type->pivot->price is what
+     * that type costs here.
+     */
+    public function bookingTypes(): BelongsToMany
+    {
+        return $this->belongsToMany(BookingType::class, 'bookable_item_booking_type')
+            ->withPivot('price', 'rate_type')
+            ->withTimestamps()
+            ->orderBy('booking_types.name');
     }
 
     public function bookings(): HasMany

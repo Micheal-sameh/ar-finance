@@ -17,9 +17,8 @@ class BookableItemOptionResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'is_exclusive' => $this->is_exclusive,
-            'rate_type' => $this->rate_type->value,
-            'price' => $this->price,
             'deposit_percent' => $this->deposit_percent,
+            'booking_types' => $this->bookingTypes->map(fn ($type) => ['id' => $type->id, 'name' => $type->name, 'rate_type' => $type->pivot->rate_type, 'price' => $type->pivot->price])->values(),
         ];
     }
 }

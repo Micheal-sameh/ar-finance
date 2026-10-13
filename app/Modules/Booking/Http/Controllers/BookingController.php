@@ -61,12 +61,16 @@ class BookingController extends Controller
         $item = BookableItem::query()->where('is_active', true)->findOrFail($data->bookableItemId);
 
         try {
-            $this->bookings->create($data, $item, $request->user()->id);
+            $booking = $this->bookings->create($data, $item, $request->user()->id);
         } catch (BookingConflictException|RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', 'Booked.');
+        $count = $booking->recurrence_group_id !== null
+            ? Booking::query()->where('recurrence_group_id', $booking->recurrence_group_id)->count()
+            : 1;
+
+        return back()->with('success', $count > 1 ? "Booked {$count} times." : 'Booked.');
     }
 
     public function cancel(Booking $booking): RedirectResponse

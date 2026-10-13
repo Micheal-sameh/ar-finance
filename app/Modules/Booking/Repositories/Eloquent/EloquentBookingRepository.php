@@ -11,7 +11,7 @@ class EloquentBookingRepository implements BookingRepositoryInterface
 {
     public function find(int $id): ?Booking
     {
-        return Booking::query()->with(['bookableItem', 'user'])->find($id);
+        return Booking::query()->with(['bookableItem', 'bookingType', 'user'])->find($id);
     }
 
     public function create(array $attributes): Booking
@@ -34,7 +34,7 @@ class EloquentBookingRepository implements BookingRepositoryInterface
     public function forCalendar(string $from, string $to, ?int $bookableItemId = null): Collection
     {
         return Booking::query()
-            ->with(['bookableItem', 'user', 'tenant:id,name'])
+            ->with(['bookableItem', 'bookingType', 'user', 'tenant:id,name'])
             ->where('status', '!=', BookingStatus::Cancelled->value)
             ->where('starts_at', '<', $to)
             ->where('ends_at', '>', $from)

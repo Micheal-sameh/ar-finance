@@ -2,20 +2,29 @@ import type { AccountOption, CostCenterOption, Paginated } from '@/types/finance
 
 export type BookingStatus = 'confirmed' | 'paid' | 'cancelled';
 export type BookingRateType = 'hourly' | 'flat';
+export type BookingRecurrence = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export interface BookingType {
+    id: number;
+    name: string;
+    rate_type: BookingRateType;
+    price: string;
+}
 
 export interface BookableItem {
     id: number;
     name: string;
     description: string | null;
     is_exclusive: boolean;
-    rate_type: BookingRateType;
-    price: string;
+    rate_type: BookingRateType | null;
+    price: string | null;
     deposit_percent: string | null;
     account_id: number;
     deferred_revenue_account_id: number | null;
     deposit_payment_account_id: number | null;
     cost_center_id: number;
     is_active: boolean;
+    booking_types?: BookingType[];
     account?: AccountOption | null;
     cost_center?: CostCenterOption | null;
     /** Owning tenant's name — only present when a Platform Admin is viewing the combined "All tenants" list. */
@@ -27,9 +36,8 @@ export interface BookableItemOption {
     id: number;
     name: string;
     is_exclusive: boolean;
-    rate_type: BookingRateType;
-    price: string;
     deposit_percent: string | null;
+    booking_types: BookingType[];
 }
 
 export interface Booking {
@@ -56,6 +64,9 @@ export interface BookingEvent {
     end: string;
     status: BookingStatus;
     bookable_item_id: number;
+    booking_type_name: string | null;
+    recurrence: BookingRecurrence;
+    recurrence_until: string | null;
     is_exclusive: boolean;
     price: string;
     accepts_deposits: boolean;
@@ -75,3 +86,12 @@ export interface BookingEvent {
 }
 
 export type BookableItemsPage = Paginated<BookableItem>;
+
+/** A row on the Booking Types page: the reusable catalog; prices live on each bookable item. */
+export interface BookingTypeSummary {
+    id: number;
+    name: string;
+    bookable_items_count: number;
+    /** Owning tenant name, only present when a Platform Admin views the combined "All tenants" list. */
+    tenant_name: string | null;
+}

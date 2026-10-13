@@ -12,7 +12,7 @@ class EloquentBookableItemRepository implements BookableItemRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return BookableItem::query()
-            ->with(['account', 'costCenter', 'tenant:id,name'])
+            ->with(['account', 'costCenter', 'bookingTypes', 'tenant:id,name'])
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->orderBy('name')
             ->paginate($perPage)
@@ -22,6 +22,7 @@ class EloquentBookableItemRepository implements BookableItemRepositoryInterface
     public function all(): Collection
     {
         return BookableItem::query()
+            ->with('bookingTypes')
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
@@ -29,7 +30,7 @@ class EloquentBookableItemRepository implements BookableItemRepositoryInterface
 
     public function find(int $id): ?BookableItem
     {
-        return BookableItem::query()->with(['account', 'costCenter'])->find($id);
+        return BookableItem::query()->with(['account', 'costCenter', 'bookingTypes'])->find($id);
     }
 
     public function create(array $attributes): BookableItem

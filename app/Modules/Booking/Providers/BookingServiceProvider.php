@@ -4,8 +4,10 @@ namespace App\Modules\Booking\Providers;
 
 use App\Modules\Booking\Models\BookableItem;
 use App\Modules\Booking\Models\Booking;
+use App\Modules\Booking\Models\BookingType;
 use App\Modules\Booking\Policies\BookableItemPolicy;
 use App\Modules\Booking\Policies\BookingPolicy;
+use App\Modules\Booking\Policies\BookingTypePolicy;
 use App\Modules\Booking\Repositories\Contracts\BookableItemRepositoryInterface;
 use App\Modules\Booking\Repositories\Contracts\BookingRepositoryInterface;
 use App\Modules\Booking\Repositories\Eloquent\EloquentBookableItemRepository;
@@ -31,6 +33,7 @@ class BookingServiceProvider extends ServiceProvider
     {
         Gate::policy(BookableItem::class, BookableItemPolicy::class);
         Gate::policy(Booking::class, BookingPolicy::class);
+        Gate::policy(BookingType::class, BookingTypePolicy::class);
 
         Route::middleware('web')->group(__DIR__.'/../routes/web.php');
     }

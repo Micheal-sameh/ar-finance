@@ -7,6 +7,7 @@ use App\Modules\Booking\Exceptions\BookableItemInUseException;
 use App\Modules\Booking\Http\Requests\SaveBookableItemRequest;
 use App\Modules\Booking\Http\Resources\BookableItemOptionResource;
 use App\Modules\Booking\Models\BookableItem;
+use App\Modules\Booking\Models\BookingType;
 use App\Modules\Booking\Services\BookableItemService;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -31,11 +32,18 @@ class BookableItemController extends Controller
         $items = $this->items->paginate($request->only(['search']))
             ->through(fn (BookableItem $item) => [
                 ...$item->toArray(),
+                'booking_types' => $item->bookingTypes->map(fn (BookingType $type) => [
+                    'id' => $type->id,
+                    'name' => $type->name,
+                    'rate_type' => $type->pivot->rate_type,
+                    'price' => $type->pivot->price,
+                ])->values(),
                 'tenant_name' => $viewingAllTenants ? $item->tenant?->name : null,
             ]);
 
         return Inertia::render('Booking/BookableItems/Index', [
             'items' => $items,
+            'bookingTypeOptions' => BookingType::query()->orderBy('name')->get(['id', 'name']),
             'filters' => $request->only(['search']),
             'viewingAllTenants' => $viewingAllTenants,
             'canManage' => $request->user()->can('bookable_items.manage'),

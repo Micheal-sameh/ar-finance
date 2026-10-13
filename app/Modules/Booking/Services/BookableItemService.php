@@ -9,6 +9,7 @@ use App\Modules\Booking\Repositories\Contracts\BookableItemRepositoryInterface;
 use App\Support\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class BookableItemService
 {
@@ -33,37 +34,56 @@ class BookableItemService
 
     public function create(CreateBookableItemData $data): BookableItem
     {
-        return $this->items->create([
-            'tenant_id' => app(TenantContext::class)->id(),
-            'name' => $data->name,
-            'description' => $data->description,
-            'is_exclusive' => $data->isExclusive,
-            'rate_type' => $data->rateType,
-            'price' => $data->price,
-            'deposit_percent' => $data->depositPercent,
-            'account_id' => $data->accountId,
-            'deferred_revenue_account_id' => $data->deferredRevenueAccountId,
-            'deposit_payment_account_id' => $data->depositPaymentAccountId,
-            'cost_center_id' => $data->costCenterId,
-            'is_active' => $data->isActive,
-        ]);
+        return DB::transaction(function () use ($data) {
+            $item = $this->items->create($this->attributes($data) + ['tenant_id' => app(TenantContext::class)->id()]);
+
+            $this->syncBookingTypes($item, $data->bookingTypes);
+
+            return $item;
+        });
     }
 
     public function update(BookableItem $item, CreateBookableItemData $data): BookableItem
     {
-        return $this->items->update($item, [
+        return DB::transaction(function () use ($item, $data) {
+            $item = $this->items->update($item, $this->attributes($data));
+
+            $this->syncBookingTypes($item, $data->bookingTypes);
+
+            return $item;
+        });
+    }
+
+    /**
+     * Makes the item's offered booking types (and their prices) match the
+     * submitted list; types left out are detached. Bookings keep their
+     * snapshotted price.
+     *
+     * @param  array<int, array{booking_type_id: int, rate_type: string, price: float}>  $types
+     */
+    private function syncBookingTypes(BookableItem $item, array $types): void
+    {
+        $item->bookingTypes()->sync(
+            collect($types)->mapWithKeys(fn (array $type) => [$type['booking_type_id'] => ['rate_type' => $type['rate_type'], 'price' => $type['price']]])->all(),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function attributes(CreateBookableItemData $data): array
+    {
+        return [
             'name' => $data->name,
             'description' => $data->description,
             'is_exclusive' => $data->isExclusive,
-            'rate_type' => $data->rateType,
-            'price' => $data->price,
             'deposit_percent' => $data->depositPercent,
             'account_id' => $data->accountId,
             'deferred_revenue_account_id' => $data->deferredRevenueAccountId,
             'deposit_payment_account_id' => $data->depositPaymentAccountId,
             'cost_center_id' => $data->costCenterId,
             'is_active' => $data->isActive,
-        ]);
+        ];
     }
 
     /**

@@ -17,7 +17,7 @@ import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { useBookableItems } from '@/hooks/useBookableItems';
 import api from '@/lib/api';
-import type { BookingEvent } from '@/types/booking';
+import type { BookingEvent, BookingRecurrence } from '@/types/booking';
 
 const STATUS_VARIANT: Record<BookingEvent['status'], 'info' | 'success' | 'neutral'> = {
     confirmed: 'info',
@@ -42,6 +42,9 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
 
     const [selection, setSelection] = useState<{ start: string; end: string } | null>(null);
     const [bookableItemId, setBookableItemId] = useState<number | null>(null);
+    const [bookingTypeId, setBookingTypeId] = useState<number | null>(null);
+    const [recurrence, setRecurrence] = useState<BookingRecurrence>('none');
+    const [recurrenceUntil, setRecurrenceUntil] = useState('');
     const [notes, setNotes] = useState('');
     const [bookingDepositAmount, setBookingDepositAmount] = useState('');
     const [bookingDepositDueAt, setBookingDepositDueAt] = useState('');
@@ -60,15 +63,20 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
     const [dayViewLoading, setDayViewLoading] = useState(false);
 
     const selectedItem = items.find((item) => item.id === bookableItemId) ?? null;
+    const selectedType = selectedItem?.booking_types.find((type) => type.id === bookingTypeId) ?? null;
+    const needsType = Boolean(selectedItem && selectedItem.booking_types.length > 0);
+    const unitPrice = selectedType ? Number(selectedType.price) : 0;
 
     function estimatedPrice(): number | null {
         if (!selectedItem || !selection) return null;
 
-        if (selectedItem.rate_type === 'flat') return Number(selectedItem.price);
+        if (!selectedType) return null;
+
+        if (selectedType.rate_type === 'flat') return unitPrice;
 
         const hours = (new Date(selection.end).getTime() - new Date(selection.start).getTime()) / 3_600_000;
 
-        return Math.round(Number(selectedItem.price) * hours * 100) / 100;
+        return Math.round(unitPrice * hours * 100) / 100;
     }
 
     function estimatedDeposit(): number | null {
@@ -106,6 +114,9 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
 
     function handleSelect(info: DateSelectArg) {
         setBookableItemId(null);
+        setBookingTypeId(null);
+        setRecurrence('none');
+        setRecurrenceUntil('');
         setNotes('');
         setBookingDepositAmount('');
         setBookingDepositDueAt('');
@@ -158,7 +169,8 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
     }
 
     function submitBooking() {
-        if (!selection || !bookableItemId) return;
+        if (!selection || !bookableItemId || (needsType && !bookingTypeId)) return;
+        if (recurrence !== 'none' && !recurrenceUntil) return;
         if (selectedItem?.deposit_percent && (!bookingDepositDueAt || depositAmountError())) return;
 
         setSubmitting(true);
@@ -168,6 +180,9 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
             route('bookings.store'),
             {
                 bookable_item_id: bookableItemId,
+                booking_type_id: needsType ? bookingTypeId : null,
+                recurrence,
+                recurrence_until: recurrence === 'none' ? null : recurrenceUntil,
                 starts_at: selection.start,
                 ends_at: selection.end,
                 notes: notes || null,
@@ -350,6 +365,8 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                             loading={submitting}
                             disabled={
                                 !bookableItemId ||
+                                (needsType && !bookingTypeId) ||
+                                (recurrence !== 'none' && !recurrenceUntil) ||
                                 !selection ||
                                 selection.end <= selection.start ||
                                 Boolean(selectedItem?.deposit_percent && (!bookingDepositDueAt || depositAmountError()))
@@ -366,7 +383,10 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                     <Select
                         label="What are you booking?"
                         value={bookableItemId ?? ''}
-                        onChange={(e) => setBookableItemId(e.target.value ? Number(e.target.value) : null)}
+                        onChange={(e) => {
+                            setBookableItemId(e.target.value ? Number(e.target.value) : null);
+                            setBookingTypeId(null);
+                        }}
                     >
                         <option value="">{itemsLoading ? 'Loading…' : 'Select an item'}</option>
                         {items.map((item) => (
@@ -375,6 +395,21 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                             </option>
                         ))}
                     </Select>
+
+                    {needsType && selectedItem && (
+                        <Select
+                            label="Booking type"
+                            value={bookingTypeId ?? ''}
+                            onChange={(e) => setBookingTypeId(e.target.value ? Number(e.target.value) : null)}
+                        >
+                            <option value="">Select a type</option>
+                            {selectedItem.booking_types.map((type) => (
+                                <option key={type.id} value={type.id}>
+                                    {type.name} — {type.price} {type.rate_type === 'hourly' ? '/ hour' : 'flat'}
+                                </option>
+                            ))}
+                        </Select>
+                    )}
 
                     {selection && (
                         <div className="d-flex gap-3">
@@ -393,6 +428,25 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                             />
                         </div>
                     )}
+
+                    <div className="d-flex gap-3">
+                        <Select label="Repeat" value={recurrence} onChange={(e) => setRecurrence(e.target.value as BookingRecurrence)}>
+                            <option value="none">Does not repeat</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
+                        </Select>
+                        {recurrence !== 'none' && (
+                            <Input
+                                type="date"
+                                label="Repeat until"
+                                value={recurrenceUntil}
+                                min={selection?.start.slice(0, 10)}
+                                onChange={(e) => setRecurrenceUntil(e.target.value)}
+                            />
+                        )}
+                    </div>
 
                     {estimatedPrice() !== null && (
                         <div style={{ fontSize: '14px' }}>
@@ -488,6 +542,13 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                             <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>Tenant: {selectedEvent.tenant_name}</div>
                         )}
 
+                        {selectedEvent.booking_type_name && <div style={{ fontSize: '14px' }}>Type: {selectedEvent.booking_type_name}</div>}
+                        {selectedEvent.recurrence !== 'none' && (
+                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                Repeats {selectedEvent.recurrence}
+                                {selectedEvent.recurrence_until && ` until ${selectedEvent.recurrence_until}`}
+                            </div>
+                        )}
                         <div style={{ fontSize: '14px' }}>Price: {selectedEvent.price}</div>
 
                         {selectedEvent.deposit_paid_at && (

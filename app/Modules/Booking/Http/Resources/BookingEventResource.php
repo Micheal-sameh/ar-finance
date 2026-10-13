@@ -24,11 +24,14 @@ class BookingEventResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'title' => "{$this->bookableItem->name} · {$this->user->name}",
+            'title' => $this->bookingType ? "{$this->bookableItem->name} · {$this->bookingType->name} · {$this->user->name}" : "{$this->bookableItem->name} · {$this->user->name}",
             'start' => $this->starts_at->toIso8601String(),
             'end' => $this->ends_at->toIso8601String(),
             'status' => $this->status->value,
             'bookable_item_id' => $this->bookable_item_id,
+            'recurrence' => $this->recurrence->value,
+            'recurrence_until' => $this->recurrence_until?->toDateString(),
+            'booking_type_name' => $this->bookingType?->name,
             'is_exclusive' => $this->bookableItem->is_exclusive,
             'price' => $this->price,
             'accepts_deposits' => $this->bookableItem->acceptsDeposits(),

@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Boxes, BookOpen, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
+import { ArrowLeftRight, Boxes, BookOpen, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -43,6 +43,7 @@ export const navConfig: NavConfigGroup[] = [
         items: [
             { label: 'Calendar', routeName: 'bookings.index', icon: Calendar, permission: 'bookings.view' },
             { label: 'Bookable Items', routeName: 'bookable-items.index', icon: ClipboardList, permission: 'bookable_items.view' },
+            { label: 'Booking Types', routeName: 'booking-types.index', icon: Tags, permission: 'bookable_items.view' },
         ],
     },
     {
@@ -115,6 +116,7 @@ export const navConfig: NavConfigGroup[] = [
             { label: 'Exchange Rates', routeName: 'exchange-rates.index', icon: ArrowLeftRight },
             { label: 'Users', routeName: 'users.index', icon: ShieldCheck },
             { label: 'Bookable Items', routeName: 'bookable-items.index', icon: ClipboardList },
+            { label: 'Booking Types', routeName: 'booking-types.index', icon: Tags },
             { label: 'Calendar', routeName: 'bookings.index', icon: Calendar },
         ],
     },

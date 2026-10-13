@@ -10,13 +10,13 @@ final readonly class CreateBookableItemData
         public string $name,
         public ?string $description,
         public bool $isExclusive,
-        public BookingRateType $rateType,
-        public float $price,
         public ?float $depositPercent,
         public int $accountId,
         public ?int $deferredRevenueAccountId,
         public ?int $depositPaymentAccountId,
         public int $costCenterId,
+        /** @var array<int, array{booking_type_id: int, rate_type: string, price: float}> */
+        public array $bookingTypes = [],
         public bool $isActive = true,
     ) {}
 
@@ -26,13 +26,16 @@ final readonly class CreateBookableItemData
             name: $data['name'],
             description: $data['description'] ?? null,
             isExclusive: (bool) ($data['is_exclusive'] ?? true),
-            rateType: BookingRateType::from($data['rate_type']),
-            price: (float) $data['price'],
             depositPercent: isset($data['deposit_percent']) && $data['deposit_percent'] !== '' ? (float) $data['deposit_percent'] : null,
             accountId: (int) $data['account_id'],
             deferredRevenueAccountId: isset($data['deferred_revenue_account_id']) ? (int) $data['deferred_revenue_account_id'] : null,
             depositPaymentAccountId: isset($data['deposit_payment_account_id']) ? (int) $data['deposit_payment_account_id'] : null,
             costCenterId: (int) $data['cost_center_id'],
+            bookingTypes: array_map(fn (array $type) => [
+                'booking_type_id' => (int) $type['booking_type_id'],
+                'rate_type' => BookingRateType::from($type['rate_type'])->value,
+                'price' => (float) $type['price'],
+            ], $data['booking_types'] ?? []),
             isActive: (bool) ($data['is_active'] ?? true),
         );
     }
