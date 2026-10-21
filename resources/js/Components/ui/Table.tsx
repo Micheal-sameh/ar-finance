@@ -9,7 +9,7 @@ function TableRoot({
     return (
         <div style={{ overflowX: 'auto' }}>
             <table
-                className={`table align-middle mb-0 ${cards ? 'af-table-cards' : ''} ${className}`}
+                className={`table af-table align-middle mb-0 ${cards ? 'af-table-cards' : ''} ${className}`}
                 style={{ fontSize: '14px', color: 'var(--af-text)' }}
                 {...rest}
             >
@@ -49,7 +49,7 @@ function Row({ className = '', style, ...rest }: HTMLAttributes<HTMLTableRowElem
 }
 
 function HeadCell({ className = '', style, ...rest }: ThHTMLAttributes<HTMLTableCellElement>) {
-    return <th className={`fw-medium py-2 ${className}`} style={{ ...style }} {...rest} />;
+    return <th className={`fw-medium ${className}`} style={{ ...style }} {...rest} />;
 }
 
 function Cell({
@@ -58,7 +58,7 @@ function Cell({
     label,
     ...rest
 }: TdHTMLAttributes<HTMLTableCellElement> & { label?: string }) {
-    return <td className={`py-2 ${className}`} style={{ ...style }} data-label={label} {...rest} />;
+    return <td className={className} style={{ ...style }} data-label={label} {...rest} />;
 }
 
 /**

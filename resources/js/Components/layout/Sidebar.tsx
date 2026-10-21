@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { visibleNavGroups } from './navConfig';
 import type { PlatformShare } from './TenantSwitcher';
@@ -25,6 +25,7 @@ export function Sidebar({
     onToggleCollapsed: () => void;
 }) {
     const [branchOpen, setBranchOpen] = useState(false);
+    const navRef = useRef<HTMLElement>(null);
     const { platform, auth } = usePage<{
         platform: PlatformShare | null;
         auth: { permissions: string[]; user: { name: string; email: string } | null };
@@ -36,6 +37,26 @@ export function Sidebar({
     // all) shows only the ordinary tenant-scoped sections.
     const isPlatformAdminViewingAllTenants = Boolean(platform) && !platform?.isImpersonating;
     const visibleGroups = visibleNavGroups(auth.permissions, isPlatformAdminViewingAllTenants);
+
+    // Keep the nav where the user left it across full page loads, then make
+    // sure the current page's link is on screen after every navigation.
+    useLayoutEffect(() => {
+        try {
+            const saved = Number(sessionStorage.getItem('af.sidebarScroll'));
+
+            if (navRef.current && saved > 0) {
+                navRef.current.scrollTop = saved;
+            }
+        } catch {
+            // storage unavailable: start at the top
+        }
+    }, []);
+
+    const currentUrl = usePage().url;
+
+    useEffect(() => {
+        navRef.current?.querySelector('.nav-item.active')?.scrollIntoView({ block: 'nearest' });
+    }, [currentUrl]);
 
     const activeTenant = platform?.tenants.find((tenant) => tenant.id === platform.activeTenantId);
     const user = auth.user;
@@ -105,7 +126,16 @@ export function Sidebar({
                 </div>
             )}
 
-            <nav>
+            <nav
+                ref={navRef}
+                onScroll={(event) => {
+                    try {
+                        sessionStorage.setItem('af.sidebarScroll', String(event.currentTarget.scrollTop));
+                    } catch {
+                        // storage unavailable: scroll position just isn't remembered
+                    }
+                }}
+            >
                 {visibleGroups.map((group) => (
                     <div key={group.label}>
                         <div className="nav-group">{group.label.toUpperCase()}</div>

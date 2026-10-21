@@ -66,4 +66,12 @@ main{padding:27px 32px 48px;max-width:1600px;margin:0 auto}.page-header{display:
 .search-results button.active{background:var(--blue-soft);color:var(--blue)}
 .search-empty{padding:18px 12px;color:#8995a7;font-size:13px;text-align:center}
 .sidebar-user .avatar{flex-shrink:0}.sidebar-user>div:nth-child(2){min-width:0}.sidebar-user b,.sidebar-user small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sidebar-user button{flex-shrink:0}
+.table.af-table{--bs-table-bg:transparent;--bs-table-color:var(--text);--bs-table-hover-bg:#f8faff;--bs-table-accent-bg:transparent;margin:0}
+.af-table thead th{padding:11px 16px;font-size:11.5px;letter-spacing:.5px;font-weight:600;color:#8793a5;background:#fafbfc;border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);white-space:nowrap}
+.af-table tbody td{padding:14px 16px;font-size:13px;color:#526078;border-bottom:1px solid var(--border-soft);vertical-align:middle}
+.af-table tbody tr:last-child td{border-bottom:0}
+.af-table tbody tr:hover{background:#f8faff}
+.af-table tbody td:first-child{color:var(--navy);font-weight:600}
+.af-table thead th.ps-3,.af-table tbody td.ps-3{padding-left:18px!important}
+.af-table thead th.pe-3,.af-table tbody td.pe-3{padding-right:18px!important}
 }
