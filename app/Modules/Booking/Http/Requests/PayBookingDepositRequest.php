@@ -2,6 +2,7 @@
 
 namespace App\Modules\Booking\Http\Requests;
 
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PayBookingDepositRequest extends FormRequest
@@ -14,7 +15,7 @@ class PayBookingDepositRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_account_id' => ['required', 'exists:accounts,id'],
+            'payment_account_id' => ['required', new ExistsInTenant('accounts')],
             'payment_due_at' => ['required', 'date', 'after:now'],
             // Minimum enforced against the item's deposit_percent in
             // BookingService::payDeposit() — omit to use that minimum.

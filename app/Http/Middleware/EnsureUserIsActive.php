@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\UserStatus;
+use App\Models\Tenant;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class EnsureUserIsActive
     {
         $user = $request->user();
 
-        if ($user instanceof User && $user->status === UserStatus::Suspended) {
+        if ($user instanceof User && ($user->status === UserStatus::Suspended || $this->belongsToDeactivatedTenant($user))) {
             auth()->guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -28,5 +29,18 @@ class EnsureUserIsActive
         }
 
         return $next($request);
+    }
+
+    /**
+     * Platform-level accounts have no tenant of their own, so only ordinary
+     * users are cut off when their tenant is deactivated.
+     */
+    private function belongsToDeactivatedTenant(User $user): bool
+    {
+        if ($user->tenant_id === null || $user->isPlatformAdmin()) {
+            return false;
+        }
+
+        return Tenant::query()->whereKey($user->tenant_id)->where('is_active', false)->exists();
     }
 }

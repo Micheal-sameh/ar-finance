@@ -5,6 +5,7 @@ namespace App\Modules\Booking\Http\Requests;
 use App\Modules\Booking\DTOs\CreateBookingData;
 use App\Modules\Booking\Enums\BookingRecurrence;
 use App\Modules\Booking\Models\BookableItem;
+use App\Rules\ExistsInTenant;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
@@ -19,8 +20,8 @@ class StoreBookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'bookable_item_id' => ['required', 'exists:bookable_items,id'],
-            'booking_type_id' => ['nullable', 'exists:booking_types,id'],
+            'bookable_item_id' => ['required', new ExistsInTenant('bookable_items')],
+            'booking_type_id' => ['nullable', new ExistsInTenant('booking_types')],
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'notes' => ['nullable', 'string'],

@@ -2,6 +2,7 @@
 
 namespace App\Modules\Booking\Http\Requests;
 
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MarkBookingPaidRequest extends FormRequest
@@ -14,7 +15,7 @@ class MarkBookingPaidRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_account_id' => ['required', 'exists:accounts,id'],
+            'payment_account_id' => ['required', new ExistsInTenant('accounts')],
             // Omit to collect the full remaining balance (current
             // behaviour); a smaller amount records a partial payment and
             // leaves the booking confirmed — see BookingService::markPaid().

@@ -4,6 +4,7 @@ namespace App\Modules\Booking\Http\Requests;
 
 use App\Modules\Booking\DTOs\CreateBookableItemData;
 use App\Modules\Booking\Enums\BookingRateType;
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 
@@ -21,17 +22,17 @@ class SaveBookableItemRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'is_exclusive' => ['boolean'],
             'deposit_percent' => ['nullable', 'numeric', 'min:0.01', 'max:100'],
-            'account_id' => ['required', 'exists:accounts,id'],
+            'account_id' => ['required', new ExistsInTenant('accounts')],
             // Only needed once deposits are accepted — the deposit posts
             // here until the booking is fully paid (see BookingService).
-            'deferred_revenue_account_id' => ['required_with:deposit_percent', 'nullable', 'exists:accounts,id'],
+            'deferred_revenue_account_id' => ['required_with:deposit_percent', 'nullable', new ExistsInTenant('accounts')],
             // Which asset account a deposit lands in — set here by the
             // admin so it's never chosen per booking.
-            'deposit_payment_account_id' => ['required_with:deposit_percent', 'nullable', 'exists:accounts,id'],
-            'cost_center_id' => ['required', 'exists:cost_centers,id'],
+            'deposit_payment_account_id' => ['required_with:deposit_percent', 'nullable', new ExistsInTenant('accounts')],
+            'cost_center_id' => ['required', new ExistsInTenant('cost_centers')],
             'is_active' => ['boolean'],
             'booking_types' => ['required', 'array', 'min:1'],
-            'booking_types.*.booking_type_id' => ['required', 'distinct', 'exists:booking_types,id'],
+            'booking_types.*.booking_type_id' => ['required', 'distinct', new ExistsInTenant('booking_types')],
             'booking_types.*.rate_type' => ['required', new Enum(BookingRateType::class)],
             'booking_types.*.price' => ['required', 'numeric', 'min:0.01'],
         ];

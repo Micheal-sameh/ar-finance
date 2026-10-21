@@ -12,6 +12,7 @@ use App\Modules\Booking\Http\Resources\BookingEventResource;
 use App\Modules\Booking\Models\BookableItem;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Services\BookingService;
+use App\Rules\ExistsInTenant;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -43,7 +44,7 @@ class BookingController extends Controller
         $request->validate([
             'from' => ['required', 'date'],
             'to' => ['required', 'date', 'after:from'],
-            'bookable_item_id' => ['nullable', 'exists:bookable_items,id'],
+            'bookable_item_id' => ['nullable', new ExistsInTenant('bookable_items')],
         ]);
 
         $bookings = $this->bookings->calendar(

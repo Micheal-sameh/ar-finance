@@ -96,6 +96,29 @@ class CrossTenantSecurityTest extends TestCase
         ])->assertSessionHasErrors(['client_id', 'receivable_account_id', 'lines.0.account_id']);
     }
 
+    public function test_users_of_a_deactivated_tenant_are_logged_out(): void
+    {
+        $user = $this->userWithRole('Super Admin');
+        $this->actingAs($user);
+        $this->get(route('dashboard'))->assertOk();
+
+        $this->tenant->update(['is_active' => false]);
+
+        $this->get(route('dashboard'))->assertRedirect(route('login'));
+        $this->assertGuest();
+    }
+
+    public function test_booking_calendar_rejects_a_foreign_tenants_item(): void
+    {
+        $this->actingAs($this->userWithRole('Super Admin'));
+
+        $this->getJson(route('bookings.calendar', [
+            'from' => '2026-01-01',
+            'to' => '2026-01-31',
+            'bookable_item_id' => 999999,
+        ]))->assertJsonValidationErrors('bookable_item_id');
+    }
+
     public function test_export_writes_formula_like_strings_as_text(): void
     {
         $response = ExcelExport::download('t.xlsx', ['Name'], [['=HYPERLINK("http://evil")'], ['+1'], ['-1+1'], ['@SUM(A1)'], ['safe']]);
