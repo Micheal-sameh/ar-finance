@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\NonPostableAccountException;
+use App\Http\Middleware\AddSecurityHeaders;
 use App\Http\Middleware\EnsureTenantContext;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            AddSecurityHeaders::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);

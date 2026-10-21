@@ -119,6 +119,14 @@ class CrossTenantSecurityTest extends TestCase
         ]))->assertJsonValidationErrors('bookable_item_id');
     }
 
+    public function test_responses_carry_security_headers(): void
+    {
+        $this->get(route('login'))
+            ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    }
+
     public function test_export_writes_formula_like_strings_as_text(): void
     {
         $response = ExcelExport::download('t.xlsx', ['Name'], [['=HYPERLINK("http://evil")'], ['+1'], ['-1+1'], ['@SUM(A1)'], ['safe']]);

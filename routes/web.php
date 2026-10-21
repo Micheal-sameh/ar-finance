@@ -31,10 +31,6 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
 
-// Not behind auth: a static preview of the ui/ primitive library, useful
-// without a live SSO server in local dev.
-Route::get('/dev/components', DevComponentsController::class)->name('dev.components');
-
 // Branded landing page with a "Continue with Avarewase" button — guests
 // land here (see redirectGuestsTo in bootstrap/app.php) rather than being
 // silently bounced straight to the SSO server.
@@ -44,6 +40,10 @@ Route::get('/login', LoginController::class)->name('login');
 // server. Gated to local by DevLoginController/DevLoginRequest as well —
 // route is only registered here for defense in depth.
 if (app()->environment('local')) {
+    // Not behind auth: a static preview of the ui/ primitive library, useful
+    // without a live SSO server. Local only so it never ships to production.
+    Route::get('/dev/components', DevComponentsController::class)->name('dev.components');
+
     Route::post('/dev-login', DevLoginController::class)
         ->middleware('throttle:10,1')
         ->name('dev-login');
@@ -67,7 +67,7 @@ if (app()->environment('local')) {
 // Platform Admin area: cross-tenant dashboard/reports and tenant
 // management. Deliberately outside the `tenant` middleware below — a
 // Platform Admin reaches these precisely when they have no active tenant.
-Route::middleware(['auth', 'active', 'permission:platform.access'])->prefix('platform')->name('platform.')->group(function () {
+Route::middleware(['auth', 'active', 'permission:platform.access', 'throttle:240,1'])->prefix('platform')->name('platform.')->group(function () {
     Route::get('/', PlatformDashboardController::class)->name('dashboard');
 
     Route::post('tenants/{tenant}/switch', [SwitchTenantController::class, 'switch'])->name('switch-tenant');
@@ -115,7 +115,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('reports/general-ledger/export', [ReportController::class, 'generalLedgerExport'])->name('reports.general-ledger.export');
 });
 
-Route::middleware(['auth', 'active', 'tenant'])->group(function () {
+Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(function () {
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
