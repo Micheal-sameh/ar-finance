@@ -1,5 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react';
-import { Button } from '@/Components/ui/Button';
+import { Icon } from '@/Components/layout/Icon';
 import { AccountPicker } from './AccountPicker';
 import { CostCenterPicker } from './CostCenterPicker';
 
@@ -45,32 +44,40 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
     }
 
     return (
-        <div>
-            <div className="d-flex fw-medium mb-2" style={{ fontSize: '12px', color: 'var(--af-label)', textTransform: 'uppercase' }}>
-                <div style={{ flex: '2 1 0' }}>Account</div>
-                <div style={{ flex: '1 1 0' }} className="text-end">Debit</div>
-                <div style={{ flex: '1 1 0' }} className="text-end">Credit</div>
-                <div style={{ flex: '1.3 1 0' }} className="ps-2">Cost center *</div>
-                <div style={{ flex: '1.5 1 0' }} className="ps-2">Description</div>
-                <div style={{ width: '36px' }} />
+        <>
+            <div className='journal-head cc'>
+                <span>ACCOUNT</span>
+                <span>DESCRIPTION</span>
+                <span className='text-end'>DEBIT</span>
+                <span className='text-end'>CREDIT</span>
+                <span>COST CENTER *</span>
+                <span />
             </div>
 
             {lines.map((line, index) => (
-                <div key={index} className="d-flex align-items-start gap-2 mb-2">
-                    <div style={{ flex: '2 1 0' }}>
+                <div key={index} className='journal-row cc'>
+                    <div>
                         <AccountPicker
                             value={line.account_id}
                             onChange={(accountId) => updateLine(index, { account_id: accountId })}
                             error={errors[`lines.${index}.account_id`]}
                         />
                     </div>
-                    <div style={{ flex: '1 1 0' }}>
+                    <div>
                         <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            className="form-control text-end"
-                            style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
+                            type='text'
+                            value={line.description}
+                            onChange={(e) => updateLine(index, { description: e.target.value })}
+                            placeholder='Line memo (optional)'
+                            aria-label='Description'
+                        />
+                    </div>
+                    <div>
+                        <input
+                            type='number'
+                            step='0.01'
+                            min='0'
+                            className='num'
                             value={line.debit}
                             onChange={(e) =>
                                 updateLine(index, {
@@ -79,16 +86,16 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                                     cost_center_id: e.target.value || line.credit ? line.cost_center_id : null,
                                 })
                             }
-                            placeholder="0.00"
+                            placeholder='0.00'
+                            aria-label='Debit'
                         />
                     </div>
-                    <div style={{ flex: '1 1 0' }}>
+                    <div>
                         <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            className="form-control text-end"
-                            style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
+                            type='number'
+                            step='0.01'
+                            min='0'
+                            className='num'
                             value={line.credit}
                             onChange={(e) =>
                                 updateLine(index, {
@@ -97,10 +104,11 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                                     cost_center_id: e.target.value || line.debit ? line.cost_center_id : null,
                                 })
                             }
-                            placeholder="0.00"
+                            placeholder='0.00'
+                            aria-label='Credit'
                         />
                     </div>
-                    <div style={{ flex: '1.3 1 0' }}>
+                    <div>
                         <CostCenterPicker
                             value={line.cost_center_id}
                             onChange={(costCenterId) => updateLine(index, { cost_center_id: costCenterId })}
@@ -108,34 +116,22 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                             disabled={!hasAmount(line)}
                         />
                     </div>
-                    <div style={{ flex: '1.5 1 0' }}>
-                        <input
-                            type="text"
-                            className="form-control"
-                            style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
-                            value={line.description}
-                            onChange={(e) => updateLine(index, { description: e.target.value })}
-                            placeholder="Line memo (optional)"
-                        />
-                    </div>
-                    <div style={{ width: '36px' }} className="pt-1">
-                        <button
-                            type="button"
-                            className="btn btn-sm p-1"
-                            style={{ color: 'var(--af-danger)' }}
-                            onClick={() => removeLine(index)}
-                            disabled={lines.length <= 2}
-                            aria-label="Remove line"
-                        >
-                            <Trash2 size={16} />
-                        </button>
-                    </div>
+                    <button
+                        type='button'
+                        className='icon-btn'
+                        onClick={() => removeLine(index)}
+                        disabled={lines.length <= 2}
+                        aria-label='Remove line'
+                    >
+                        <Icon name='close' size={15} />
+                    </button>
                 </div>
             ))}
 
-            <Button type="button" variant="outline" size="sm" leadingIcon={<Plus size={14} />} onClick={addLine}>
-                Add line
-            </Button>
-        </div>
+            <button type='button' className='add-line' onClick={addLine}>
+                <Icon name='plus' size={16} />
+                Add another line
+            </button>
+        </>
     );
 }

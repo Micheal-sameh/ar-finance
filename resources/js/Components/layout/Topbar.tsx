@@ -1,18 +1,17 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { ChevronDown, LogOut, User as UserIcon } from 'lucide-react';
+import { LogOut, Menu, User as UserIcon } from 'lucide-react';
 import { Dropdown } from 'react-bootstrap';
 import { DevUserSwitcher, type DevUser } from './DevUserSwitcher';
-import { TenantSwitcher, type PlatformShare } from './TenantSwitcher';
+import { GlobalSearch } from './GlobalSearch';
 
 interface AuthUser {
     name: string;
     email: string;
 }
 
-export function Topbar() {
-    const { auth, platform, devUsers } = usePage<{
+export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
+    const { auth, devUsers } = usePage<{
         auth: { user: AuthUser | null };
-        platform: PlatformShare | null;
         devUsers: DevUser[] | null;
     }>().props;
     const user = auth.user;
@@ -21,64 +20,45 @@ export function Topbar() {
         return null;
     }
 
-    function logout() {
-        router.post(route('logout'));
-    }
+    const initials = user.name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('');
 
     return (
-        <div
-            className="d-flex align-items-center justify-content-end"
-            style={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 5,
-                padding: '10px 16px',
-                borderRadius: 'var(--af-radius)',
-                border: '1px solid var(--af-border)',
-                marginBottom: '16px',
-                backgroundColor: 'var(--af-surface)',
-            }}
-        >
-            {devUsers && <DevUserSwitcher users={devUsers} />}
-            {platform && <TenantSwitcher platform={platform} />}
-
-            <Dropdown align="end">
-                <Dropdown.Toggle
-                    as="button"
-                    bsPrefix="af-topbar-toggle"
-                    className="d-flex align-items-center gap-2 border-0 bg-transparent"
-                    style={{ padding: '4px 8px', borderRadius: 'var(--af-radius-sm)' }}
-                >
-                    <div
-                        className="d-flex align-items-center justify-content-center"
-                        style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '50%',
-                            backgroundColor: '#dbe8ff',
-                            color: 'var(--af-primary-hover)',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                        }}
-                    >
-                        {user.name.charAt(0).toUpperCase()}
-                    </div>
-                    <span style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--af-text)' }}>{user.name}</span>
-                    <ChevronDown size={14} style={{ color: 'var(--af-label)' }} />
-                </Dropdown.Toggle>
-
-                <Dropdown.Menu style={{ fontSize: '14px', minWidth: '180px' }}>
-                    <Dropdown.Item as={Link} href={route('profile.show')} className="d-flex align-items-center gap-2">
-                        <UserIcon size={15} />
-                        Profile
-                    </Dropdown.Item>
-                    <Dropdown.Divider />
-                    <Dropdown.Item onClick={logout} className="d-flex align-items-center gap-2" style={{ color: 'var(--af-danger)' }}>
-                        <LogOut size={15} />
-                        Logout
-                    </Dropdown.Item>
-                </Dropdown.Menu>
-            </Dropdown>
-        </div>
+        <header className="topbar">
+            <div className="d-flex align-items-center gap-2">
+                <button type="button" className="icon-btn d-lg-none" aria-label="Open menu" onClick={onOpenSidebar}>
+                    <Menu size={20} />
+                </button>
+                <GlobalSearch />
+            </div>
+            <div className="top-actions">
+                {devUsers && <DevUserSwitcher users={devUsers} />}
+                <Dropdown align="end">
+                    <Dropdown.Toggle as="button" bsPrefix="af-topbar-toggle" className="top-avatar border-0" aria-label="Account menu">
+                        {initials}
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu style={{ fontSize: '13.5px', minWidth: '180px' }}>
+                        <Dropdown.Header>{user.name}</Dropdown.Header>
+                        <Dropdown.Item as={Link} href={route('profile.show')} className="d-flex align-items-center gap-2">
+                            <UserIcon size={15} />
+                            Profile
+                        </Dropdown.Item>
+                        <Dropdown.Divider />
+                        <Dropdown.Item
+                            onClick={() => router.post(route('logout'))}
+                            className="d-flex align-items-center gap-2"
+                            style={{ color: 'var(--af-danger)' }}
+                        >
+                            <LogOut size={15} />
+                            Logout
+                        </Dropdown.Item>
+                    </Dropdown.Menu>
+                </Dropdown>
+            </div>
+        </header>
     );
 }

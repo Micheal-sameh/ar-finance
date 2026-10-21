@@ -10,19 +10,20 @@ interface ExportButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
  * Excel export is a GET download (like the accounts import template),
  * not a POST action, so it can't go through <Button>'s onClick handler.
  */
-export function ExportButton({ label = 'Export to Excel', className = '', style, ...rest }: ExportButtonProps) {
+export function ExportButton({ label = 'Export', className = '', style, ...rest }: ExportButtonProps) {
     return (
         <a
-            className={`btn d-inline-flex align-items-center gap-2 fw-medium text-decoration-none ${className}`}
+            className={`btn d-inline-flex align-items-center gap-2 fw-semibold text-decoration-none ${className}`}
             style={{
                 borderRadius: 'var(--af-radius-sm)',
                 border: '1px solid',
                 lineHeight: 1.2,
-                backgroundColor: 'transparent',
+                backgroundColor: 'var(--af-surface)',
                 borderColor: 'var(--af-border)',
-                color: 'var(--af-text)',
-                padding: '8px 16px',
-                fontSize: '14px',
+                color: '#44526a',
+                padding: '0 13px',
+                height: '36px',
+                fontSize: '12.5px',
                 ...style,
             }}
             {...rest}

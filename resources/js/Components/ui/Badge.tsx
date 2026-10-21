@@ -22,7 +22,7 @@ export function Badge({ variant = 'neutral', className = '', style, children, ..
                 border: `1px solid ${tone.border}`,
                 borderRadius: '999px',
                 padding: '2px 10px',
-                fontSize: '11px',
+                fontSize: '12.5px',
                 lineHeight: 1.6,
                 ...style,
             }}

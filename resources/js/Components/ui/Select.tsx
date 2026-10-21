@@ -13,18 +13,18 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         return (
             <div>
                 {label && (
-                    <label htmlFor={selectId} className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                    <label htmlFor={selectId} className="d-block" style={{ fontSize: '12px', fontWeight: 600, color: '#5e6b80', marginBottom: '6px' }}>
                         {label}
                     </label>
                 )}
                 <select
                     ref={ref}
                     id={selectId}
-                    className={`form-select ${className}`}
+                    className={`form-select fg-control ${className}`}
                     style={{
                         borderColor: error ? 'var(--af-danger)' : 'var(--af-border)',
                         borderRadius: 'var(--af-radius-sm)',
-                        fontSize: '14px',
+                        fontSize: '13px',
                         ...style,
                     }}
                     {...rest}

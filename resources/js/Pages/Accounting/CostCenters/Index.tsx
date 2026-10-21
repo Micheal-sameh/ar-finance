@@ -1,21 +1,17 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { PiggyBank, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { FormEvent, useState } from 'react';
-import { BudgetBar } from '@/Components/finance/BudgetBar';
 import { CostCenterPicker } from '@/Components/finance/CostCenterPicker';
+import { Icon } from '@/Components/layout/Icon';
 import { PageHeader } from '@/Components/layout/PageHeader';
-import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
-import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
-import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { ImportModal } from '@/Components/ui/ImportModal';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
-import { Table } from '@/Components/ui/Table';
 import type { CostCenter, CostCenterSummaryRow, CostCenterType, Paginated } from '@/types/finance';
 
 interface Props {
@@ -23,6 +19,18 @@ interface Props {
     summary: CostCenterSummaryRow[];
     filters: { type?: string; search?: string; from: string; to: string };
     viewingAllTenants: boolean;
+}
+
+function formatMoney(value: number): string {
+    return `EGP ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function utilizationTone(percent: number): string {
+    if (percent >= 90) {
+        return 'red';
+    }
+
+    return percent >= 85 ? 'amber' : 'green';
 }
 
 export default function CostCentersIndex({ costCenters, summary, filters, viewingAllTenants }: Props) {
@@ -99,6 +107,10 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
     }
 
     const summaryByCenter = new Map(summary.map((row) => [row.cost_center_id, row]));
+    const totals = summary.reduce(
+        (sum, row) => (row.budget === null ? sum : { budget: sum.budget + row.budget, spent: sum.spent + row.spent }),
+        { budget: 0, spent: 0 },
+    );
 
     return (
         <>
@@ -126,8 +138,27 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                 }
             />
 
-            <Card padded={false}>
-                <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
+            <div className="center-summary">
+                <div>
+                    <span>Total budget</span>
+                    <b>{formatMoney(totals.budget)}</b>
+                </div>
+                <div>
+                    <span>Actual spend</span>
+                    <b>{formatMoney(totals.spent)}</b>
+                </div>
+                <div>
+                    <span>Remaining</span>
+                    <b>{formatMoney(totals.budget - totals.spent)}</b>
+                </div>
+                <div>
+                    <span>Utilization</span>
+                    <b>{totals.budget > 0 ? `${((totals.spent / totals.budget) * 100).toFixed(1)}%` : '—'}</b>
+                </div>
+            </div>
+
+            <article className="card" style={{ marginBottom: '14px' }}>
+                <div className="p-3">
                     <FilterPanel active={Boolean(filters.type || filters.search)}>
                         <form onSubmit={runSearch} className="af-filter-bar">
                             <Input
@@ -156,72 +187,90 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                         </form>
                     </FilterPanel>
                 </div>
+            </article>
 
-                {costCenters.data.length === 0 ? (
-                    <EmptyState
-                        icon={<PiggyBank size={20} />}
-                        title="No centers yet"
-                        description="Create a cost or profit center to start tagging expenses and journal lines."
-                        action={!viewingAllTenants && <Button onClick={openCreate}>New Center</Button>}
-                    />
-                ) : (
-                    <Table cards>
-                        <Table.Head>
-                            <Table.HeadCell className="ps-3">Name</Table.HeadCell>
-                            <Table.HeadCell>Type</Table.HeadCell>
-                            <Table.HeadCell style={{ width: '260px' }}>Budget vs Actual</Table.HeadCell>
-                            <Table.HeadCell className="text-end">Net</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
-                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
-                        </Table.Head>
-                        <tbody>
-                            {costCenters.data.map((costCenter) => {
-                                const row = summaryByCenter.get(costCenter.id);
+            {costCenters.data.length === 0 ? (
+                <article className="card empty-page">
+                    <div className="empty-icon">
+                        <Icon name="target" size={26} />
+                    </div>
+                    <h2>No centers yet</h2>
+                    <p>Create a cost or profit center to start tagging expenses and journal lines.</p>
+                    {!viewingAllTenants && (
+                        <button type="button" className="button primary" onClick={openCreate}>
+                            <Icon name="plus" size={16} />
+                            New center
+                        </button>
+                    )}
+                </article>
+            ) : (
+                <div className="center-grid">
+                    {costCenters.data.map((costCenter) => {
+                        const row = summaryByCenter.get(costCenter.id);
+                        const budget = row?.budget ?? null;
+                        const spent = row?.spent ?? 0;
+                        const net = row?.net ?? 0;
+                        const percent = budget !== null && budget > 0 ? (spent / budget) * 100 : null;
 
-                                return (
-                                    <Table.Row key={costCenter.id}>
-                                        <Table.Cell className="ps-3" label="Name">
-                                            {costCenter.name}
-                                            {costCenter.parent && (
-                                                <span style={{ color: 'var(--af-label)', fontSize: '12px' }}>
-                                                    {' '}
-                                                    &middot; under {costCenter.parent.name}
-                                                </span>
-                                            )}
-                                        </Table.Cell>
-                                        <Table.Cell label="Type">
-                                            <Badge variant={costCenter.type === 'profit' ? 'info' : 'neutral'}>{costCenter.type}</Badge>
-                                        </Table.Cell>
-                                        <Table.Cell label="Budget vs Actual">
-                                            <BudgetBar budget={row?.budget ?? null} spent={row?.spent ?? 0} />
-                                        </Table.Cell>
-                                        <Table.Cell
-                                            className="text-end"
-                                            label="Net"
-                                            style={{ color: (row?.net ?? 0) < 0 ? 'var(--af-danger)' : 'var(--af-success)' }}
-                                        >
-                                            {(row?.net ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </Table.Cell>
-                                        {viewingAllTenants && <Table.Cell label="Tenant">{costCenter.tenant_name}</Table.Cell>}
-                                        {!viewingAllTenants && (
-                                            <Table.Cell className="text-end pe-3" label="Actions">
-                                                <div className="d-flex justify-content-end gap-1">
-                                                    <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(costCenter)} aria-label="Edit">
-                                                        <Pencil size={15} />
-                                                    </button>
-                                                    <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => destroy(costCenter)} aria-label="Delete">
-                                                        <Trash2 size={15} />
-                                                    </button>
-                                                </div>
-                                            </Table.Cell>
-                                        )}
-                                    </Table.Row>
-                                );
-                            })}
-                        </tbody>
-                    </Table>
-                )}
-            </Card>
+                        return (
+                            <article className="card center-card" key={costCenter.id}>
+                                <div className="center-title">
+                                    <div className="center-icon">
+                                        <Icon name="target" />
+                                    </div>
+                                    <div>
+                                        <h2>{costCenter.name}</h2>
+                                        <p>
+                                            {costCenter.type === 'profit' ? 'Profit center' : 'Cost center'}
+                                            {costCenter.parent && ` · under ${costCenter.parent.name}`}
+                                            {viewingAllTenants && costCenter.tenant_name && ` · ${costCenter.tenant_name}`}
+                                        </p>
+                                    </div>
+                                    {!viewingAllTenants && (
+                                        <>
+                                            <button type="button" className="icon-btn" onClick={() => openEdit(costCenter)} aria-label="Edit">
+                                                <Pencil size={15} />
+                                            </button>
+                                            <button type="button" className="icon-btn" onClick={() => destroy(costCenter)} aria-label="Delete">
+                                                <Trash2 size={15} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                                {percent === null ? (
+                                    <div className="budget-head">
+                                        <span>No budget set</span>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="budget-head">
+                                            <span>Budget utilization</span>
+                                            <b>{Math.round(percent)}%</b>
+                                        </div>
+                                        <div className="budget-bar">
+                                            <i className={utilizationTone(percent)} style={{ width: `${Math.min(100, percent)}%` }} />
+                                        </div>
+                                    </>
+                                )}
+                                <div className="budget-values">
+                                    <span>
+                                        <small>SPENT</small>
+                                        {formatMoney(spent)}
+                                    </span>
+                                    <span>
+                                        <small>BUDGET</small>
+                                        {budget === null ? '—' : formatMoney(budget)}
+                                    </span>
+                                </div>
+                                <div className="center-profit">
+                                    <span>Net P&amp;L</span>
+                                    <b className={net < 0 ? 'negative' : ''}>{net < 0 ? `(${formatMoney(Math.abs(net))})` : formatMoney(net)}</b>
+                                </div>
+                            </article>
+                        );
+                    })}
+                </div>
+            )}
 
             <Modal
                 open={modalOpen}

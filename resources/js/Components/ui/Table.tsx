@@ -10,7 +10,7 @@ function TableRoot({
         <div style={{ overflowX: 'auto' }}>
             <table
                 className={`table align-middle mb-0 ${cards ? 'af-table-cards' : ''} ${className}`}
-                style={{ fontSize: '12.5px', color: 'var(--af-text)' }}
+                style={{ fontSize: '14px', color: 'var(--af-text)' }}
                 {...rest}
             >
                 {children}
@@ -25,7 +25,7 @@ function Head({ children, ...rest }: HTMLAttributes<HTMLTableSectionElement>) {
             <tr
                 style={{
                     color: 'var(--af-label)',
-                    fontSize: '11px',
+                    fontSize: '12.5px',
                     textTransform: 'uppercase',
                     letterSpacing: '0.04em',
                     backgroundColor: '#f6f7f4',

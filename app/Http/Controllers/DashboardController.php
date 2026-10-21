@@ -25,8 +25,13 @@ class DashboardController extends Controller
             return redirect()->route('bookings.index');
         }
 
+        $validated = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+
         return Inertia::render('Dashboard/Index', [
-            'summary' => $this->dashboard->summary(),
+            'summary' => $this->dashboard->summary($validated['from'] ?? null, $validated['to'] ?? null),
             'baseCurrency' => $this->exchangeRates->baseCurrency(),
         ]);
     }

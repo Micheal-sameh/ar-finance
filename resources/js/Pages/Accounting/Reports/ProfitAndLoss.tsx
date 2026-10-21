@@ -5,6 +5,7 @@ import { ProfitLossGroupedSection } from '@/Components/finance/ProfitLossGrouped
 import { ProfitLossSection } from '@/Components/finance/ProfitLossSection';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
+import { ReportTitle } from '@/Components/finance/ReportTitle';
 import { Card } from '@/Components/ui/Card';
 import { ExportMenu } from '@/Components/ui/ExportMenu';
 import { FilterPanel } from '@/Components/ui/FilterPanel';
@@ -71,7 +72,7 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                 }
             />
 
-            <Card>
+            <Card style={{ padding: '28px 42px', maxWidth: '930px', margin: '0 auto' }}>
                 <FilterPanel active>
                     <form onSubmit={applyFilter} className="af-filter-bar mb-4">
                         <div style={{ maxWidth: '160px' }}>
@@ -128,6 +129,8 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                         </Button>
                     </form>
                 </FilterPanel>
+
+                <ReportTitle title="Profit & Loss" period={`For the period ${report.from} – ${report.to}`} />
 
                 {grouped ? (
                     <>
@@ -227,14 +230,11 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                             secondaryLinkTo={report.compare_to}
                         />
 
-                        <div
-                            className="d-flex align-items-center justify-content-between pt-3"
-                            style={{ borderTop: '2px solid var(--af-navy)', fontSize: '16px', fontWeight: 700 }}
-                        >
-                            <span>Net Profit</span>
-                            <span style={{ color: report.net_profit.current >= 0 ? 'var(--af-success)' : 'var(--af-danger)' }}>
+                        <div className="net-profit">
+                            <span>Net profit</span>
+                            <strong className={report.net_profit.current < 0 ? 'negative' : ''}>
                                 <MoneyDisplay amount={report.net_profit.current} />
-                            </span>
+                            </strong>
                         </div>
                     </>
                 )}

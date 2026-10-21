@@ -45,6 +45,7 @@ class InvoiceController extends Controller
         return Inertia::render('Sales/Invoices/Index', [
             'invoices' => $invoices,
             'filters' => $request->only(['status', 'from', 'to', 'search']),
+            'statusCounts' => Invoice::query()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status'),
             'viewingAllTenants' => $viewingAllTenants,
         ]);
     }

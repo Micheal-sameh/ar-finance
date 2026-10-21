@@ -21,12 +21,12 @@ export function StatCard({ label, value, sub, icon, color = 'primary' }: StatCar
         <Card>
             <div className="d-flex align-items-start justify-content-between">
                 <div>
-                    <div style={{ color: 'var(--af-label)', fontSize: '12px', marginBottom: '6px' }}>{label}</div>
+                    <div style={{ color: 'var(--af-label)', fontSize: '13.5px', marginBottom: '6px' }}>{label}</div>
                     <div style={{ color: 'var(--af-text)', fontSize: '20px', fontWeight: 600, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
                         {value}
                     </div>
                     {sub && (
-                        <div style={{ color: 'var(--af-label)', fontSize: '12px', marginTop: '4px' }}>{sub}</div>
+                        <div style={{ color: 'var(--af-label)', fontSize: '13.5px', marginTop: '4px' }}>{sub}</div>
                     )}
                 </div>
                 {icon && (

@@ -13,18 +13,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         return (
             <div>
                 {label && (
-                    <label htmlFor={inputId} className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                    <label htmlFor={inputId} className="d-block" style={{ fontSize: '12px', fontWeight: 600, color: '#5e6b80', marginBottom: '6px' }}>
                         {label}
                     </label>
                 )}
                 <input
                     ref={ref}
                     id={inputId}
-                    className={`form-control ${className}`}
+                    className={`form-control fg-control ${className}`}
                     style={{
                         borderColor: error ? 'var(--af-danger)' : 'var(--af-border)',
                         borderRadius: 'var(--af-radius-sm)',
-                        fontSize: '14px',
+                        fontSize: '13px',
                         ...style,
                     }}
                     {...rest}

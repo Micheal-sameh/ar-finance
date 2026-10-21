@@ -6,6 +6,7 @@ import { ProfitLossSection } from '@/Components/finance/ProfitLossSection';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
+import { ReportTitle } from '@/Components/finance/ReportTitle';
 import { Card } from '@/Components/ui/Card';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
@@ -60,7 +61,7 @@ export default function BalanceSheet({ report, filters }: Props) {
                 }
             />
 
-            <Card>
+            <Card style={{ padding: '28px 42px', maxWidth: '930px', margin: '0 auto' }}>
                 <form onSubmit={applyFilter} className="af-filter-bar mb-4">
                     <div style={{ maxWidth: '160px' }}>
                         <Select label="Group by" value={groupBy} onChange={(e) => setGroupBy(e.target.value as BalanceSheetGroupBy | 'none')}>
@@ -87,6 +88,11 @@ export default function BalanceSheet({ report, filters }: Props) {
                         Apply
                     </Button>
                 </form>
+
+                <ReportTitle
+                    title="Balance Sheet"
+                    period={grouped ? `For the period ${report.from} – ${report.to}` : `As of ${filters.as_of}`}
+                />
 
                 {grouped ? (
                     <>

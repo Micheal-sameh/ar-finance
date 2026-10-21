@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Boxes, BookOpen, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
+import { ArrowLeftRight, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -70,7 +70,7 @@ export const navConfig: NavConfigGroup[] = [
             { label: 'Balance Sheet', routeName: 'reports.balance-sheet', icon: LandmarkIcon, permission: 'accounts.view' },
             { label: 'Cash Flow', routeName: 'reports.cash-flow', icon: Waves, permission: 'accounts.view' },
             { label: 'Trial Balance', routeName: 'reports.trial-balance', icon: Scale, permission: 'accounts.view' },
-            { label: 'General Ledger', routeName: 'reports.general-ledger', icon: BookOpen, permission: 'accounts.view' },
+            { label: 'General Ledger', routeName: 'reports.general-ledger', icon: BookText, permission: 'accounts.view' },
             { label: 'VAT Return', routeName: 'reports.vat-return', icon: Percent, permission: 'accounts.view' },
             { label: 'AR/AP Aging', routeName: 'reports.aging', icon: CircleDollarSign, permission: 'accounts.view' },
         ],
@@ -103,7 +103,7 @@ export const navConfig: NavConfigGroup[] = [
         items: [
             { label: 'Chart of Accounts', routeName: 'accounts.index', icon: ListTree },
             { label: 'Journal Entries', routeName: 'journals.index', icon: BookOpen },
-            { label: 'General Ledger', routeName: 'reports.general-ledger', icon: BookOpen },
+            { label: 'General Ledger', routeName: 'reports.general-ledger', icon: BookText },
             { label: 'P&C Centers', routeName: 'cost-centers.index', icon: PiggyBank },
             { label: 'Fixed Assets', routeName: 'fixed-assets.index', icon: Boxes },
             { label: 'Invoices', routeName: 'invoices.index', icon: FileText },
@@ -133,3 +133,21 @@ export const navConfig: NavConfigGroup[] = [
         ],
     },
 ];
+
+/**
+ * The nav groups a user may see: platform groups only while a Platform
+ * Admin views all tenants, and only items whose permission the user holds
+ * (the server would 403 on the rest, so they're hidden rather than left to
+ * click through into a dead end).
+ */
+export function visibleNavGroups(permissions: string[], isPlatformAdminViewingAllTenants: boolean): NavConfigGroup[] {
+    const held = new Set(permissions);
+
+    return navConfig
+        .filter((group) => Boolean(group.platformOnly) === isPlatformAdminViewingAllTenants)
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => !item.permission || held.has(item.permission)),
+        }))
+        .filter((group) => group.items.length > 0);
+}

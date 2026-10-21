@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\JournalEntry;
+use Illuminate\Support\Carbon;
 
 /**
  * Assembles the home-page KPI snapshot from data other services already
@@ -16,8 +17,7 @@ class DashboardService
         private readonly ReportService $reports,
         private readonly JournalService $journals,
         private readonly BankAccountService $bankAccounts,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{
@@ -27,14 +27,23 @@ class DashboardService
      *     revenue_month: float,
      *     expenses_month: float,
      *     net_profit_month: float,
+     *     period: array{from: string, to: string},
+     *     previous: array{revenue: float, expenses: float, net_profit: float},
      *     trend: array<int, array{month: string, revenue: float, expenses: float}>,
+     *     expense_breakdown: array<int, array{label: string, amount: float, percent: float}>,
+     *     overdue: array{total: float, count: int, rows: array<int, array{id: int, name: string, amount: float, age_label: string}>},
      *     recent_activity: array<int, array{id: int, date: string, description: string, reference: ?string, source_label: string, amount: float}>,
      * }
      */
-    public function summary(): array
+    public function summary(?string $from = null, ?string $to = null): array
     {
-        $today = now()->toDateString();
-        $monthStart = now()->startOfMonth()->toDateString();
+        $from ??= now()->startOfMonth()->toDateString();
+        $to ??= now()->toDateString();
+
+        // The comparison period is the span of equal length immediately before the selected one.
+        $days = Carbon::parse($from)->diffInDays(Carbon::parse($to)) + 1;
+        $previousTo = Carbon::parse($from)->subDay();
+        $previousFrom = $previousTo->copy()->subDays($days - 1);
 
         $balances = $this->reports->accountBalances();
         $cash = round(
@@ -42,9 +51,9 @@ class DashboardService
             2,
         );
 
-        $ar = $this->reports->arAging($today);
-        $ap = $this->reports->apAging($today);
-        $pnl = $this->reports->profitAndLoss($monthStart, $today);
+        $ar = $this->reports->arAging($to);
+        $ap = $this->reports->apAging($to);
+        $pnl = $this->reports->profitAndLoss($from, $to, $previousFrom->toDateString(), $previousTo->toDateString());
 
         return [
             'cash' => $cash,
@@ -53,21 +62,83 @@ class DashboardService
             'revenue_month' => $pnl['total_revenue']['current'],
             'expenses_month' => $pnl['total_expenses']['current'],
             'net_profit_month' => $pnl['net_profit']['current'],
-            'trend' => $this->monthlyTrend(6),
+            'period' => ['from' => $from, 'to' => $to],
+            'previous' => [
+                'revenue' => $pnl['total_revenue']['prior'],
+                'expenses' => $pnl['total_expenses']['prior'],
+                'net_profit' => $pnl['net_profit']['prior'],
+            ],
+            'trend' => $this->monthlyTrend(12, Carbon::parse($to)),
+            'expense_breakdown' => $this->expenseBreakdown($pnl['expenses']),
+            'overdue' => $this->overdueSummary($ar['rows']),
             'recent_activity' => $this->recentActivity(8),
+        ];
+    }
+
+    /**
+     * Top four expense accounts for the month plus an "Other" remainder, as
+     * a share of total expenses.
+     *
+     * @param  array<int, array{name: string, current: float}>  $expenses
+     * @return array<int, array{label: string, amount: float, percent: float}>
+     */
+    private function expenseBreakdown(array $expenses): array
+    {
+        $sorted = collect($expenses)->filter(fn ($row) => $row['current'] > 0)->sortByDesc('current')->values();
+        $total = (float) $sorted->sum('current');
+
+        if ($total <= 0) {
+            return [];
+        }
+
+        $rows = $sorted->take(4)->map(fn ($row) => ['label' => $row['name'], 'amount' => round($row['current'], 2)]);
+        $remainder = round($total - $rows->sum('amount'), 2);
+
+        if ($remainder > 0) {
+            $rows->push(['label' => 'Other', 'amount' => $remainder]);
+        }
+
+        return $rows->map(fn ($row) => $row + ['percent' => round($row['amount'] / $total * 100, 1)])->all();
+    }
+
+    /**
+     * Receivables past their due date, per client, largest first.
+     *
+     * @param  array<int, array{id: int, name: string, days_1_30: float, days_31_60: float, days_61_90: float, days_90_plus: float}>  $agingRows
+     * @return array{total: float, count: int, rows: array<int, array{id: int, name: string, amount: float, age_label: string}>}
+     */
+    private function overdueSummary(array $agingRows): array
+    {
+        $buckets = ['days_90_plus' => '90+ days', 'days_61_90' => '61–90 days', 'days_31_60' => '31–60 days', 'days_1_30' => '1–30 days'];
+
+        $rows = collect($agingRows)
+            ->map(function (array $row) use ($buckets) {
+                $amount = round($row['days_1_30'] + $row['days_31_60'] + $row['days_61_90'] + $row['days_90_plus'], 2);
+                $oldest = collect($buckets)->first(fn ($label, $key) => $row[$key] > 0);
+
+                return ['id' => $row['id'], 'name' => $row['name'], 'amount' => $amount, 'age_label' => $oldest ?? ''];
+            })
+            ->filter(fn ($row) => $row['amount'] > 0)
+            ->sortByDesc('amount')
+            ->values();
+
+        return [
+            'total' => round((float) $rows->sum('amount'), 2),
+            'count' => $rows->count(),
+            'rows' => $rows->take(4)->all(),
         ];
     }
 
     /**
      * @return array<int, array{month: string, revenue: float, expenses: float}>
      */
-    private function monthlyTrend(int $months): array
+    private function monthlyTrend(int $months, Carbon $endingAt): array
     {
         $rows = [];
 
         for ($i = $months - 1; $i >= 0; $i--) {
-            $start = now()->subMonthsNoOverflow($i)->startOfMonth();
-            $end = now()->subMonthsNoOverflow($i)->endOfMonth();
+            $start = $endingAt->copy()->subMonthsNoOverflow($i)->startOfMonth();
+            $end = $endingAt->copy()->subMonthsNoOverflow($i)->endOfMonth();
             $pnl = $this->reports->profitAndLoss($start->toDateString(), $end->toDateString());
 
             $rows[] = [

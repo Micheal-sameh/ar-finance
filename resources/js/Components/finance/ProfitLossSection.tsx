@@ -50,33 +50,35 @@ export function ProfitLossSection({
     const showSecondary = secondaryColumnLabel !== undefined;
 
     return (
-        <div className="mb-4">
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--af-navy)', marginBottom: '8px' }}>{title}</div>
+        <div className='report-group'>
+            <h3>{title}</h3>
 
             {showSecondary && (
-                <div className="d-flex" style={{ fontSize: '11px', color: 'var(--af-label)', textTransform: 'uppercase' }}>
-                    <div style={{ flex: 1 }} />
-                    <div style={{ width: '140px' }} className="text-end">This period</div>
-                    <div style={{ width: '140px' }} className="text-end">{secondaryColumnLabel}</div>
+                <div className='report-columns'>
+                    <span />
+                    <span>THIS PERIOD</span>
+                    <span>{secondaryColumnLabel?.toUpperCase()}</span>
                 </div>
             )}
 
             {rows.length === 0 ? (
-                <div style={{ fontSize: '13px', color: 'var(--af-label)', padding: '6px 0' }}>{emptyLabel}</div>
+                <div className='report-row'>
+                    <span style={{ color: 'var(--muted)' }}>{emptyLabel}</span>
+                </div>
             ) : (
                 rows.map((row) => (
-                    <div key={row.key} className="d-flex" style={{ fontSize: '14px', padding: '4px 0' }}>
-                        <div style={{ flex: 1 }}>{row.label}</div>
-                        <div style={{ width: showSecondary ? '140px' : '160px' }} className="text-end">
+                    <div key={row.key} className='report-row'>
+                        <span>{row.label}</span>
+                        <b>
                             {row.accountId ? (
                                 <AmountLink accountId={row.accountId} from={linkFrom} to={linkTo} amount={row.amount} currency={currency} />
                             ) : (
                                 <MoneyDisplay amount={row.amount} currency={currency} />
                             )}
-                        </div>
-                        {showSecondary && (
-                            <div style={{ width: '140px' }} className="text-end">
-                                {row.accountId ? (
+                        </b>
+                        <b>
+                            {showSecondary &&
+                                (row.accountId ? (
                                     <AmountLink
                                         accountId={row.accountId}
                                         from={secondaryLinkFrom}
@@ -86,26 +88,18 @@ export function ProfitLossSection({
                                     />
                                 ) : (
                                     <MoneyDisplay amount={row.secondaryAmount ?? 0} currency={currency} />
-                                )}
-                            </div>
-                        )}
+                                ))}
+                        </b>
                     </div>
                 ))
             )}
 
-            <div
-                className="d-flex"
-                style={{ fontSize: '14px', fontWeight: 600, padding: '8px 0', borderTop: '1px solid var(--af-border)', marginTop: '4px' }}
-            >
-                <div style={{ flex: 1 }}>{totalLabel}</div>
-                <div style={{ width: showSecondary ? '140px' : '160px' }} className="text-end">
+            <div className='report-total'>
+                <span>{totalLabel}</span>
+                <b>
                     <MoneyDisplay amount={total} currency={currency} />
-                </div>
-                {showSecondary && (
-                    <div style={{ width: '140px' }} className="text-end">
-                        <MoneyDisplay amount={secondaryTotal ?? 0} currency={currency} />
-                    </div>
-                )}
+                </b>
+                <b>{showSecondary && <MoneyDisplay amount={secondaryTotal ?? 0} currency={currency} />}</b>
             </div>
         </div>
     );

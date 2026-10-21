@@ -1,122 +1,141 @@
-import { usePage } from '@inertiajs/react';
-import { Menu } from 'lucide-react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { Offcanvas } from 'react-bootstrap';
-import { navConfig } from './navConfig';
-import { NavGroup } from './NavGroup';
-import { NavItem } from './NavItem';
+import { Icon } from './Icon';
+import { visibleNavGroups } from './navConfig';
 import type { PlatformShare } from './TenantSwitcher';
 
-const brand = (
-    <>
-        Avarewase <span style={{ color: 'var(--af-gold)' }}>Finance</span>
-    </>
-);
+function initials(name: string): string {
+    return name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part.charAt(0).toUpperCase())
+        .join('');
+}
 
-export function Sidebar() {
-    const [show, setShow] = useState(false);
-    const { platform, auth } = usePage<{ platform: PlatformShare | null; auth: { permissions: string[] } }>().props;
+export function Sidebar({
+    open,
+    onClose,
+    collapsed,
+    onToggleCollapsed,
+}: {
+    open: boolean;
+    onClose: () => void;
+    collapsed: boolean;
+    onToggleCollapsed: () => void;
+}) {
+    const [branchOpen, setBranchOpen] = useState(false);
+    const { platform, auth } = usePage<{
+        platform: PlatformShare | null;
+        auth: { permissions: string[]; user: { name: string; email: string } | null };
+    }>().props;
     // Two entirely separate sidebars, switched by whether a Platform Admin
     // is currently impersonating a tenant: viewing "All tenants" (no active
     // tenant) shows only the Platform section; impersonating a tenant (or
     // being an ordinary tenant user, who never has a `platform` share at
     // all) shows only the ordinary tenant-scoped sections.
     const isPlatformAdminViewingAllTenants = Boolean(platform) && !platform?.isImpersonating;
-    const permissions = new Set(auth.permissions);
+    const visibleGroups = visibleNavGroups(auth.permissions, isPlatformAdminViewingAllTenants);
 
-    // A role like Booking Agent only holds bookings.*, so every other
-    // module's links (which the server would 403 on anyway) are hidden
-    // rather than left to click through into a dead end.
-    const visibleGroups = navConfig
-        .filter((group) => Boolean(group.platformOnly) === isPlatformAdminViewingAllTenants)
-        .map((group) => ({
-            ...group,
-            items: group.items.filter((item) => !item.permission || permissions.has(item.permission)),
-        }))
-        .filter((group) => group.items.length > 0);
+    const activeTenant = platform?.tenants.find((tenant) => tenant.id === platform.activeTenantId);
+    const user = auth.user;
 
     return (
-        <>
-            <div
-                className="d-flex d-lg-none align-items-center justify-content-between"
-                style={{
-                    backgroundColor: 'var(--af-navy)',
-                    padding: '12px 16px',
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 1020,
+        <aside className={`sidebar ${open ? 'open' : ''}`} onClick={onClose}>
+            <button
+                type="button"
+                className="sidebar-toggle"
+                aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleCollapsed();
                 }}
             >
-                <div style={{ color: '#fff', fontWeight: 700, fontSize: '16px', letterSpacing: '-0.01em' }}>{brand}</div>
-                <button
-                    type="button"
-                    onClick={() => setShow(true)}
-                    aria-label="Open menu"
-                    className="d-flex align-items-center justify-content-center"
-                    style={{ background: 'transparent', border: 'none', color: '#fff', padding: '4px' }}
-                >
-                    <Menu size={22} />
-                </button>
+                <Icon name="chevron" size={14} />
+            </button>
+
+            <div className="brand">
+                <div>
+                    <b>Avarewase</b>
+                    <small>FINANCE</small>
+                </div>
             </div>
 
-            <Offcanvas
-                show={show}
-                onHide={() => setShow(false)}
-                responsive="lg"
-                placement="start"
-                className="af-sidebar"
-            >
-                {/* Bootstrap's responsive offcanvas force-hides .offcanvas-header
-                 * at the lg+ breakpoint (it's meant to blend into a navbar),
-                 * so the brand can't live there for desktop — it has to be a
-                 * non-scrolling child of .offcanvas-body instead, separate
-                 * from the scrollable nav wrapper below it. */}
-                <Offcanvas.Header closeButton closeVariant="white" className="d-lg-none">
-                    <Offcanvas.Title style={{ color: '#fff', fontWeight: 700, fontSize: '16px' }}>{brand}</Offcanvas.Title>
-                </Offcanvas.Header>
-
-                <Offcanvas.Body className="d-flex flex-column" style={{ padding: '22px 16px 16px' }} onClick={() => setShow(false)}>
-                    <div
-                        className="af-sidebar-brand px-2 mb-4 d-none d-lg-flex align-items-center"
-                        style={{ color: '#fff', fontWeight: 700, fontSize: '16px', letterSpacing: '-0.01em', gap: '11px' }}
-                    >
-                        <span
-                            className="d-flex align-items-center justify-content-center"
-                            style={{
-                                flexShrink: 0,
-                                width: '37px',
-                                height: '37px',
-                                borderRadius: '10px',
-                                background: 'linear-gradient(145deg, #e5b95e, var(--af-gold))',
-                                boxShadow: 'inset 0 1px rgba(255,255,255,0.45)',
-                                color: 'var(--af-navy)',
-                                fontFamily: 'Georgia, serif',
-                                fontSize: '20px',
-                                fontWeight: 800,
-                            }}
-                        >
-                            A
+            {platform && (
+                <div className="branch-wrap" onClick={(event) => event.stopPropagation()}>
+                    <button type="button" className="branch-switcher" onClick={() => setBranchOpen(!branchOpen)}>
+                        <span className="branch-icon">
+                            <Icon name="bank" size={17} />
                         </span>
-                        <span className="af-label">{brand}</span>
-                    </div>
+                        <span>
+                            <small>ORGANIZATION</small>
+                            <b>{activeTenant ? activeTenant.name : 'All tenants'}</b>
+                        </span>
+                        <Icon name="chevron" size={15} />
+                    </button>
+                    {branchOpen && (
+                        <div className="branch-menu">
+                            <button
+                                type="button"
+                                className={!activeTenant ? 'selected' : ''}
+                                onClick={() => {
+                                    setBranchOpen(false);
+                                    router.post(route('platform.stop-impersonating'));
+                                }}
+                            >
+                                All tenants
+                                <span>{!activeTenant && <Icon name="check" size={14} />}</span>
+                            </button>
+                            {platform.tenants.map((tenant) => (
+                                <button
+                                    type="button"
+                                    key={tenant.id}
+                                    className={activeTenant?.id === tenant.id ? 'selected' : ''}
+                                    onClick={() => {
+                                        setBranchOpen(false);
+                                        router.post(route('platform.switch-tenant', tenant.id));
+                                    }}
+                                >
+                                    {tenant.name}
+                                    <span>{activeTenant?.id === tenant.id && <Icon name="check" size={14} />}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
-                    <div className="af-sidebar-nav">
-                        {visibleGroups.map((group) => (
-                            <NavGroup key={group.label} label={group.label}>
-                                {group.items.map((item) => (
-                                    <NavItem
-                                        key={item.routeName}
-                                        label={item.label}
-                                        href={route(item.routeName)}
-                                        icon={item.icon}
-                                        active={route().current(item.routeName)}
-                                    />
-                                ))}
-                            </NavGroup>
+            <nav>
+                {visibleGroups.map((group) => (
+                    <div key={group.label}>
+                        <div className="nav-group">{group.label.toUpperCase()}</div>
+                        {group.items.map((item) => (
+                            <Link
+                                key={item.routeName}
+                                href={route(item.routeName)}
+                                title={item.label}
+                                className={`nav-item ${route().current(item.routeName) ? 'active' : ''}`}
+                            >
+                                <item.icon size={18} strokeWidth={1.8} />
+                                <span>{item.label}</span>
+                            </Link>
                         ))}
                     </div>
-                </Offcanvas.Body>
-            </Offcanvas>
-        </>
+                ))}
+            </nav>
+
+            {user && (
+                <div className="sidebar-user">
+                    <div className="avatar">{initials(user.name)}</div>
+                    <div>
+                        <b>{user.name}</b>
+                        <small>{user.email}</small>
+                    </div>
+                    <button type="button" aria-label="Log out" onClick={() => router.post(route('logout'))}>
+                        <Icon name="logout" size={17} />
+                    </button>
+                </div>
+            )}
+        </aside>
     );
 }

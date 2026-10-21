@@ -1,33 +1,33 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { FileText, Plus } from 'lucide-react';
 import { FormEvent, useState } from 'react';
-import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
+import { Icon } from '@/Components/layout/Icon';
 import { PageHeader } from '@/Components/layout/PageHeader';
-import { Badge } from '@/Components/ui/Badge';
-import { Button } from '@/Components/ui/Button';
-import { Card } from '@/Components/ui/Card';
-import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
-import { FilterPanel } from '@/Components/ui/FilterPanel';
-import { Input } from '@/Components/ui/Input';
-import { Select } from '@/Components/ui/Select';
-import { Table } from '@/Components/ui/Table';
 import type { Invoice, InvoiceStatus, Paginated } from '@/types/finance';
-import { formatDate, invoiceStatusVariant } from '@/utils/finance';
 
 interface Props {
     invoices: Paginated<Invoice>;
     filters: { status?: string; from?: string; to?: string; search?: string };
+    statusCounts: Partial<Record<InvoiceStatus, number>>;
     viewingAllTenants: boolean;
 }
 
-const INVOICE_STATUSES: { value: InvoiceStatus; label: string }[] = [
+const TABS: { value: InvoiceStatus | ''; label: string }[] = [
+    { value: '', label: 'All' },
     { value: 'draft', label: 'Draft' },
     { value: 'sent', label: 'Sent' },
     { value: 'paid', label: 'Paid' },
     { value: 'overdue', label: 'Overdue' },
     { value: 'void', label: 'Void' },
 ];
+
+const statusBadge: Record<InvoiceStatus, string> = {
+    draft: 'neutral',
+    sent: 'info',
+    paid: 'success',
+    overdue: 'error',
+    void: 'neutral',
+};
 
 function invoiceTotal(invoice: Invoice): number {
     return invoice.lines.reduce((sum, line) => {
@@ -39,21 +39,27 @@ function invoiceTotal(invoice: Invoice): number {
     }, 0);
 }
 
-export default function InvoicesIndex({ invoices, filters, viewingAllTenants }: Props) {
-    const [search, setSearch] = useState(filters.search ?? '');
+function formatMoney(value: number, currency: string): string {
+    return `${currency} ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
-    function runSearch(e: FormEvent) {
-        e.preventDefault();
-        router.get(route('invoices.index'), { ...filters, search }, { preserveState: true });
-    }
+function formatDay(value: string): string {
+    return new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+export default function InvoicesIndex({ invoices, filters, statusCounts, viewingAllTenants }: Props) {
+    const [search, setSearch] = useState(filters.search ?? '');
+    const total = Object.values(statusCounts).reduce((sum, count) => sum + Number(count), 0);
+    const from = invoices.data.length === 0 ? 0 : (invoices.current_page - 1) * invoices.per_page + 1;
+    const to = from === 0 ? 0 : from + invoices.data.length - 1;
 
     function runFilters(next: Partial<Props['filters']>) {
         router.get(route('invoices.index'), { ...filters, search, ...next }, { preserveState: true });
     }
 
-    function clearFilters() {
-        setSearch('');
-        router.get(route('invoices.index'), {}, { preserveState: true });
+    function runSearch(event: FormEvent) {
+        event.preventDefault();
+        runFilters({});
     }
 
     return (
@@ -65,114 +71,125 @@ export default function InvoicesIndex({ invoices, filters, viewingAllTenants }: 
                 subtitle={
                     viewingAllTenants
                         ? 'Every tenant’s invoices, combined. Switch into a tenant to manage one.'
-                        : 'Revenue recognized against clients.'
+                        : 'Create, send, and track customer invoices.'
                 }
                 action={
                     !viewingAllTenants && (
-                        <div className="d-flex gap-2">
-                            <ExportButton href={route('invoices.export', filters)} />
-                            <Link href={route('invoices.create')}>
-                                <Button leadingIcon={<Plus size={16} />}>New Invoice</Button>
-                            </Link>
-                        </div>
+                        <Link href={route('invoices.create')} className="button primary">
+                            <Icon name="plus" size={17} />
+                            New invoice
+                        </Link>
                     )
                 }
             />
 
-            <Card padded={false}>
-                <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)' }}>
-                    <FilterPanel active={Boolean(filters.status || filters.from || filters.to || filters.search)}>
-                    <form onSubmit={runSearch} className="af-filter-bar">
-                        <Input
-                            placeholder="Search invoice # or client…"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            style={{ maxWidth: '240px' }}
-                        />
-                        <Select
-                            value={filters.status ?? ''}
-                            onChange={(e) => runFilters({ status: e.target.value || undefined })}
-                            style={{ maxWidth: '150px' }}
-                        >
-                            <option value="">All statuses</option>
-                            {INVOICE_STATUSES.map((s) => (
-                                <option key={s.value} value={s.value}>
-                                    {s.label}
-                                </option>
-                            ))}
-                        </Select>
-                        <Input
-                            type="date"
-                            label="From"
-                            value={filters.from ?? ''}
-                            onChange={(e) => runFilters({ from: e.target.value || undefined })}
-                        />
-                        <Input
-                            type="date"
-                            label="To"
-                            value={filters.to ?? ''}
-                            onChange={(e) => runFilters({ to: e.target.value || undefined })}
-                        />
-                        <Button type="submit" variant="outline">
-                            Search
-                        </Button>
-                        {(filters.status || filters.from || filters.to || filters.search) && (
-                            <Button type="button" variant="ghost" onClick={clearFilters}>
-                                Clear
-                            </Button>
-                        )}
-                    </form>
-                    </FilterPanel>
-                </div>
+            <div className="tabs">
+                {TABS.map((tab) => (
+                    <Link
+                        key={tab.value}
+                        href={route('invoices.index', { ...filters, status: tab.value || undefined })}
+                        preserveState
+                        className={(filters.status ?? '') === tab.value ? 'active' : ''}
+                    >
+                        {tab.label}
+                        <span>{tab.value === '' ? total : (statusCounts[tab.value] ?? 0)}</span>
+                    </Link>
+                ))}
+            </div>
 
-                {invoices.data.length === 0 ? (
-                    <EmptyState
-                        icon={<FileText size={20} />}
-                        title="No invoices yet"
-                        description="Create your first invoice to start billing clients."
-                        action={
-                            !viewingAllTenants && (
-                                <Link href={route('invoices.create')}>
-                                    <Button>New Invoice</Button>
-                                </Link>
-                            )
-                        }
+            <article className="card list-card">
+                <form className="list-toolbar" onSubmit={runSearch}>
+                    <div className="table-search">
+                        <Icon name="search" />
+                        <input
+                            placeholder="Search by invoice or customer..."
+                            value={search}
+                            onChange={(event) => setSearch(event.target.value)}
+                        />
+                    </div>
+                    <input
+                        type="date"
+                        aria-label="From"
+                        value={filters.from ?? ''}
+                        onChange={(event) => runFilters({ from: event.target.value || undefined })}
                     />
-                ) : (
-                    <Table cards>
-                        <Table.Head>
-                            <Table.HeadCell className="ps-3">Number</Table.HeadCell>
-                            <Table.HeadCell>Client</Table.HeadCell>
-                            <Table.HeadCell>Issue date</Table.HeadCell>
-                            <Table.HeadCell>Due date</Table.HeadCell>
-                            <Table.HeadCell>Status</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
-                            <Table.HeadCell className="text-end pe-3">Total</Table.HeadCell>
-                        </Table.Head>
+                    <input
+                        type="date"
+                        aria-label="To"
+                        value={filters.to ?? ''}
+                        onChange={(event) => runFilters({ to: event.target.value || undefined })}
+                    />
+                    <span className="toolbar-spacer" />
+                    {!viewingAllTenants && <ExportButton href={route('invoices.export', filters)} />}
+                </form>
+
+                <div className="table-wrap invoice-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>INVOICE</th>
+                                <th>CUSTOMER</th>
+                                {viewingAllTenants && <th>TENANT</th>}
+                                <th>ISSUED</th>
+                                <th>DUE DATE</th>
+                                <th className="align-right">AMOUNT</th>
+                                <th>STATUS</th>
+                            </tr>
+                        </thead>
                         <tbody>
+                            {invoices.data.length === 0 && (
+                                <tr>
+                                    <td colSpan={7}>No invoices found. Create your first invoice to start billing clients.</td>
+                                </tr>
+                            )}
                             {invoices.data.map((invoice) => (
-                                <Table.Row
+                                <tr
                                     key={invoice.id}
                                     style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
                                     onClick={viewingAllTenants ? undefined : () => router.get(route('invoices.show', invoice.id))}
                                 >
-                                    <Table.Cell className="ps-3" label="Number">{invoice.invoice_number}</Table.Cell>
-                                    <Table.Cell label="Client">{invoice.client?.name ?? '—'}</Table.Cell>
-                                    <Table.Cell label="Issue date">{formatDate(invoice.issue_date)}</Table.Cell>
-                                    <Table.Cell label="Due date">{formatDate(invoice.due_date)}</Table.Cell>
-                                    <Table.Cell label="Status">
-                                        <Badge variant={invoiceStatusVariant(invoice.status)}>{invoice.status}</Badge>
-                                    </Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{invoice.tenant_name}</Table.Cell>}
-                                    <Table.Cell className="text-end pe-3" label="Total">
-                                        <MoneyDisplay amount={invoiceTotal(invoice)} currency={invoice.currency} />
-                                    </Table.Cell>
-                                </Table.Row>
+                                    <td>
+                                        <b className="link">{invoice.invoice_number}</b>
+                                    </td>
+                                    <td>
+                                        <b>{invoice.client?.name ?? '—'}</b>
+                                    </td>
+                                    {viewingAllTenants && <td>{invoice.tenant_name}</td>}
+                                    <td>{formatDay(invoice.issue_date)}</td>
+                                    <td>{formatDay(invoice.due_date)}</td>
+                                    <td className="align-right">
+                                        <span className="money">{formatMoney(invoiceTotal(invoice), invoice.currency)}</span>
+                                    </td>
+                                    <td>
+                                        <span className={`badge ${statusBadge[invoice.status]}`}>
+                                            <i />
+                                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                        </span>
+                                    </td>
+                                </tr>
                             ))}
                         </tbody>
-                    </Table>
-                )}
-            </Card>
+                    </table>
+                </div>
+
+                <div className="pagination">
+                    <span>
+                        Showing {from}–{to} of {invoices.total} invoices
+                    </span>
+                    <div>
+                        {invoices.links.map((link, index) => (
+                            <Link
+                                key={index}
+                                href={link.url ?? '#'}
+                                preserveState
+                                className={`${link.active ? 'active' : ''} ${link.url ? '' : 'disabled'}`}
+                            >
+                                <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </article>
         </>
     );
 }

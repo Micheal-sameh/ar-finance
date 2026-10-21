@@ -15,7 +15,7 @@ const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
         backgroundColor: 'var(--af-primary)',
         borderColor: 'var(--af-primary)',
         color: '#fff',
-        boxShadow: '0 2px 5px rgba(63, 97, 116, 0.2)',
+        boxShadow: '0 2px 5px rgba(37, 99, 235, 0.2)',
     },
     outline: {
         backgroundColor: 'var(--af-surface)',
@@ -35,8 +35,8 @@ const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
 };
 
 const sizeStyles: Record<ButtonSize, React.CSSProperties> = {
-    sm: { padding: '5px 12px', fontSize: '12px' },
-    md: { padding: '0 14px', height: '36px', fontSize: '12.5px' },
+    sm: { padding: '5px 12px', fontSize: '13.5px' },
+    md: { padding: '0 13px', height: '36px', fontSize: '12.5px' },
 };
 
 /**
@@ -49,7 +49,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             <button
                 ref={ref}
                 disabled={disabled || loading}
-                className={`btn d-inline-flex align-items-center gap-2 fw-medium ${className}`}
+                className={`btn d-inline-flex align-items-center gap-2 fw-semibold ${className}`}
                 style={{
                     borderRadius: 'var(--af-radius-sm)',
                     border: '1px solid',
