@@ -2,6 +2,7 @@
 
 namespace App\Support\Pdf;
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Mpdf\Mpdf;
 use Mpdf\MpdfException;
@@ -40,6 +41,13 @@ class PdfExport
         $mpdf->autoScriptToLang = true;
         $mpdf->autoLangToFont = true;
         $mpdf->useSubstitutions = true;
+
+        $exportedBy = e(Auth::user()?->name ?? '');
+        $exportedAt = now()->format('Y-m-d H:i');
+        $mpdf->SetHTMLFooter(
+            '<div style="font-size: 9px; color: #888; text-align: right;">'
+            ."Exported by {$exportedBy} on {$exportedAt}</div>"
+        );
 
         $mpdf->WriteHTML(View::make($view, $data)->render());
 
