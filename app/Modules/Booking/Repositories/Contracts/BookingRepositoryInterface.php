@@ -29,4 +29,6 @@ interface BookingRepositoryInterface
      * still sitting in deferred revenue — see RecognizeBookingRevenue.
      */
     public function awaitingRevenueRecognition(): Collection;
+
+    public function countInSeries(string $recurrenceGroupId): int;
 }

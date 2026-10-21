@@ -6,9 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Modules\Booking\Exceptions\BookableItemInUseException;
 use App\Modules\Booking\Http\Requests\SaveBookableItemRequest;
 use App\Modules\Booking\Http\Resources\BookableItemOptionResource;
+use App\Modules\Booking\Http\Resources\BookableItemResource;
 use App\Modules\Booking\Models\BookableItem;
-use App\Modules\Booking\Models\BookingType;
 use App\Modules\Booking\Services\BookableItemService;
+use App\Modules\Booking\Services\BookingTypeService;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class BookableItemController extends Controller
 {
     public function __construct(
         private readonly BookableItemService $items,
+        private readonly BookingTypeService $bookingTypes,
         private readonly TenantContext $tenantContext,
     ) {}
 
@@ -27,25 +29,14 @@ class BookableItemController extends Controller
     {
         $this->authorize('viewAny', BookableItem::class);
 
-        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
-
         $items = $this->items->paginate($request->only(['search']))
-            ->through(fn (BookableItem $item) => [
-                ...$item->toArray(),
-                'booking_types' => $item->bookingTypes->map(fn (BookingType $type) => [
-                    'id' => $type->id,
-                    'name' => $type->name,
-                    'rate_type' => $type->pivot->rate_type,
-                    'price' => $type->pivot->price,
-                ])->values(),
-                'tenant_name' => $viewingAllTenants ? $item->tenant?->name : null,
-            ]);
+            ->through(fn (BookableItem $item) => (new BookableItemResource($item))->resolve());
 
         return Inertia::render('Booking/BookableItems/Index', [
             'items' => $items,
-            'bookingTypeOptions' => BookingType::query()->orderBy('name')->get(['id', 'name']),
+            'bookingTypeOptions' => $this->bookingTypes->options(),
             'filters' => $request->only(['search']),
-            'viewingAllTenants' => $viewingAllTenants,
+            'viewingAllTenants' => $this->tenantContext->isViewingAllTenants(),
             'canManage' => $request->user()->can('bookable_items.manage'),
         ]);
     }

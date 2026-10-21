@@ -47,4 +47,9 @@ class EloquentBookingRepository implements BookingRepositoryInterface
     {
         return Booking::query()->with('bookableItem')->awaitingRevenueRecognition()->get();
     }
+
+    public function countInSeries(string $recurrenceGroupId): int
+    {
+        return Booking::query()->where('recurrence_group_id', $recurrenceGroupId)->count();
+    }
 }

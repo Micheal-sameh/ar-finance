@@ -92,6 +92,17 @@ class BookingService
     }
 
     /**
+     * How many bookings were created together with this one — 1 for a
+     * booking that doesn't repeat.
+     */
+    public function seriesSize(Booking $booking): int
+    {
+        return $booking->recurrence_group_id === null
+            ? 1
+            : $this->bookings->countInSeries($booking->recurrence_group_id);
+    }
+
+    /**
      * Start/end pairs for the booking and each repeat up to the end date.
      *
      * @return array<int, array{0: string, 1: string}>

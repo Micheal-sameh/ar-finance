@@ -66,9 +66,7 @@ class BookingController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        $count = $booking->recurrence_group_id !== null
-            ? Booking::query()->where('recurrence_group_id', $booking->recurrence_group_id)->count()
-            : 1;
+        $count = $this->bookings->seriesSize($booking);
 
         return back()->with('success', $count > 1 ? "Booked {$count} times." : 'Booked.');
     }
