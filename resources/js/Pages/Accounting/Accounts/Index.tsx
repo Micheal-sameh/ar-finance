@@ -10,6 +10,7 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
+import { FileDropzone } from '@/Components/ui/FileDropzone';
 import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
@@ -797,24 +798,34 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                 <form onSubmit={submitImport} className="d-flex flex-column gap-3">
                     <a
                         href={route('accounts.import-template')}
-                        className="d-inline-flex align-items-center gap-1 align-self-start"
-                        style={{ fontSize: '13px', color: 'var(--af-primary)' }}
+                        className="d-flex align-items-center gap-3 text-decoration-none"
+                        style={{
+                            padding: '12px 14px',
+                            borderRadius: 'var(--af-radius-sm)',
+                            border: '1px solid var(--af-border)',
+                            color: 'var(--af-text)',
+                        }}
                     >
-                        <Download size={14} />
-                        Download template
+                        <Download size={18} style={{ color: 'var(--af-primary)', flexShrink: 0 }} />
+                        <div>
+                            <div style={{ fontSize: '14px', fontWeight: 500 }}>Download template</div>
+                            <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Start from a ready-made sheet with the right columns.</div>
+                        </div>
                     </a>
+
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Spreadsheet (.xlsx, .xls, or .csv)
+                            Spreadsheet
                         </label>
-                        <input
-                            type="file"
+                        <FileDropzone
+                            file={importForm.data.file}
+                            onChange={(file) => importForm.setData('file', file)}
                             accept=".xlsx,.xls,.csv"
-                            className="form-control"
-                            style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
-                            onChange={(e) => importForm.setData('file', e.target.files?.[0] ?? null)}
+                            hint=".xlsx, .xls or .csv"
+                            error={Boolean(importForm.errors.file)}
                         />
                     </div>
+
                     {importForm.errors.file && (
                         <div
                             style={{
@@ -828,10 +839,29 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                             {importForm.errors.file}
                         </div>
                     )}
+
                     <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                        Columns: <strong>code</strong>, <strong>name</strong>, <strong>type</strong> (asset, liability, equity,
-                        revenue, expense), and optionally normal_balance, parent_code, is_active, opening_balance. One row per
-                        account, with a header row. A parent account's code must already exist or appear earlier in the file.
+                        <div className="d-flex flex-wrap align-items-center gap-1 mb-1">
+                            <span className="me-1">Required:</span>
+                            {['code', 'name', 'type'].map((column) => (
+                                <Badge key={column} variant="info">
+                                    {column}
+                                </Badge>
+                            ))}
+                        </div>
+                        <div className="d-flex flex-wrap align-items-center gap-1 mb-2">
+                            <span className="me-1">Optional:</span>
+                            {['normal_balance', 'parent_code', 'is_active', 'opening_balance'].map((column) => (
+                                <Badge key={column} variant="neutral">
+                                    {column}
+                                </Badge>
+                            ))}
+                        </div>
+                        <ul className="mb-0 ps-3">
+                            <li>type is one of asset, liability, equity, revenue or expense.</li>
+                            <li>One row per account, with a header row.</li>
+                            <li>A parent account's code must already exist or appear earlier in the file.</li>
+                        </ul>
                     </div>
                 </form>
             </Modal>
