@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CostCenterImportException;
 use App\Exceptions\CostCenterInUseException;
 use App\Http\Controllers\Concerns\ExportsExcel;
+use App\Http\Requests\CostCenters\ImportCostCentersRequest;
 use App\Http\Requests\CostCenters\SaveCostCenterRequest;
 use App\Http\Resources\CostCenterOptionResource;
 use App\Models\CostCenter;
 use App\Services\CostCenterService;
 use App\Services\ReportService;
+use App\Support\Excel\CostCenterImportTemplate;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -64,6 +67,24 @@ class CostCenterController extends Controller
         ]);
 
         return $this->exportXlsx('cost-centers.xlsx', ['Name', 'Type', 'Parent', 'Budget', 'Status'], $rows);
+    }
+
+    public function importTemplate(): StreamedResponse
+    {
+        $this->authorize('create', CostCenter::class);
+
+        return CostCenterImportTemplate::download();
+    }
+
+    public function import(ImportCostCentersRequest $request): RedirectResponse
+    {
+        try {
+            $count = $this->costCenters->import($request->rows());
+        } catch (CostCenterImportException $e) {
+            return back()->withErrors(['file' => implode("\n", $e->rowErrors())]);
+        }
+
+        return redirect()->route('cost-centers.index')->with('success', "Imported {$count} center(s).");
     }
 
     public function options(): AnonymousResourceCollection

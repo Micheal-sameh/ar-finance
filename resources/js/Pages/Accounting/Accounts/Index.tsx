@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Building2, ChevronDown, ChevronRight, Download, ListTree, Pencil, Plus, Trash2, Upload } from 'lucide-react';
+import { Building2, ChevronDown, ChevronRight, ListTree, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { Fragment, FormEvent, useMemo, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
@@ -10,7 +10,7 @@ import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
-import { FileDropzone } from '@/Components/ui/FileDropzone';
+import { ImportModal } from '@/Components/ui/ImportModal';
 import { FilterPanel } from '@/Components/ui/FilterPanel';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
@@ -444,7 +444,6 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
         opening_balance: '' as number | string,
     });
 
-    const importForm = useForm<{ file: File | null }>({ file: null });
 
     function handleCodeChange(value: string) {
         const inferredType = TYPE_BY_CODE_PREFIX[value.charAt(0)];
@@ -519,17 +518,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
     }
 
     function openImport() {
-        importForm.reset();
-        importForm.clearErrors();
         setImportOpen(true);
-    }
-
-    function submitImport(e: FormEvent) {
-        e.preventDefault();
-        importForm.post(route('accounts.import'), {
-            forceFormData: true,
-            onSuccess: () => setImportOpen(false),
-        });
     }
 
     return (
@@ -780,91 +769,19 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                 </form>
             </Modal>
 
-            <Modal
+            <ImportModal
                 open={importOpen}
                 onClose={() => setImportOpen(false)}
-                title="Import from Excel"
-                footer={
-                    <>
-                        <Button variant="outline" onClick={() => setImportOpen(false)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={submitImport} loading={importForm.processing} disabled={!importForm.data.file}>
-                            Import
-                        </Button>
-                    </>
-                }
-            >
-                <form onSubmit={submitImport} className="d-flex flex-column gap-3">
-                    <a
-                        href={route('accounts.import-template')}
-                        className="d-flex align-items-center gap-3 text-decoration-none"
-                        style={{
-                            padding: '12px 14px',
-                            borderRadius: 'var(--af-radius-sm)',
-                            border: '1px solid var(--af-border)',
-                            color: 'var(--af-text)',
-                        }}
-                    >
-                        <Download size={18} style={{ color: 'var(--af-primary)', flexShrink: 0 }} />
-                        <div>
-                            <div style={{ fontSize: '14px', fontWeight: 500 }}>Download template</div>
-                            <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>Start from a ready-made sheet with the right columns.</div>
-                        </div>
-                    </a>
-
-                    <div>
-                        <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Spreadsheet
-                        </label>
-                        <FileDropzone
-                            file={importForm.data.file}
-                            onChange={(file) => importForm.setData('file', file)}
-                            accept=".xlsx,.xls,.csv"
-                            hint=".xlsx, .xls or .csv"
-                            error={Boolean(importForm.errors.file)}
-                        />
-                    </div>
-
-                    {importForm.errors.file && (
-                        <div
-                            style={{
-                                color: 'var(--af-danger)',
-                                fontSize: '12px',
-                                whiteSpace: 'pre-line',
-                                maxHeight: '220px',
-                                overflowY: 'auto',
-                            }}
-                        >
-                            {importForm.errors.file}
-                        </div>
-                    )}
-
-                    <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                        <div className="d-flex flex-wrap align-items-center gap-1 mb-1">
-                            <span className="me-1">Required:</span>
-                            {['code', 'name', 'type'].map((column) => (
-                                <Badge key={column} variant="info">
-                                    {column}
-                                </Badge>
-                            ))}
-                        </div>
-                        <div className="d-flex flex-wrap align-items-center gap-1 mb-2">
-                            <span className="me-1">Optional:</span>
-                            {['normal_balance', 'parent_code', 'is_active', 'opening_balance'].map((column) => (
-                                <Badge key={column} variant="neutral">
-                                    {column}
-                                </Badge>
-                            ))}
-                        </div>
-                        <ul className="mb-0 ps-3">
-                            <li>type is one of asset, liability, equity, revenue or expense.</li>
-                            <li>One row per account, with a header row.</li>
-                            <li>A parent account's code must already exist or appear earlier in the file.</li>
-                        </ul>
-                    </div>
-                </form>
-            </Modal>
+                action={route('accounts.import')}
+                templateHref={route('accounts.import-template')}
+                requiredColumns={['code', 'name', 'type']}
+                optionalColumns={['normal_balance', 'parent_code', 'is_active', 'opening_balance']}
+                notes={[
+                    'type is one of asset, liability, equity, revenue or expense.',
+                    'One row per account, with a header row.',
+                    "A parent account's code must already exist or appear earlier in the file.",
+                ]}
+            />
         </>
     );
 }

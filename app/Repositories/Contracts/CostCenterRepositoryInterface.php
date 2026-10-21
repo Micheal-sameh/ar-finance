@@ -15,6 +15,12 @@ interface CostCenterRepositoryInterface
      */
     public function all(): Collection;
 
+    /**
+     * Every cost center, active or not — the import needs all existing names
+     * to reject duplicates and to resolve parents.
+     */
+    public function allIncludingInactive(): Collection;
+
     public function find(int $id): ?CostCenter;
 
     public function create(array $attributes): CostCenter;

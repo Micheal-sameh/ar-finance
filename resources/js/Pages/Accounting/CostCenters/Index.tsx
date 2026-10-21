@@ -1,5 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { PiggyBank, Pencil, Plus, Trash2 } from 'lucide-react';
+import { PiggyBank, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { BudgetBar } from '@/Components/finance/BudgetBar';
 import { CostCenterPicker } from '@/Components/finance/CostCenterPicker';
@@ -11,6 +11,7 @@ import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { FilterPanel } from '@/Components/ui/FilterPanel';
+import { ImportModal } from '@/Components/ui/ImportModal';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
@@ -28,6 +29,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
     const [editing, setEditing] = useState<CostCenter | null>(null);
 
     const form = useForm<{
@@ -112,6 +114,9 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                 action={
                     !viewingAllTenants && (
                         <div className="d-flex gap-2">
+                            <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={() => setImportOpen(true)}>
+                                Import from Excel
+                            </Button>
                             <ExportButton href={route('cost-centers.export', filters)} />
                             <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
                                 New Center
@@ -262,6 +267,20 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                     </div>
                 </form>
             </Modal>
+
+            <ImportModal
+                open={importOpen}
+                onClose={() => setImportOpen(false)}
+                action={route('cost-centers.import')}
+                templateHref={route('cost-centers.import-template')}
+                requiredColumns={['name', 'type']}
+                optionalColumns={['parent', 'budget', 'is_active']}
+                notes={[
+                    'type is cost or profit.',
+                    'One row per center, with a header row.',
+                    'Names must be unique. A parent is the name of an existing center or another row in the file, in any order.',
+                ]}
+            />
         </>
     );
 }

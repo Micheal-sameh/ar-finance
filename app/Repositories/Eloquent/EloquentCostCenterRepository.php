@@ -29,6 +29,11 @@ class EloquentCostCenterRepository implements CostCenterRepositoryInterface
             ->get();
     }
 
+    public function allIncludingInactive(): Collection
+    {
+        return CostCenter::query()->orderBy('name')->get();
+    }
+
     public function find(int $id): ?CostCenter
     {
         return CostCenter::query()->with(['parent', 'children'])->find($id);

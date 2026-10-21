@@ -134,6 +134,8 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
 
     Route::get('cost-centers/options', [CostCenterController::class, 'options'])->name('cost-centers.options');
     Route::get('cost-centers/export', [CostCenterController::class, 'export'])->name('cost-centers.export');
+    Route::post('cost-centers/import', [CostCenterController::class, 'import'])->name('cost-centers.import');
+    Route::get('cost-centers/import-template', [CostCenterController::class, 'importTemplate'])->name('cost-centers.import-template');
     Route::resource('cost-centers', CostCenterController::class)->only(['store', 'update', 'destroy']);
 
     Route::get('clients/export', [ClientController::class, 'export'])->name('clients.export');
