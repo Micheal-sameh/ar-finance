@@ -14,14 +14,13 @@ class BankTransactionController extends Controller
 {
     public function __construct(
         private readonly BankReconciliationService $reconciliation,
-    ) {
-    }
+    ) {}
 
     public function match(MatchBankTransactionRequest $request, BankTransaction $bankTransaction): RedirectResponse
     {
         $this->authorize('update', $bankTransaction->bankAccount);
 
-        $journalLine = JournalLine::findOrFail($request->validated('journal_line_id'));
+        $journalLine = JournalLine::query()->whereHas('journalEntry')->findOrFail($request->validated('journal_line_id'));
 
         try {
             $this->reconciliation->match($bankTransaction, $journalLine);

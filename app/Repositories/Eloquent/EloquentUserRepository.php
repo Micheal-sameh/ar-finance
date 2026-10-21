@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Eloquent;
 
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Support\TenantContext;
@@ -37,23 +38,52 @@ class EloquentUserRepository implements UserRepositoryInterface
 
     public function update(User $user, string $status, string $role): User
     {
+        $before = ['status' => $user->status->value, 'role' => $user->getRoleNames()->all()];
+
         $user->update(['status' => $status]);
         $user->syncRoles([$role]);
+
+        $this->audit($user, $before, ['status' => $status, 'role' => [$role]]);
 
         return $user->fresh('roles');
     }
 
     public function assignTenant(User $user, ?int $tenantId): User
     {
+        $before = ['tenant_id' => $user->tenant_id];
+
         $user->update(['tenant_id' => $tenantId]);
+
+        $this->audit($user, $before, ['tenant_id' => $tenantId]);
 
         return $user->fresh('tenant');
     }
 
     public function assignRole(User $user, string $role): User
     {
+        $before = ['role' => $user->getRoleNames()->all()];
+
         $user->syncRoles([$role]);
 
+        $this->audit($user, $before, ['role' => [$role]]);
+
         return $user->fresh('roles');
+    }
+
+    /**
+     * @param  array<string, mixed>  $before
+     * @param  array<string, mixed>  $after
+     */
+    private function audit(User $user, array $before, array $after): void
+    {
+        AuditLog::create([
+            'tenant_id' => $user->tenant_id,
+            'user_id' => auth()->id(),
+            'auditable_type' => User::class,
+            'auditable_id' => $user->id,
+            'action' => 'updated',
+            'before' => $before,
+            'after' => $after,
+        ]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Requests\FixedAssets;
 
 use App\DTOs\CreateFixedAssetData;
 use App\Enums\DepreciationMethod;
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Enum;
 
@@ -23,9 +24,9 @@ class StoreFixedAssetRequest extends FormRequest
             'salvage_value' => ['nullable', 'numeric', 'min:0'],
             'useful_life_years' => ['required', 'integer', 'min:1', 'max:100'],
             'depreciation_method' => ['required', new Enum(DepreciationMethod::class)],
-            'asset_account_id' => ['required', 'exists:accounts,id'],
-            'depreciation_account_id' => ['required', 'exists:accounts,id'],
-            'accumulated_depreciation_account_id' => ['required', 'exists:accounts,id'],
+            'asset_account_id' => ['required', new ExistsInTenant('accounts')],
+            'depreciation_account_id' => ['required', new ExistsInTenant('accounts')],
+            'accumulated_depreciation_account_id' => ['required', new ExistsInTenant('accounts')],
         ];
     }
 

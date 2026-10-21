@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\PurchaseOrders;
 
+use App\Rules\ExistsInTenant;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -22,7 +23,7 @@ class ConvertToBillRequest extends FormRequest
             ],
             'bill_date' => ['required', 'date'],
             'due_date' => ['required', 'date', 'after_or_equal:bill_date'],
-            'payable_account_id' => ['required', 'exists:accounts,id'],
+            'payable_account_id' => ['required', new ExistsInTenant('accounts')],
         ];
     }
 }

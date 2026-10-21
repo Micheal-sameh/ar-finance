@@ -6,6 +6,7 @@ use App\DTOs\CreateAccountData;
 use App\Enums\AccountType;
 use App\Enums\NormalBalance;
 use App\Models\Account;
+use App\Rules\ExistsInTenant;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -50,7 +51,7 @@ class UpdateAccountRequest extends FormRequest
             'currency' => ['nullable', 'string', 'size:3'],
             'parent_id' => [
                 'nullable',
-                'exists:accounts,id',
+                new ExistsInTenant('accounts'),
                 Rule::notIn([$accountId]),
                 function (string $attribute, mixed $value, \Closure $fail): void {
                     if (! $value) {

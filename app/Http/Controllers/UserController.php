@@ -83,6 +83,8 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        $this->ensureCanManage($request->user(), $user);
+
         if ($user->is($request->user())) {
             return back()->with('error', "You can't edit your own account.");
         }
@@ -94,6 +96,8 @@ class UserController extends Controller
 
     public function assignTenant(AssignUserTenantRequest $request, User $user): RedirectResponse
     {
+        $this->ensureCanManage($request->user(), $user);
+
         if ($user->is($request->user())) {
             return back()->with('error', "You can't reassign your own account.");
         }
@@ -105,6 +109,8 @@ class UserController extends Controller
 
     public function assignRole(AssignUserRoleRequest $request, User $user): RedirectResponse
     {
+        $this->ensureCanManage($request->user(), $user);
+
         if ($user->is($request->user())) {
             return back()->with('error', "You can't change your own role.");
         }
@@ -112,5 +118,21 @@ class UserController extends Controller
         $this->users->assignRole($user, $request->validated('role'));
 
         return redirect()->route('users.index')->with('success', 'User role updated.');
+    }
+
+    /**
+     * User binding is unscoped, so an ordinary tenant admin must not reach
+     * users of other tenants, and nobody but a Platform Admin may touch a
+     * cross-tenant (Platform Admin / Portal Manager) account.
+     */
+    private function ensureCanManage(User $actor, User $target): void
+    {
+        if ($actor->isPlatformAdmin()) {
+            abort_if($target->hasRole('Platform Admin') && ! $actor->hasRole('Platform Admin'), 403);
+
+            return;
+        }
+
+        abort_unless($target->tenant_id === $actor->tenant_id && ! $target->isPlatformAdmin(), 403);
     }
 }

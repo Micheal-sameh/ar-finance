@@ -3,6 +3,7 @@
 namespace App\Http\Requests\BankAccounts;
 
 use App\DTOs\CreateBankAccountData;
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SaveBankAccountRequest extends FormRequest
@@ -16,7 +17,7 @@ class SaveBankAccountRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'account_id' => ['required', 'exists:accounts,id'],
+            'account_id' => ['required', new ExistsInTenant('accounts')],
             'bank_name' => ['nullable', 'string', 'max:255'],
             'account_number' => ['nullable', 'string', 'max:50'],
             'currency' => ['nullable', 'string', 'size:3'],

@@ -4,6 +4,7 @@ namespace App\Http\Requests\Journals;
 
 use App\DTOs\CreateJournalEntryData;
 use App\Enums\JournalSourceType;
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
@@ -21,10 +22,10 @@ class StoreJournalEntryRequest extends FormRequest
             'description' => ['required', 'string', 'max:255'],
             'reference' => ['nullable', 'string', 'max:255'],
             'lines' => ['required', 'array', 'min:2'],
-            'lines.*.account_id' => ['required', 'exists:accounts,id'],
+            'lines.*.account_id' => ['required', new ExistsInTenant('accounts')],
             'lines.*.debit' => ['required', 'numeric', 'min:0'],
             'lines.*.credit' => ['required', 'numeric', 'min:0'],
-            'lines.*.cost_center_id' => ['nullable', 'exists:cost_centers,id'],
+            'lines.*.cost_center_id' => ['nullable', new ExistsInTenant('cost_centers')],
             'lines.*.description' => ['nullable', 'string', 'max:255'],
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Expenses;
 
 use App\DTOs\CreateExpenseData;
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreExpenseRequest extends FormRequest
@@ -16,12 +17,12 @@ class StoreExpenseRequest extends FormRequest
     {
         return [
             'description' => ['required', 'string', 'max:255'],
-            'account_id' => ['required', 'exists:accounts,id'],
+            'account_id' => ['required', new ExistsInTenant('accounts')],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'date' => ['required', 'date'],
-            'vendor_id' => ['nullable', 'exists:vendors,id'],
-            'cost_center_id' => ['nullable', 'exists:cost_centers,id'],
-            'payable_account_id' => ['required', 'exists:accounts,id'],
+            'vendor_id' => ['nullable', new ExistsInTenant('vendors')],
+            'cost_center_id' => ['nullable', new ExistsInTenant('cost_centers')],
+            'payable_account_id' => ['required', new ExistsInTenant('accounts')],
         ];
     }
 

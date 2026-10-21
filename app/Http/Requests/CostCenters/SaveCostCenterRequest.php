@@ -4,6 +4,7 @@ namespace App\Http\Requests\CostCenters;
 
 use App\DTOs\CreateCostCenterData;
 use App\Enums\CostCenterType;
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -23,7 +24,7 @@ class SaveCostCenterRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', new Enum(CostCenterType::class)],
             'budget' => ['nullable', 'numeric', 'min:0'],
-            'parent_id' => ['nullable', 'exists:cost_centers,id', Rule::notIn([$costCenterId])],
+            'parent_id' => ['nullable', new ExistsInTenant('cost_centers'), Rule::notIn([$costCenterId])],
             'is_active' => ['boolean'],
         ];
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Expenses;
 
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MarkExpensePaidRequest extends FormRequest
@@ -14,7 +15,7 @@ class MarkExpensePaidRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_account_id' => ['required', 'exists:accounts,id'],
+            'payment_account_id' => ['required', new ExistsInTenant('accounts')],
         ];
     }
 }

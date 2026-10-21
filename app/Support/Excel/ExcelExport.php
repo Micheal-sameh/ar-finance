@@ -2,7 +2,10 @@
 
 namespace App\Support\Excel;
 
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -28,7 +31,7 @@ class ExcelExport
 
         $rowNumber = 2;
         foreach ($rows as $row) {
-            $sheet->fromArray($row, null, "A{$rowNumber}");
+            self::writeRow($sheet, $row, $rowNumber);
             $rowNumber++;
         }
 
@@ -43,5 +46,24 @@ class ExcelExport
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    /**
+     * Strings starting with a formula trigger are written as explicit text
+     * so spreadsheet apps never evaluate user-controlled values.
+     *
+     * @param  array<int, mixed>  $row
+     */
+    private static function writeRow(Worksheet $sheet, array $row, int $rowNumber): void
+    {
+        foreach (array_values($row) as $index => $value) {
+            $coordinate = Coordinate::stringFromColumnIndex($index + 1).$rowNumber;
+
+            if (is_string($value) && preg_match('/^[=+\-@\t\r]/', $value) === 1) {
+                $sheet->setCellValueExplicit($coordinate, $value, DataType::TYPE_STRING);
+            } else {
+                $sheet->setCellValue($coordinate, $value);
+            }
+        }
     }
 }

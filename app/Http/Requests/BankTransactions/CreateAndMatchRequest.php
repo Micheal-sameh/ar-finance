@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\BankTransactions;
 
+use App\Rules\ExistsInTenant;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateAndMatchRequest extends FormRequest
@@ -14,7 +15,7 @@ class CreateAndMatchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'offset_account_id' => ['required', 'exists:accounts,id'],
+            'offset_account_id' => ['required', new ExistsInTenant('accounts')],
             'description' => ['required', 'string', 'max:255'],
         ];
     }
