@@ -15,14 +15,25 @@ const brand = (
 
 export function Sidebar() {
     const [show, setShow] = useState(false);
-    const { platform } = usePage<{ platform: PlatformShare | null }>().props;
+    const { platform, auth } = usePage<{ platform: PlatformShare | null; auth: { permissions: string[] } }>().props;
     // Two entirely separate sidebars, switched by whether a Platform Admin
     // is currently impersonating a tenant: viewing "All tenants" (no active
     // tenant) shows only the Platform section; impersonating a tenant (or
     // being an ordinary tenant user, who never has a `platform` share at
     // all) shows only the ordinary tenant-scoped sections.
     const isPlatformAdminViewingAllTenants = Boolean(platform) && !platform?.isImpersonating;
-    const visibleGroups = navConfig.filter((group) => Boolean(group.platformOnly) === isPlatformAdminViewingAllTenants);
+    const permissions = new Set(auth.permissions);
+
+    // A role like Booking Agent only holds bookings.*, so every other
+    // module's links (which the server would 403 on anyway) are hidden
+    // rather than left to click through into a dead end.
+    const visibleGroups = navConfig
+        .filter((group) => Boolean(group.platformOnly) === isPlatformAdminViewingAllTenants)
+        .map((group) => ({
+            ...group,
+            items: group.items.filter((item) => !item.permission || permissions.has(item.permission)),
+        }))
+        .filter((group) => group.items.length > 0);
 
     return (
         <>

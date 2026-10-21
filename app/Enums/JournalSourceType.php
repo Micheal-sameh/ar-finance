@@ -11,6 +11,7 @@ enum JournalSourceType: string
     case Depreciation = 'depreciation';
     case Revaluation = 'revaluation';
     case OpeningBalance = 'opening_balance';
+    case Booking = 'booking';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum JournalSourceType: string
             self::Depreciation => 'Depreciation',
             self::Revaluation => 'Currency Revaluation',
             self::OpeningBalance => 'Opening Balance',
+            self::Booking => 'Booking',
         };
     }
 }

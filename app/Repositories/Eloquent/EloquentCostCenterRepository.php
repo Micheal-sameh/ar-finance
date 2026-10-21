@@ -53,7 +53,7 @@ class EloquentCostCenterRepository implements CostCenterRepositoryInterface
 
     public function isInUse(CostCenter $costCenter): bool
     {
-        return $costCenter->journalLines()->exists() || $costCenter->expenses()->exists();
+        return $costCenter->journalLines()->exists() || $costCenter->expenses()->exists() || $costCenter->bookableItems()->exists();
     }
 
     public function hasChildren(CostCenter $costCenter): bool
