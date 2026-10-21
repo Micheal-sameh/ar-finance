@@ -40,7 +40,7 @@ export function Sidebar() {
             <div
                 className="d-flex d-lg-none align-items-center justify-content-between"
                 style={{
-                    backgroundColor: 'var(--af-primary)',
+                    backgroundColor: 'var(--af-navy)',
                     padding: '12px 16px',
                     position: 'sticky',
                     top: 0,
@@ -75,21 +75,24 @@ export function Sidebar() {
                     <Offcanvas.Title style={{ color: '#fff', fontWeight: 700, fontSize: '16px' }}>{brand}</Offcanvas.Title>
                 </Offcanvas.Header>
 
-                <Offcanvas.Body className="d-flex flex-column" style={{ padding: '20px 12px' }} onClick={() => setShow(false)}>
+                <Offcanvas.Body className="d-flex flex-column" style={{ padding: '22px 16px 16px' }} onClick={() => setShow(false)}>
                     <div
                         className="af-sidebar-brand px-2 mb-4 d-none d-lg-flex align-items-center"
-                        style={{ color: '#fff', fontWeight: 700, fontSize: '16px', letterSpacing: '-0.01em' }}
+                        style={{ color: '#fff', fontWeight: 700, fontSize: '16px', letterSpacing: '-0.01em', gap: '11px' }}
                     >
                         <span
                             className="d-flex align-items-center justify-content-center"
                             style={{
                                 flexShrink: 0,
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '6px',
-                                backgroundColor: 'var(--af-gold)',
-                                color: '#fff',
-                                fontSize: '13px',
+                                width: '37px',
+                                height: '37px',
+                                borderRadius: '10px',
+                                background: 'linear-gradient(145deg, #e5b95e, var(--af-gold))',
+                                boxShadow: 'inset 0 1px rgba(255,255,255,0.45)',
+                                color: 'var(--af-navy)',
+                                fontFamily: 'Georgia, serif',
+                                fontSize: '20px',
+                                fontWeight: 800,
                             }}
                         >
                             A

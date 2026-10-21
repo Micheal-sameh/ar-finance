@@ -1,28 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @import 'bootstrap/dist/css/bootstrap.min.css';
 
 :root {
-    --af-primary: #2563eb;
-    --af-primary-hover: #1d4ed8;
-    --af-gold: #c9922a;
-    --af-navy: #1e2d4a;
-    --af-bg: #f1f3f7;
-    --af-surface: #ffffff;
-    --af-text: #0f172a;
-    --af-label: #6b7a99;
-    --af-border: #d1d9e6;
-    --af-success: #16a34a;
-    --af-danger: #dc2626;
-    --af-warning: #d97706;
-    --af-info: #2563eb;
+    --af-primary: #52758a;
+    --af-primary-hover: #3f6174;
+    --af-gold: #9b8358;
+    --af-navy: #293940;
+    --af-bg: #f2f2ed;
+    --af-surface: #fbfbf8;
+    --af-text: #34444a;
+    --af-label: #748084;
+    --af-border: #d9ddd8;
+    --af-success: #527864;
+    --af-danger: #a75f5f;
+    --af-warning: #9b7848;
+    --af-info: #52758a;
 
     --af-radius: 12px;
     --af-radius-sm: 8px;
-    --af-shadow: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 3px 0 rgb(15 23 42 / 0.08);
+    --af-shadow: 0 1px 2px rgba(45, 58, 61, 0.025), 0 4px 14px rgba(45, 58, 61, 0.02);
 
-    --af-sidebar-collapsed: 72px;
+    --af-sidebar-collapsed: 260px;
     --af-sidebar-expanded: 260px;
 
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    --font-sans: 'Inter', 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 }
 
@@ -41,7 +42,8 @@ body {
     background-color: var(--af-bg);
     color: var(--af-text);
     font-family: var(--font-sans);
-    font-size: 14px;
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
 }
 
 #app {
@@ -93,7 +95,7 @@ body {
  * designed to blend into a navbar, not stay panel-colored) — override
  * for the app sidebar, which should stay solid at every width. */
 .af-sidebar {
-    background-color: var(--af-primary) !important;
+    background-color: var(--af-navy) !important;
     width: var(--af-sidebar-expanded);
 }
 
@@ -137,13 +139,8 @@ body {
          * background behind it instead. Bootstrap's responsive offcanvas
          * resets .offcanvas-body to transparent with !important at this
          * same breakpoint, so this has to match it to win. */
-        background-color: var(--af-primary) !important;
+        background-color: var(--af-navy) !important;
         transition: width 0.18s ease;
-    }
-
-    .af-sidebar:hover .offcanvas-body {
-        width: var(--af-sidebar-expanded);
-        box-shadow: 4px 0 16px rgb(15 23 42 / 0.18);
     }
 
     .af-sidebar-brand {
@@ -167,18 +164,12 @@ body {
      * what makes the width transition animate instead of snapping. */
     .af-label {
         display: inline-block;
-        width: 0;
-        margin-left: 0;
-        opacity: 0;
+        width: auto;
+        margin-left: 8px;
+        opacity: 1;
         overflow: hidden;
         white-space: nowrap;
         transition: width 0.18s ease, opacity 0.12s ease, margin-left 0.18s ease;
-    }
-
-    .af-sidebar:hover .af-label {
-        width: 160px;
-        margin-left: 8px;
-        opacity: 1;
     }
 
     .af-nav-icon {

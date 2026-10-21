@@ -15,9 +15,10 @@ const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
         backgroundColor: 'var(--af-primary)',
         borderColor: 'var(--af-primary)',
         color: '#fff',
+        boxShadow: '0 2px 5px rgba(63, 97, 116, 0.2)',
     },
     outline: {
-        backgroundColor: 'transparent',
+        backgroundColor: 'var(--af-surface)',
         borderColor: 'var(--af-border)',
         color: 'var(--af-text)',
     },
@@ -34,8 +35,8 @@ const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
 };
 
 const sizeStyles: Record<ButtonSize, React.CSSProperties> = {
-    sm: { padding: '5px 12px', fontSize: '13px' },
-    md: { padding: '8px 16px', fontSize: '14px' },
+    sm: { padding: '5px 12px', fontSize: '12px' },
+    md: { padding: '0 14px', height: '36px', fontSize: '12.5px' },
 };
 
 /**

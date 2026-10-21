@@ -11,10 +11,12 @@ export function NavGroup({ label, children }: NavGroupProps) {
             <div
                 className="af-label px-2 mb-1"
                 style={{
-                    fontSize: '11px',
+                    fontSize: '9px',
+                    fontWeight: 700,
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    color: 'rgba(255,255,255,0.45)',
+                    letterSpacing: '0.14em',
+                    color: '#71839e',
+                    paddingTop: '8px',
                 }}
             >
                 {label}

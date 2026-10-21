@@ -15,11 +15,13 @@ export function NavItem({ label, href, icon: Icon, active = false }: NavItemProp
             title={label}
             className="d-flex align-items-center text-decoration-none"
             style={{
-                padding: '8px 12px',
+                height: '36px',
+                padding: '0 10px',
                 borderRadius: 'var(--af-radius-sm)',
-                fontSize: '14px',
-                color: active ? '#fff' : 'rgba(255,255,255,0.75)',
-                backgroundColor: active ? 'rgba(255,255,255,0.18)' : 'transparent',
+                fontSize: '12.5px',
+                color: active ? '#fff' : '#bec8d7',
+                backgroundColor: active ? 'var(--af-primary)' : 'transparent',
+                boxShadow: active ? '0 4px 12px rgba(0,0,0,0.16)' : 'none',
             }}
         >
             <Icon size={16} className="af-nav-icon" />

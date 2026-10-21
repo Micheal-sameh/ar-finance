@@ -32,10 +32,11 @@ export function Topbar() {
                 position: 'sticky',
                 top: 0,
                 zIndex: 5,
-                padding: '10px 0',
+                padding: '10px 16px',
+                borderRadius: 'var(--af-radius)',
+                border: '1px solid var(--af-border)',
                 marginBottom: '16px',
-                backgroundColor: 'var(--af-bg)',
-                borderBottom: '1px solid var(--af-border)',
+                backgroundColor: 'var(--af-surface)',
             }}
         >
             {devUsers && <DevUserSwitcher users={devUsers} />}
@@ -54,15 +55,15 @@ export function Topbar() {
                             width: '28px',
                             height: '28px',
                             borderRadius: '50%',
-                            backgroundColor: 'var(--af-primary)',
-                            color: '#fff',
+                            backgroundColor: '#dbe8ff',
+                            color: 'var(--af-primary-hover)',
                             fontSize: '12px',
                             fontWeight: 600,
                         }}
                     >
                         {user.name.charAt(0).toUpperCase()}
                     </div>
-                    <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--af-text)' }}>{user.name}</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--af-text)' }}>{user.name}</span>
                     <ChevronDown size={14} style={{ color: 'var(--af-label)' }} />
                 </Dropdown.Toggle>
 

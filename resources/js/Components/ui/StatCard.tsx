@@ -21,8 +21,8 @@ export function StatCard({ label, value, sub, icon, color = 'primary' }: StatCar
         <Card>
             <div className="d-flex align-items-start justify-content-between">
                 <div>
-                    <div style={{ color: 'var(--af-label)', fontSize: '13px', marginBottom: '6px' }}>{label}</div>
-                    <div style={{ color: 'var(--af-text)', fontSize: '24px', fontWeight: 600, lineHeight: 1.2 }}>
+                    <div style={{ color: 'var(--af-label)', fontSize: '12px', marginBottom: '6px' }}>{label}</div>
+                    <div style={{ color: 'var(--af-text)', fontSize: '20px', fontWeight: 600, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
                         {value}
                     </div>
                     {sub && (
@@ -32,9 +32,9 @@ export function StatCard({ label, value, sub, icon, color = 'primary' }: StatCar
                 {icon && (
                     <div
                         style={{
-                            width: '48px',
-                            height: '48px',
-                            borderRadius: 'var(--af-radius-sm)',
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '9px',
                             backgroundColor: tone.bg,
                             color: tone.fg,
                             display: 'flex',

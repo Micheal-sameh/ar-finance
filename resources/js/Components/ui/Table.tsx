@@ -10,7 +10,7 @@ function TableRoot({
         <div style={{ overflowX: 'auto' }}>
             <table
                 className={`table align-middle mb-0 ${cards ? 'af-table-cards' : ''} ${className}`}
-                style={{ fontSize: '14px', color: 'var(--af-text)' }}
+                style={{ fontSize: '12.5px', color: 'var(--af-text)' }}
                 {...rest}
             >
                 {children}
@@ -25,9 +25,10 @@ function Head({ children, ...rest }: HTMLAttributes<HTMLTableSectionElement>) {
             <tr
                 style={{
                     color: 'var(--af-label)',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
+                    letterSpacing: '0.04em',
+                    backgroundColor: '#f6f7f4',
                     borderBottom: '1px solid var(--af-border)',
                 }}
             >
@@ -41,7 +42,7 @@ function Row({ className = '', style, ...rest }: HTMLAttributes<HTMLTableRowElem
     return (
         <tr
             className={className}
-            style={{ borderBottom: '1px solid var(--af-border)', ...style }}
+            style={{ borderBottom: '1px solid #e9ebe7', ...style }}
             {...rest}
         />
     );

@@ -4,30 +4,30 @@
  * tokens internally — never hardcode a hex value in a page or component.
  */
 export const colors = {
-    primary: '#2563EB',
-    primaryHover: '#1D4ED8',
-    gold: '#C9922A',
-    navy: '#1E2D4A',
-    bg: '#F1F3F7',
-    surface: '#FFFFFF',
-    text: '#0F172A',
-    label: '#6B7A99',
-    border: '#D1D9E6',
-    success: '#16A34A',
-    danger: '#DC2626',
-    warning: '#D97706',
-    info: '#2563EB',
+    primary: '#52758A',
+    primaryHover: '#3F6174',
+    gold: '#9B8358',
+    navy: '#293940',
+    bg: '#F2F2ED',
+    surface: '#FBFBF8',
+    text: '#34444A',
+    label: '#748084',
+    border: '#D9DDD8',
+    success: '#527864',
+    danger: '#A75F5F',
+    warning: '#9B7848',
+    info: '#52758A',
 } as const;
 
 export type Variant = 'primary' | 'success' | 'warning' | 'danger' | 'neutral' | 'info';
 
 export const variantColors: Record<Variant, { fg: string; bg: string; border: string }> = {
-    primary: { fg: colors.primary, bg: '#EFF4FE', border: '#BFD3FB' },
-    success: { fg: colors.success, bg: '#EAF7EE', border: '#BFE6CB' },
-    warning: { fg: colors.warning, bg: '#FCF3E7', border: '#F3D9AE' },
-    danger: { fg: colors.danger, bg: '#FCEBEB', border: '#F4BFBF' },
-    neutral: { fg: colors.label, bg: '#EEF1F6', border: colors.border },
-    info: { fg: colors.info, bg: '#EFF4FE', border: '#BFD3FB' },
+    primary: { fg: colors.primary, bg: '#EDF2F3', border: '#C9D8DE' },
+    success: { fg: colors.success, bg: '#EDF3EF', border: '#C6D9CE' },
+    warning: { fg: colors.warning, bg: '#F6F1E8', border: '#E3D3B8' },
+    danger: { fg: colors.danger, bg: '#F7EEEE', border: '#E6CACA' },
+    neutral: { fg: colors.label, bg: '#ECEEEA', border: colors.border },
+    info: { fg: colors.info, bg: '#EDF2F3', border: '#C9D8DE' },
 };
 
 export const radius = {
@@ -36,5 +36,5 @@ export const radius = {
 } as const;
 
 export const shadow = {
-    card: '0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 3px 0 rgb(15 23 42 / 0.08)',
+    card: '0 1px 2px rgba(45, 58, 61, 0.025), 0 4px 14px rgba(45, 58, 61, 0.02)',
 } as const;
