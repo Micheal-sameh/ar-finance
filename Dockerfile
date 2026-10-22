@@ -20,7 +20,7 @@ RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 ########################################
 # 2) Build frontend assets (Vite/React)
 ########################################
-FROM node:22-alpine AS frontend
+FROM node:22.23.4-alpine AS frontend
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
