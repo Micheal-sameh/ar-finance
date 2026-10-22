@@ -53,7 +53,7 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
 
     return (
         <div>
-            <div className="d-flex fw-medium mb-2" style={{ fontSize: '12px', color: 'var(--af-label)', textTransform: 'uppercase' }}>
+            <div className="d-flex fw-medium mb-2 af-line-header" style={{ fontSize: '12px', color: 'var(--af-label)', textTransform: 'uppercase' }}>
                 <div style={{ flex: '2 1 0' }}>Description</div>
                 <div style={{ flex: '0 0 90px' }} className="text-end">Qty</div>
                 <div style={{ flex: '1 1 0' }} className="text-end">Unit price</div>
@@ -64,7 +64,7 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
             </div>
 
             {lines.map((line, index) => (
-                <div key={index} className="d-flex align-items-start gap-2 mb-2">
+                <div key={index} className="d-flex align-items-start gap-2 mb-2 af-line-row">
                     <div style={{ flex: '2 1 0' }}>
                         <input
                             type="text"
@@ -84,6 +84,8 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
                             style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
                             value={line.quantity}
                             onChange={(e) => updateLine(index, { quantity: e.target.value })}
+                            placeholder="Qty"
+                            aria-label="Quantity"
                         />
                     </div>
                     <div style={{ flex: '1 1 0' }}>
@@ -95,7 +97,8 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
                             style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
                             value={line.unit_price}
                             onChange={(e) => updateLine(index, { unit_price: e.target.value })}
-                            placeholder="0.00"
+                            placeholder="Unit price"
+                            aria-label="Unit price"
                         />
                     </div>
                     {showTax && (
@@ -109,6 +112,8 @@ export function LineItemEditor({ lines, onChange, accountLabel = 'Account', curr
                                 style={{ borderRadius: 'var(--af-radius-sm)', fontSize: '14px' }}
                                 value={line.tax_rate}
                                 onChange={(e) => updateLine(index, { tax_rate: e.target.value })}
+                                placeholder="Tax %"
+                                aria-label="Tax rate"
                             />
                         </div>
                     )}

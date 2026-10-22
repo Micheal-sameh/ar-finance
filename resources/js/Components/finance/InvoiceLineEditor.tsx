@@ -86,6 +86,7 @@ export function InvoiceLineEditor({ lines, onChange, currency = 'EGP', errors = 
                         min="0.01"
                         value={line.quantity}
                         onChange={(e) => updateLine(index, { quantity: e.target.value })}
+                        placeholder="Qty"
                         aria-label="Quantity"
                     />
                     <input
@@ -104,6 +105,7 @@ export function InvoiceLineEditor({ lines, onChange, currency = 'EGP', errors = 
                         max="100"
                         value={line.tax_rate}
                         onChange={(e) => updateLine(index, { tax_rate: e.target.value })}
+                        placeholder="Tax %"
                         aria-label="Tax rate"
                     />
                     <strong>

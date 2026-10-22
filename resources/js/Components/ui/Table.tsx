@@ -7,7 +7,7 @@ function TableRoot({
     ...rest
 }: HTMLAttributes<HTMLTableElement> & { cards?: boolean }) {
     return (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="af-table-scroll" style={{ overflowX: 'auto' }}>
             <table
                 className={`table af-table align-middle mb-0 ${cards ? 'af-table-cards' : ''} ${className}`}
                 style={{ fontSize: '14px', color: 'var(--af-text)' }}

@@ -38,6 +38,7 @@ interface Props {
 
 export default function CalendarIndex({ viewingAllTenants }: Props) {
     const calendarRef = useRef<FullCalendar>(null);
+    const [isNarrowScreen] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767.98px)').matches);
     const { items, loading: itemsLoading } = useBookableItems(!viewingAllTenants);
 
     const [selection, setSelection] = useState<{ start: string; end: string } | null>(null);
@@ -308,8 +309,15 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                     <FullCalendar
                         ref={calendarRef}
                         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                        initialView="timeGridWeek"
-                        headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }}
+                        initialView={isNarrowScreen ? 'timeGridDay' : 'timeGridWeek'}
+                        headerToolbar={
+                            isNarrowScreen
+                                ? { left: 'prev,next', center: 'title', right: 'today' }
+                                : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' }
+                        }
+                        footerToolbar={isNarrowScreen ? { center: 'dayGridMonth,timeGridWeek,timeGridDay' } : undefined}
+                        titleFormat={isNarrowScreen ? { month: 'short', day: 'numeric', year: 'numeric' } : undefined}
+                        dayHeaderFormat={isNarrowScreen ? { weekday: 'short', day: 'numeric' } : undefined}
                         selectable={!viewingAllTenants}
                         select={viewingAllTenants ? undefined : handleSelect}
                         dateClick={viewingAllTenants ? openDayView : undefined}

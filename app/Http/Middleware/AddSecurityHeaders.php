@@ -38,8 +38,8 @@ class AddSecurityHeaders
     private function contentSecurityPolicy(): string
     {
         $isLocal = app()->environment('local');
-        $vite = $isLocal ? ' http://localhost:5173 http://[::1]:5173' : '';
-        $viteSockets = $isLocal ? ' ws://localhost:5173 ws://[::1]:5173' : '';
+        $vite = $isLocal ? ' http://localhost:5173' : '';
+        $viteSockets = $isLocal ? ' ws://localhost:5173' : '';
 
         return implode('; ', [
             "default-src 'self'",

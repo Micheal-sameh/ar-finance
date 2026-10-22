@@ -86,7 +86,7 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                                     cost_center_id: e.target.value || line.credit ? line.cost_center_id : null,
                                 })
                             }
-                            placeholder='0.00'
+                            placeholder='Debit'
                             aria-label='Debit'
                         />
                     </div>
@@ -104,7 +104,7 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                                     cost_center_id: e.target.value || line.debit ? line.cost_center_id : null,
                                 })
                             }
-                            placeholder='0.00'
+                            placeholder='Credit'
                             aria-label='Credit'
                         />
                     </div>
