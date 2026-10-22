@@ -39,7 +39,7 @@ RUN npm run build
 # 3) Runtime image: php-fpm + scheduler/queue worker, managed by supervisor
 #    (nginx/webserver and MySQL are expected to already run on the host)
 ########################################
-FROM php:8.3-fpm-alpine AS runtime
+FROM php:8.3.36-fpm-alpine AS runtime
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
 
