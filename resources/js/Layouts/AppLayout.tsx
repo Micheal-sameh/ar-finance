@@ -35,6 +35,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="fg-app">
             <div className={`app-shell ${collapsed ? 'collapsed' : ''}`}>
                 <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
+                {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
                 <div className="workspace">
                     <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
                     <main>
