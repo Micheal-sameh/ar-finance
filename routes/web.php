@@ -64,6 +64,10 @@ if (app()->environment('local')) {
 // (that one's for a resource server taking an Authorization header on
 // every request, which doesn't fit a cookie-session Inertia app).
 
+// Not behind `tenant`: a Platform Admin with no active tenant must still be
+// able to log out rather than being bounced to /platform.
+Route::post('logout', LogoutController::class)->middleware(['auth', 'throttle:240,1'])->name('logout');
+
 // Platform Admin area: cross-tenant dashboard/reports and tenant
 // management. Deliberately outside the `tenant` middleware below — a
 // Platform Admin reaches these precisely when they have no active tenant.
@@ -119,7 +123,6 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
-    Route::post('logout', LogoutController::class)->name('logout');
 
     Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::resource('users', UserController::class)->only(['update']);

@@ -85,6 +85,16 @@ class PlatformAdminTest extends TestCase
             ->assertRedirect(route('platform.dashboard'));
     }
 
+    public function test_platform_admin_without_an_active_tenant_can_log_out(): void
+    {
+        $admin = $this->platformAdmin();
+
+        $this->actingAs($admin)->post(route('logout'))
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+    }
+
     public function test_ordinary_user_cannot_access_the_platform_area(): void
     {
         $tenant = Tenant::create(['name' => 'Test Co', 'slug' => 'test-co', 'base_currency' => 'EGP']);

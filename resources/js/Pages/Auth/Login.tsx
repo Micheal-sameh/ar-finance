@@ -8,9 +8,6 @@ interface LoginProps {
     devLoginEnabled: boolean;
 }
 
-const INDIGO = '#6366f1';
-const INDIGO_DARK = '#4f46e5';
-
 export default function Login({ devLoginEnabled }: LoginProps) {
     const form = useForm({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +22,7 @@ export default function Login({ devLoginEnabled }: LoginProps) {
             className="d-flex flex-column"
             style={{
                 minHeight: '100vh',
-                background: 'linear-gradient(135deg, #eef1fd 0%, #f6f7fc 50%, #eef2fb 100%)',
+                background: 'var(--af-bg)',
             }}
         >
             <Head title="Log in" />
@@ -34,9 +31,9 @@ export default function Login({ devLoginEnabled }: LoginProps) {
                 <div className="d-flex align-items-center gap-2">
                     <div
                         className="d-flex align-items-center justify-content-center"
-                        style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: INDIGO }}
+                        style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'var(--af-navy)' }}
                     >
-                        <ShieldCheck size={16} color="#fff" />
+                        <ShieldCheck size={16} color="var(--af-gold)" />
                     </div>
                     <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--af-navy)' }}>
                         Avarewase <span style={{ color: 'var(--af-gold)' }}>Finance</span>
@@ -49,13 +46,13 @@ export default function Login({ devLoginEnabled }: LoginProps) {
                         style={{
                             fontSize: '11px',
                             color: 'var(--af-label)',
-                            backgroundColor: '#fff',
+                            backgroundColor: 'var(--af-surface)',
                             border: '1px solid var(--af-border)',
                             borderRadius: 999,
                             padding: '4px 10px',
                         }}
                     >
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--af-success)', display: 'inline-block' }} />
                         SSO Shield 2.4 Active
                     </span>
                     <span
@@ -63,7 +60,7 @@ export default function Login({ devLoginEnabled }: LoginProps) {
                         style={{
                             fontSize: '11px',
                             color: 'var(--af-label)',
-                            backgroundColor: '#fff',
+                            backgroundColor: 'var(--af-surface)',
                             border: '1px solid var(--af-border)',
                             borderRadius: 999,
                             padding: '4px 10px',
@@ -80,15 +77,15 @@ export default function Login({ devLoginEnabled }: LoginProps) {
                     <Card
                         style={{
                             borderRadius: 16,
-                            boxShadow: '0 0 0 4px rgba(99,102,241,0.08), 0 16px 40px rgba(30,41,90,0.12)',
+                            boxShadow: 'var(--af-shadow), 0 16px 40px rgba(41,57,64,0.10)',
                             padding: '32px',
                         }}
                     >
                         <div
                             className="d-flex align-items-center justify-content-center mx-auto mb-3"
-                            style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(99,102,241,0.12)' }}
+                            style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#f4f0e7' }}
                         >
-                            <ShieldCheck size={22} color={INDIGO} />
+                            <ShieldCheck size={22} color="var(--af-gold)" />
                         </div>
 
                         <div className="text-center mb-4">
@@ -105,7 +102,7 @@ export default function Login({ devLoginEnabled }: LoginProps) {
                             href={route('avarewase.login')}
                             className="d-flex align-items-center justify-content-center gap-2 text-decoration-none fw-medium w-100 mb-3"
                             style={{
-                                background: `linear-gradient(135deg, ${INDIGO} 0%, ${INDIGO_DARK} 100%)`,
+                                backgroundColor: 'var(--af-primary)',
                                 color: '#fff',
                                 borderRadius: 'var(--af-radius-sm)',
                                 padding: '11px 16px',
@@ -233,7 +230,7 @@ export default function Login({ devLoginEnabled }: LoginProps) {
                 </div>
                 <div className="d-flex align-items-center gap-3">
                     <span className="d-flex align-items-center gap-1">
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--af-success)', display: 'inline-block' }} />
                         SOC2 / EAS 8 Audit
                     </span>
                     <span>System Status</span>
