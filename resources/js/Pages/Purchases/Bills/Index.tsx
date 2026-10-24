@@ -60,7 +60,7 @@ export default function BillsIndex({ bills, filters, viewingAllTenants }: Props)
                 title="Bills"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s bills, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s bills, combined. Switch into a service to manage one.'
                         : 'Vendor bills — approving posts spend to the ledger.'
                 }
                 action={
@@ -141,7 +141,7 @@ export default function BillsIndex({ bills, filters, viewingAllTenants }: Props)
                             <Table.HeadCell>Vendor</Table.HeadCell>
                             <Table.HeadCell>Due date</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Total</Table.HeadCell>
                         </Table.Head>
                         <tbody>
@@ -157,7 +157,7 @@ export default function BillsIndex({ bills, filters, viewingAllTenants }: Props)
                                     <Table.Cell label="Status">
                                         <Badge variant={statusVariant(bill.status)}>{bill.status}</Badge>
                                     </Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{bill.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{bill.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Total">
                                         <MoneyDisplay amount={billTotal(bill)} />
                                     </Table.Cell>

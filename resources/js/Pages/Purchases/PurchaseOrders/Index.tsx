@@ -65,7 +65,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters, viewingAl
                 title="Purchase Orders"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s purchase orders, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s purchase orders, combined. Switch into a service to manage one.'
                         : 'Pre-commitments to vendors — convert one to a bill once the goods or work arrive.'
                 }
                 action={
@@ -146,7 +146,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters, viewingAl
                             <Table.HeadCell>Vendor</Table.HeadCell>
                             <Table.HeadCell>Order date</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Total</Table.HeadCell>
                         </Table.Head>
                         <tbody>

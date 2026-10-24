@@ -131,7 +131,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                 title="Bookable Items"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s bookable items, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s bookable items, combined. Switch into a service to manage one.'
                         : 'What people can book on the calendar, its rate, and where it posts once paid.'
                 }
                 action={
@@ -174,7 +174,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                             <Table.HeadCell>Availability</Table.HeadCell>
                             <Table.HeadCell>Rate</Table.HeadCell>
                             <Table.HeadCell>Account</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             {canWrite && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
@@ -208,7 +208,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                                         )}
                                     </Table.Cell>
                                     <Table.Cell label="Account">{item.account?.name}</Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{item.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{item.tenant_name}</Table.Cell>}
                                     {canWrite && (
                                         <Table.Cell className="text-end pe-3" label="Actions">
                                             <div className="d-flex justify-content-end gap-1">

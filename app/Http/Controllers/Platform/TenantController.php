@@ -31,7 +31,7 @@ class TenantController extends Controller
 
         $this->tenants->create($request->validated());
 
-        return redirect()->route('platform.tenants.index')->with('success', 'Tenant created with the standard chart of accounts.');
+        return redirect()->route('platform.tenants.index')->with('success', 'Service created with the standard chart of accounts.');
     }
 
     public function update(SaveTenantRequest $request, Tenant $tenant): RedirectResponse

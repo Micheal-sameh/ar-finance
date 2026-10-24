@@ -38,7 +38,7 @@ export default function PlatformVatReturn({ rows, filters }: Props) {
         <>
             <Head title="Platform VAT Return" />
 
-            <PageHeader title="VAT Return — All Tenants" subtitle="Each tenant's output/input VAT, compared side by side." />
+            <PageHeader title="VAT Return — All Services" subtitle="Each service's output/input VAT, compared side by side." />
 
             <Card>
                 <div className="mb-3">
@@ -59,7 +59,7 @@ export default function PlatformVatReturn({ rows, filters }: Props) {
 
                 <Table>
                     <Table.Head>
-                        <Table.HeadCell className="ps-3">Tenant</Table.HeadCell>
+                        <Table.HeadCell className="ps-3">Service</Table.HeadCell>
                         <Table.HeadCell className="text-end">Output VAT</Table.HeadCell>
                         <Table.HeadCell className="text-end">Input VAT</Table.HeadCell>
                         <Table.HeadCell className="text-end pe-3">Net VAT Payable</Table.HeadCell>

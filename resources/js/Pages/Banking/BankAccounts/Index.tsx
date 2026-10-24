@@ -110,7 +110,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                 title="Bank Accounts"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s bank accounts, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s bank accounts, combined. Switch into a service to manage one.'
                         : 'Each links to a Chart of Accounts cash/bank account for reconciliation.'
                 }
                 action={
@@ -172,7 +172,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>GL Account</Table.HeadCell>
                             <Table.HeadCell>Bank</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
@@ -185,7 +185,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                                     <Table.Cell className="ps-3" label="Name">{bankAccount.name}</Table.Cell>
                                     <Table.Cell label="GL Account">{bankAccount.account ? `${bankAccount.account.code} · ${bankAccount.account.name}` : '—'}</Table.Cell>
                                     <Table.Cell label="Bank">{bankAccount.bank_name ?? '—'}</Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{bankAccount.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{bankAccount.tenant_name}</Table.Cell>}
                                     {!viewingAllTenants && (
                                         <Table.Cell className="text-end pe-3" label="Actions" onClick={(e) => e.stopPropagation()}>
                                             <div className="d-flex justify-content-end gap-1">

@@ -66,7 +66,7 @@ export default function JournalsIndex({ entries, filters, authorOptions, viewing
                 title="Journal Entries"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s posted transactions, combined. Switch into a tenant to post or view one.'
+                        ? 'Every service’s posted transactions, combined. Switch into a service to post or view one.'
                         : 'Every posted transaction in the general ledger.'
                 }
                 action={
@@ -163,7 +163,7 @@ export default function JournalsIndex({ entries, filters, authorOptions, viewing
                             <Table.HeadCell>Description</Table.HeadCell>
                             <Table.HeadCell>Reference</Table.HeadCell>
                             <Table.HeadCell>Source</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Amount</Table.HeadCell>
                         </Table.Head>
                         <tbody>
@@ -179,7 +179,7 @@ export default function JournalsIndex({ entries, filters, authorOptions, viewing
                                     <Table.Cell label="Source">
                                         <Badge variant="neutral">{entry.source_type}</Badge>
                                     </Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{entry.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{entry.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Amount">
                                         <MoneyDisplay amount={entryTotal(entry)} />
                                     </Table.Cell>

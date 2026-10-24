@@ -37,13 +37,13 @@ export function TenantSwitcher({ platform }: { platform: PlatformShare }) {
             >
                 {activeTenant ? <Building2 size={15} /> : <Globe size={15} />}
                 <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--af-text)' }}>
-                    {activeTenant ? activeTenant.name : 'All tenants'}
+                    {activeTenant ? activeTenant.name : 'All services'}
                 </span>
                 <ChevronDown size={14} style={{ color: 'var(--af-label)' }} />
             </Dropdown.Toggle>
 
             <Dropdown.Menu style={{ fontSize: '14px', minWidth: '220px' }}>
-                <Dropdown.Header>Switch tenant</Dropdown.Header>
+                <Dropdown.Header>Switch service</Dropdown.Header>
                 {platform.tenants.map((tenant) => (
                     <Dropdown.Item
                         key={tenant.id}
@@ -57,7 +57,7 @@ export function TenantSwitcher({ platform }: { platform: PlatformShare }) {
                 ))}
                 <Dropdown.Divider />
                 <Dropdown.Item active={!platform.isImpersonating} onClick={stopImpersonating}>
-                    All tenants (Platform view)
+                    All services (Platform view)
                 </Dropdown.Item>
             </Dropdown.Menu>
         </Dropdown>

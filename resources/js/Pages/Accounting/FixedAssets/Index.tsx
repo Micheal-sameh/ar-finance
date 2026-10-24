@@ -51,7 +51,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters, viewingAllTenan
                 title="Fixed Assets"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s fixed assets, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s fixed assets, combined. Switch into a service to manage one.'
                         : 'Depreciation register — straight-line, posted monthly.'
                 }
                 action={
@@ -99,7 +99,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters, viewingAllTenan
                             <Table.HeadCell>Purchase date</Table.HeadCell>
                             <Table.HeadCell className="text-end">Cost</Table.HeadCell>
                             <Table.HeadCell className="text-end">Accumulated Depr.</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Net Book Value</Table.HeadCell>
                         </Table.Head>
                         <tbody>
@@ -117,7 +117,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters, viewingAllTenan
                                     <Table.Cell className="text-end" label="Accumulated Depr.">
                                         <MoneyDisplay amount={asset.accumulated_depreciation} />
                                     </Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{asset.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{asset.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Net Book Value">
                                         <MoneyDisplay amount={netBookValue(asset)} />
                                     </Table.Cell>

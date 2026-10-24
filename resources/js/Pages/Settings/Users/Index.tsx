@@ -32,7 +32,7 @@ function RoleOptions({ roles }: { roles: string[] }) {
                 </optgroup>
             )}
             {tenantRoles.length > 0 && (
-                <optgroup label="Tenant">
+                <optgroup label="Service">
                     {tenantRoles.map((role) => (
                         <option key={role} value={role}>
                             {role}
@@ -57,7 +57,7 @@ function TenantCheckboxes({
 }) {
     return (
         <div>
-            <div style={{ fontSize: '12px', color: 'var(--af-label)', marginBottom: '4px' }}>Tenants</div>
+            <div style={{ fontSize: '12px', color: 'var(--af-label)', marginBottom: '4px' }}>Services</div>
             <div
                 className="d-flex flex-column gap-1 p-2"
                 style={{ border: '1px solid var(--af-border)', borderRadius: 'var(--af-radius-sm)', maxHeight: '180px', overflowY: 'auto' }}
@@ -188,7 +188,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
 
             <PageHeader
                 title="Users"
-                subtitle={viewingAllTenants ? 'Every tenant’s users, combined. Switch into a tenant to manage one.' : 'Everyone with access to this tenant.'}
+                subtitle={viewingAllTenants ? 'Every service’s users, combined. Switch into a service to manage one.' : 'Everyone with access to this service.'}
                 action={
                     canCreate ? (
                         <Button onClick={() => setCreating(true)}>
@@ -249,7 +249,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                             <Table.HeadCell>Membership Code</Table.HeadCell>
                             <Table.HeadCell>Roles</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             {canManage && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
@@ -287,7 +287,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                                         </Badge>
                                     </Table.Cell>
                                     {viewingAllTenants && (
-                                        <Table.Cell label="Tenant">
+                                        <Table.Cell label="Service">
                                             <div className="d-flex align-items-center gap-2">
                                                 <span>{user.tenant_name || 'Unassigned'}</span>
                                                 {canAssignTenant && user.id !== auth.user?.id && (
@@ -296,7 +296,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                                                         className="btn btn-sm p-1"
                                                         style={{ color: 'var(--af-label)' }}
                                                         onClick={() => openManageTenants(user)}
-                                                        aria-label="Manage tenants"
+                                                        aria-label="Manage services"
                                                     >
                                                         <Pencil size={14} />
                                                     </button>
@@ -368,14 +368,14 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
             <Modal
                 open={managingTenants !== null}
                 onClose={() => setManagingTenants(null)}
-                title={managingTenants ? `Tenants for ${managingTenants.name}` : ''}
+                title={managingTenants ? `Services for ${managingTenants.name}` : ''}
                 footer={
                     <>
                         <Button variant="outline" onClick={() => setManagingTenants(null)}>
                             Cancel
                         </Button>
                         <Button onClick={submitTenants} loading={tenantForm.processing}>
-                            Save tenants
+                            Save services
                         </Button>
                     </>
                 }

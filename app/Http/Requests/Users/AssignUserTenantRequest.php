@@ -18,4 +18,15 @@ class AssignUserTenantRequest extends FormRequest
             'tenant_ids.*' => ['integer', 'distinct', 'exists:tenants,id'],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'tenant_ids' => 'services',
+            'tenant_ids.*' => 'service',
+        ];
+    }
 }

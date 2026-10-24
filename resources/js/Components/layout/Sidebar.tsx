@@ -90,7 +90,7 @@ export function Sidebar({
                         </span>
                         <span>
                             <small>ORGANIZATION</small>
-                            <b>{activeTenant ? activeTenant.name : 'All tenants'}</b>
+                            <b>{activeTenant ? activeTenant.name : 'All services'}</b>
                         </span>
                         <Icon name="chevron" size={15} />
                     </button>
@@ -104,7 +104,7 @@ export function Sidebar({
                                     router.post(route('platform.stop-impersonating'));
                                 }}
                             >
-                                All tenants
+                                All services
                                 <span>{!activeTenant && <Icon name="check" size={14} />}</span>
                             </button>
                             {platform.tenants.map((tenant) => (

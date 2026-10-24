@@ -39,7 +39,7 @@ export default function PlatformBalanceSheet({ rows, filters }: Props) {
         <>
             <Head title="Platform Balance Sheet" />
 
-            <PageHeader title="Balance Sheet — All Tenants" subtitle="Each tenant's assets, liabilities and equity, compared side by side." />
+            <PageHeader title="Balance Sheet — All Services" subtitle="Each service's assets, liabilities and equity, compared side by side." />
 
             <Card>
                 <div className="mb-3">
@@ -57,7 +57,7 @@ export default function PlatformBalanceSheet({ rows, filters }: Props) {
 
                 <Table>
                     <Table.Head>
-                        <Table.HeadCell className="ps-3">Tenant</Table.HeadCell>
+                        <Table.HeadCell className="ps-3">Service</Table.HeadCell>
                         <Table.HeadCell className="text-end">Total Assets</Table.HeadCell>
                         <Table.HeadCell className="text-end">Total Liabilities</Table.HeadCell>
                         <Table.HeadCell className="text-end">Total Equity</Table.HeadCell>

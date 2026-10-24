@@ -90,7 +90,7 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                 title="Employees"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s employees, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s employees, combined. Switch into a service to manage one.'
                         : 'Everyone on payroll.'
                 }
                 action={
@@ -129,7 +129,7 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                             <Table.HeadCell>Job title</Table.HeadCell>
                             <Table.HeadCell className="text-end">Salary</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>

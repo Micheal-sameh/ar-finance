@@ -91,14 +91,14 @@ export const navConfig: NavConfigGroup[] = [
         platformOnly: true,
         items: [
             { label: 'Dashboard', routeName: 'platform.dashboard', icon: Globe },
-            { label: 'Tenants', routeName: 'platform.tenants.index', icon: Building2 },
+            { label: 'Services', routeName: 'platform.tenants.index', icon: Building2 },
         ],
     },
     {
         // Every tenant's own data, combined and read-only — see
         // TenantContext::isViewingAllTenants(). Switch into a tenant (nav
         // dropdown) to create/edit/delete instead.
-        label: 'All Tenants',
+        label: 'All Services',
         platformOnly: true,
         items: [
             { label: 'Chart of Accounts', routeName: 'accounts.index', icon: ListTree },

@@ -299,7 +299,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                 title="Booking Calendar"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s bookings, combined and read-only. Switch into a tenant to book, cancel, or collect payment.'
+                        ? 'Every service’s bookings, combined and read-only. Switch into a service to book, cancel, or collect payment.'
                         : 'Select a time slot on the calendar to book it.'
                 }
             />
@@ -640,7 +640,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                     <div className="d-flex flex-column gap-3">
                         {Object.entries(
                             dayViewBookings.reduce<Record<string, BookingEvent[]>>((groups, booking) => {
-                                const tenant = booking.tenant_name ?? 'Unknown tenant';
+                                const tenant = booking.tenant_name ?? 'Unknown service';
                                 (groups[tenant] ??= []).push(booking);
                                 return groups;
                             }, {}),

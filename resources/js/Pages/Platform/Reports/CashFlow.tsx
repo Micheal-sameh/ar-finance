@@ -38,7 +38,7 @@ export default function PlatformCashFlow({ rows, filters }: Props) {
         <>
             <Head title="Platform Cash Flow" />
 
-            <PageHeader title="Cash Flow — All Tenants" subtitle="Each tenant's cash position, compared side by side." />
+            <PageHeader title="Cash Flow — All Services" subtitle="Each service's cash position, compared side by side." />
 
             <Card>
                 <div className="mb-3">
@@ -59,7 +59,7 @@ export default function PlatformCashFlow({ rows, filters }: Props) {
 
                 <Table>
                     <Table.Head>
-                        <Table.HeadCell className="ps-3">Tenant</Table.HeadCell>
+                        <Table.HeadCell className="ps-3">Service</Table.HeadCell>
                         <Table.HeadCell className="text-end">Beginning Cash</Table.HeadCell>
                         <Table.HeadCell className="text-end">Ending Cash</Table.HeadCell>
                         <Table.HeadCell className="text-end pe-3">Net Change</Table.HeadCell>

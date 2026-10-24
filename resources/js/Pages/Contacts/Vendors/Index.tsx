@@ -84,7 +84,7 @@ export default function VendorsIndex({ vendors, filters, viewingAllTenants }: Pr
                 title="Vendors"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s vendors, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s vendors, combined. Switch into a service to manage one.'
                         : 'Everyone you record expenses against.'
                 }
                 action={
@@ -122,7 +122,7 @@ export default function VendorsIndex({ vendors, filters, viewingAllTenants }: Pr
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Email</Table.HeadCell>
                             <Table.HeadCell>Payment terms</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
@@ -135,7 +135,7 @@ export default function VendorsIndex({ vendors, filters, viewingAllTenants }: Pr
                                     <Table.Cell className="ps-3" label="Name">{vendor.name}</Table.Cell>
                                     <Table.Cell label="Email">{vendor.email ?? '—'}</Table.Cell>
                                     <Table.Cell label="Payment terms">{vendor.payment_terms ?? '—'}</Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{vendor.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{vendor.tenant_name}</Table.Cell>}
                                     {!viewingAllTenants && (
                                         <Table.Cell className="text-end pe-3" label="Actions">
                                             <div className="d-flex justify-content-end gap-1">

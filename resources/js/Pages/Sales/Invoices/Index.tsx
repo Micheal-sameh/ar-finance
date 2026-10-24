@@ -70,7 +70,7 @@ export default function InvoicesIndex({ invoices, filters, statusCounts, viewing
                 title="Invoices"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s invoices, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s invoices, combined. Switch into a service to manage one.'
                         : 'Create, send, and track customer invoices.'
                 }
                 action={

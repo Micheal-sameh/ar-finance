@@ -24,12 +24,12 @@ export function MemberTenantSwitcher({ memberTenants }: { memberTenants: MemberT
                 style={{ padding: '4px 8px', borderRadius: 'var(--af-radius-sm)' }}
             >
                 <Building2 size={15} />
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--af-text)' }}>{active?.name ?? 'Select tenant'}</span>
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--af-text)' }}>{active?.name ?? 'Select service'}</span>
                 <ChevronDown size={14} style={{ color: 'var(--af-label)' }} />
             </Dropdown.Toggle>
 
             <Dropdown.Menu style={{ fontSize: '14px', minWidth: '220px' }}>
-                <Dropdown.Header>Switch tenant</Dropdown.Header>
+                <Dropdown.Header>Switch service</Dropdown.Header>
                 {memberTenants.tenants.map((tenant) => (
                     <Dropdown.Item
                         key={tenant.id}

@@ -22,7 +22,7 @@ class EnsureTenantContext
     {
         if ($this->tenantContext->isPlatformAdmin() && ! $this->tenantContext->isImpersonating()) {
             return redirect()->route('platform.dashboard')
-                ->with('error', 'Select a tenant to manage its data.');
+                ->with('error', 'Select a service to manage its data.');
         }
 
         return $next($request);

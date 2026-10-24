@@ -39,7 +39,7 @@ export default function PlatformTrialBalance({ rows, filters }: Props) {
         <>
             <Head title="Platform Trial Balance" />
 
-            <PageHeader title="Trial Balance — All Tenants" subtitle="Each tenant's own closing balances, compared side by side." />
+            <PageHeader title="Trial Balance — All Services" subtitle="Each service's own closing balances, compared side by side." />
 
             <Card>
                 <div className="mb-3">
@@ -60,7 +60,7 @@ export default function PlatformTrialBalance({ rows, filters }: Props) {
 
                 <Table>
                     <Table.Head>
-                        <Table.HeadCell className="ps-3">Tenant</Table.HeadCell>
+                        <Table.HeadCell className="ps-3">Service</Table.HeadCell>
                         <Table.HeadCell className="text-end">Total Debit</Table.HeadCell>
                         <Table.HeadCell className="text-end">Total Credit</Table.HeadCell>
                         <Table.HeadCell className="text-end pe-3">Balanced</Table.HeadCell>

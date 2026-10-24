@@ -71,8 +71,8 @@ export default function PlatformDashboard({ summary, baseCurrency }: Props) {
                 title="Platform Dashboard"
                 subtitle={
                     summary.mixed_currencies
-                        ? 'Combined totals across all active tenants — tenants use different base currencies, so totals are summed without FX conversion.'
-                        : 'Combined totals across all active tenants.'
+                        ? 'Combined totals across all active services — services use different base currencies, so totals are summed without FX conversion.'
+                        : 'Combined totals across all active services.'
                 }
             />
 
@@ -111,15 +111,15 @@ export default function PlatformDashboard({ summary, baseCurrency }: Props) {
 
             <Card padded={false} className="mb-3">
                 <div className="p-3" style={{ borderBottom: '1px solid var(--af-border)', fontSize: '14px', fontWeight: 600, color: 'var(--af-text)' }}>
-                    By Tenant
+                    By Service
                 </div>
 
                 {summary.by_tenant.length === 0 ? (
-                    <EmptyState icon={<PiggyBank size={20} />} title="No active tenants" description="Create a tenant to see it here." />
+                    <EmptyState icon={<PiggyBank size={20} />} title="No active services" description="Create a service to see it here." />
                 ) : (
                     <Table cards>
                         <Table.Head>
-                            <Table.HeadCell className="ps-3">Tenant</Table.HeadCell>
+                            <Table.HeadCell className="ps-3">Service</Table.HeadCell>
                             <Table.HeadCell className="text-end">Cash</Table.HeadCell>
                             <Table.HeadCell className="text-end">Receivables</Table.HeadCell>
                             <Table.HeadCell className="text-end">Payables</Table.HeadCell>
@@ -128,7 +128,7 @@ export default function PlatformDashboard({ summary, baseCurrency }: Props) {
                         <tbody>
                             {summary.by_tenant.map((row) => (
                                 <Table.Row key={row.tenant_id}>
-                                    <Table.Cell className="ps-3" label="Tenant">
+                                    <Table.Cell className="ps-3" label="Service">
                                         {row.tenant_name}
                                     </Table.Cell>
                                     <Table.Cell className="text-end" label="Cash">
@@ -165,7 +165,7 @@ export default function PlatformDashboard({ summary, baseCurrency }: Props) {
                     <Table>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Date</Table.HeadCell>
-                            <Table.HeadCell>Tenant</Table.HeadCell>
+                            <Table.HeadCell>Service</Table.HeadCell>
                             <Table.HeadCell>Description</Table.HeadCell>
                             <Table.HeadCell>Source</Table.HeadCell>
                             <Table.HeadCell className="text-end pe-3">Amount</Table.HeadCell>

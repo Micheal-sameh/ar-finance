@@ -89,7 +89,7 @@ export default function BookingTypesIndex({ types, viewingAllTenants, canManage 
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Used on</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             {canWrite && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
@@ -101,7 +101,7 @@ export default function BookingTypesIndex({ types, viewingAllTenants, canManage 
                                     <Table.Cell label="Used on">
                                         {type.bookable_items_count} {type.bookable_items_count === 1 ? 'item' : 'items'}
                                     </Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{type.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{type.tenant_name}</Table.Cell>}
                                     {canWrite && (
                                         <Table.Cell className="text-end pe-3" label="Actions">
                                             <div className="d-flex justify-content-end gap-1">

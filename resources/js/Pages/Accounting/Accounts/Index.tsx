@@ -529,7 +529,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                 title="Chart of Accounts"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s chart of accounts, combined. Switch into a tenant to manage it.'
+                        ? 'Every service’s chart of accounts, combined. Switch into a service to manage it.'
                         : 'Every posting account in the ledger, grouped by type.'
                 }
                 action={
@@ -604,7 +604,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                             <Table.HeadCell>Name</Table.HeadCell>
                             <Table.HeadCell>Normal Balance</Table.HeadCell>
                             <Table.HeadCell>Currency</Table.HeadCell>
-                            <Table.HeadCell>Tenants</Table.HeadCell>
+                            <Table.HeadCell>Services</Table.HeadCell>
                             <Table.HeadCell className="text-end">Balance</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
                         </Table.Head>

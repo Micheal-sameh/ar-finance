@@ -36,7 +36,7 @@ export default function PlatformAging({ rows, filters }: Props) {
         <>
             <Head title="Platform AR/AP Aging" />
 
-            <PageHeader title="AR/AP Aging — All Tenants" subtitle="Each tenant's outstanding receivables and payables, compared side by side." />
+            <PageHeader title="AR/AP Aging — All Services" subtitle="Each service's outstanding receivables and payables, compared side by side." />
 
             <Card>
                 <div className="mb-3">
@@ -54,7 +54,7 @@ export default function PlatformAging({ rows, filters }: Props) {
 
                 <Table>
                     <Table.Head>
-                        <Table.HeadCell className="ps-3">Tenant</Table.HeadCell>
+                        <Table.HeadCell className="ps-3">Service</Table.HeadCell>
                         <Table.HeadCell className="text-end">Total AR</Table.HeadCell>
                         <Table.HeadCell className="text-end pe-3">Total AP</Table.HeadCell>
                     </Table.Head>

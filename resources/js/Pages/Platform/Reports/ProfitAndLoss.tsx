@@ -38,7 +38,7 @@ export default function PlatformProfitAndLoss({ rows, filters }: Props) {
         <>
             <Head title="Platform Profit & Loss" />
 
-            <PageHeader title="Profit & Loss — All Tenants" subtitle="Each tenant's revenue, expenses and net profit, compared side by side." />
+            <PageHeader title="Profit & Loss — All Services" subtitle="Each service's revenue, expenses and net profit, compared side by side." />
 
             <Card>
                 <div className="mb-3">
@@ -59,7 +59,7 @@ export default function PlatformProfitAndLoss({ rows, filters }: Props) {
 
                 <Table>
                     <Table.Head>
-                        <Table.HeadCell className="ps-3">Tenant</Table.HeadCell>
+                        <Table.HeadCell className="ps-3">Service</Table.HeadCell>
                         <Table.HeadCell className="text-end">Revenue</Table.HeadCell>
                         <Table.HeadCell className="text-end">Expenses</Table.HeadCell>
                         <Table.HeadCell className="text-end pe-3">Net Profit</Table.HeadCell>

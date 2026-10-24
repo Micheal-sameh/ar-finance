@@ -71,14 +71,14 @@ export default function TenantsIndex({ tenants }: Props) {
 
     return (
         <>
-            <Head title="Tenants" />
+            <Head title="Services" />
 
             <PageHeader
-                title="Tenants"
-                subtitle="Create and configure tenants. Every new tenant starts with the standard chart of accounts."
+                title="Services"
+                subtitle="Create and configure services. Every new service starts with the standard chart of accounts."
                 action={
                     <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                        New Tenant
+                        New Service
                     </Button>
                 }
             />
@@ -87,9 +87,9 @@ export default function TenantsIndex({ tenants }: Props) {
                 {tenants.data.length === 0 ? (
                     <EmptyState
                         icon={<Building2 size={20} />}
-                        title="No tenants yet"
-                        description="Create the first tenant to get started."
-                        action={<Button onClick={openCreate}>New Tenant</Button>}
+                        title="No services yet"
+                        description="Create the first service to get started."
+                        action={<Button onClick={openCreate}>New Service</Button>}
                     />
                 ) : (
                     <Table cards>
@@ -137,14 +137,14 @@ export default function TenantsIndex({ tenants }: Props) {
             <Modal
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
-                title={editing ? 'Edit Tenant' : 'New Tenant'}
+                title={editing ? 'Edit Service' : 'New Service'}
                 footer={
                     <>
                         <Button variant="outline" onClick={() => setModalOpen(false)}>
                             Cancel
                         </Button>
                         <Button onClick={submit} loading={form.processing}>
-                            {editing ? 'Save changes' : 'Create tenant'}
+                            {editing ? 'Save changes' : 'Create service'}
                         </Button>
                     </>
                 }

@@ -103,7 +103,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
 
             <PageHeader
                 title="Clients"
-                subtitle={viewingAllTenants ? 'Every tenant’s clients, combined. Switch into a tenant to manage one.' : 'Everyone you invoice.'}
+                subtitle={viewingAllTenants ? 'Every service’s clients, combined. Switch into a service to manage one.' : 'Everyone you invoice.'}
                 action={
                     !viewingAllTenants && (
                         <div className="d-flex gap-2">
@@ -164,7 +164,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
                             <Table.HeadCell>Email</Table.HeadCell>
                             <Table.HeadCell>Phone</Table.HeadCell>
                             <Table.HeadCell>Currency</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
@@ -178,7 +178,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
                                     <Table.Cell label="Email">{client.email ?? '—'}</Table.Cell>
                                     <Table.Cell label="Phone">{client.phone ?? '—'}</Table.Cell>
                                     <Table.Cell label="Currency">{client.currency}</Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{client.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{client.tenant_name}</Table.Cell>}
                                     {!viewingAllTenants && (
                                         <Table.Cell className="text-end pe-3" label="Actions">
                                             <div className="d-flex justify-content-end gap-1">

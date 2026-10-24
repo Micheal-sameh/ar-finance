@@ -120,7 +120,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                 title="P&C Centers"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s cost/profit centers, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s cost/profit centers, combined. Switch into a service to manage one.'
                         : `Budget vs actual, ${filters.from} to ${filters.to}.`
                 }
                 action={

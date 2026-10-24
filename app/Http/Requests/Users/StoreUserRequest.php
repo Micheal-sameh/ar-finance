@@ -65,4 +65,15 @@ class StoreUserRequest extends FormRequest
 
         return $key === null ? $data : data_get($data, $key, $default);
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'tenant_ids' => 'services',
+            'tenant_ids.*' => 'service',
+        ];
+    }
 }

@@ -52,7 +52,7 @@ export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: 
                 title="Expenses"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every tenant’s expenses, combined. Switch into a tenant to manage one.'
+                        ? 'Every service’s expenses, combined. Switch into a service to manage one.'
                         : 'Spend recorded against the business.'
                 }
                 action={
@@ -138,7 +138,7 @@ export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: 
                             <Table.HeadCell>Category</Table.HeadCell>
                             <Table.HeadCell>Vendor</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
-                            {viewingAllTenants && <Table.HeadCell>Tenant</Table.HeadCell>}
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             <Table.HeadCell className="text-end pe-3">Amount</Table.HeadCell>
                         </Table.Head>
                         <tbody>
@@ -155,7 +155,7 @@ export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: 
                                     <Table.Cell label="Status">
                                         <Badge variant={expenseStatusVariant(expense.status)}>{expense.status}</Badge>
                                     </Table.Cell>
-                                    {viewingAllTenants && <Table.Cell label="Tenant">{expense.tenant_name}</Table.Cell>}
+                                    {viewingAllTenants && <Table.Cell label="Service">{expense.tenant_name}</Table.Cell>}
                                     <Table.Cell className="text-end pe-3" label="Amount">
                                         <MoneyDisplay amount={expense.amount} />
                                     </Table.Cell>
