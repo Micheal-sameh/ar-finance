@@ -45,9 +45,8 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', Password::min(8)],
             'role' => ['required', 'string', Rule::exists('roles', 'name')->where('guard_name', 'web'), new GrantableRole],
             'status' => ['required', new Enum(UserStatus::class)],
-            'tenant_id' => $isPlatformRole
-                ? ['nullable']
-                : ['required', 'integer', 'exists:tenants,id'],
+            'tenant_ids' => $isPlatformRole ? ['nullable', 'array'] : ['required', 'array', 'min:1'],
+            'tenant_ids.*' => ['integer', 'distinct', 'exists:tenants,id'],
         ];
     }
 
@@ -59,8 +58,10 @@ class StoreUserRequest extends FormRequest
         $data = parent::validated();
 
         if (in_array($data['role'], self::PLATFORM_ROLES, true)) {
-            $data['tenant_id'] = null;
+            $data['tenant_ids'] = [];
         }
+
+        $data['tenant_ids'] = array_map('intval', $data['tenant_ids'] ?? []);
 
         return $key === null ? $data : data_get($data, $key, $default);
     }

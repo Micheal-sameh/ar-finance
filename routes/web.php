@@ -27,6 +27,7 @@ use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TenantSwitchController;
 use App\Http\Controllers\TwoFactorChallengeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
@@ -100,6 +101,7 @@ Route::middleware(['auth', 'active', 'permission:platform.access', 'throttle:240
 // action (create/update/destroy/...) stays behind `tenant`, since those
 // require impersonating a specific tenant.
 Route::middleware(['auth', 'active'])->group(function () {
+    Route::post('tenants/{tenant}/switch', TenantSwitchController::class)->name('tenant.switch');
     Route::get('accounts', [AccountController::class, 'index'])->name('accounts.index');
     Route::get('accounts/options', [AccountController::class, 'options'])->name('accounts.options');
     Route::get('journals', [JournalEntryController::class, 'index'])->name('journals.index');

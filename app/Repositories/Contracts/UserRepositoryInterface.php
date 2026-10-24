@@ -12,13 +12,17 @@ interface UserRepositoryInterface
     public function find(int $id): ?User;
 
     /**
-     * @param  array{name: string, email: ?string, phone: ?string, password: string, tenant_id: ?int, status: string}  $attributes
+     * @param  array{name: string, email: ?string, phone: ?string, password: string, status: string}  $attributes
+     * @param  array<int, int>  $tenantIds  the first one becomes the user's default tenant
      */
-    public function create(array $attributes, string $role): User;
+    public function create(array $attributes, array $tenantIds, string $role): User;
 
     public function update(User $user, string $status, string $role): User;
 
-    public function assignTenant(User $user, ?int $tenantId): User;
+    /**
+     * @param  array<int, int>  $tenantIds
+     */
+    public function assignTenants(User $user, array $tenantIds): User;
 
     public function assignRole(User $user, string $role): User;
 }

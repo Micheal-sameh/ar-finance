@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -110,9 +111,36 @@ class User extends Authenticatable
         return true;
     }
 
+    protected static function booted(): void
+    {
+        // The default tenant is always one of the user's tenants.
+        static::saved(function (User $user) {
+            if ($user->tenant_id !== null && ($user->wasRecentlyCreated || $user->wasChanged('tenant_id'))) {
+                $user->tenants()->syncWithoutDetaching([$user->tenant_id]);
+                $user->unsetRelation('tenants');
+            }
+        });
+    }
+
+    /**
+     * The user's default tenant (used until they switch to another).
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * Every tenant the user may work in.
+     */
+    public function tenants(): BelongsToMany
+    {
+        return $this->belongsToMany(Tenant::class)->withTimestamps();
+    }
+
+    public function canAccessTenant(int $tenantId): bool
+    {
+        return $this->loadMissing('tenants')->tenants->contains('id', $tenantId);
     }
 
     /**

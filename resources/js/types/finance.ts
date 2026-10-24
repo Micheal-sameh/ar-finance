@@ -430,7 +430,7 @@ export interface AppUser {
     status: UserStatus;
     roles: string[];
     tenant_name?: string | null;
-    tenant_id?: number | null;
+    tenant_ids?: number[] | null;
 }
 
 export type PayrollRunStatus = 'draft' | 'approved' | 'paid';

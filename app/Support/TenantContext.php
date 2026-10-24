@@ -35,7 +35,19 @@ class TenantContext
             return null;
         }
 
-        return $user->isPlatformAdmin() ? session('acting_tenant_id') : $user->tenant_id;
+        if ($user->isPlatformAdmin()) {
+            return session('acting_tenant_id');
+        }
+
+        // A multi-tenant user works in whichever of their tenants they last
+        // switched to, falling back to their default one.
+        $active = session('active_tenant_id');
+
+        if ($active !== null && $user->canAccessTenant((int) $active)) {
+            return (int) $active;
+        }
+
+        return $user->tenant_id;
     }
 
     public function tenant(): ?Tenant

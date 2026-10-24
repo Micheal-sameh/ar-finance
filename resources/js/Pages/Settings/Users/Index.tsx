@@ -44,6 +44,41 @@ function RoleOptions({ roles }: { roles: string[] }) {
     );
 }
 
+function TenantCheckboxes({
+    tenants,
+    value,
+    onChange,
+    error,
+}: {
+    tenants: Pick<Tenant, 'id' | 'name'>[];
+    value: number[];
+    onChange: (next: number[]) => void;
+    error?: string;
+}) {
+    return (
+        <div>
+            <div style={{ fontSize: '12px', color: 'var(--af-label)', marginBottom: '4px' }}>Tenants</div>
+            <div
+                className="d-flex flex-column gap-1 p-2"
+                style={{ border: '1px solid var(--af-border)', borderRadius: 'var(--af-radius-sm)', maxHeight: '180px', overflowY: 'auto' }}
+            >
+                {tenants.map((tenant) => (
+                    <label key={tenant.id} className="d-flex align-items-center gap-2" style={{ fontSize: '14px' }}>
+                        <input
+                            type="checkbox"
+                            className="form-check-input m-0"
+                            checked={value.includes(tenant.id)}
+                            onChange={(e) => onChange(e.target.checked ? [...value, tenant.id] : value.filter((id) => id !== tenant.id))}
+                        />
+                        {tenant.name}
+                    </label>
+                ))}
+            </div>
+            {error && <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>{error}</div>}
+        </div>
+    );
+}
+
 interface Props {
     users: Paginated<AppUser>;
     filters: { status?: string; role?: string; search?: string };
@@ -60,6 +95,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
     const [search, setSearch] = useState(filters.search ?? '');
     const [editing, setEditing] = useState<AppUser | null>(null);
     const [creating, setCreating] = useState(false);
+    const [managingTenants, setManagingTenants] = useState<AppUser | null>(null);
     const { auth } = usePage<{ auth: { user: { id: number } | null } }>().props;
 
     const form = useForm<{ status: UserStatus; role: string }>({
@@ -73,9 +109,10 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
         phone: '',
         password: '',
         role: '',
-        tenant_id: '',
+        tenant_ids: [] as number[],
         status: 'active' as UserStatus,
     });
+    const tenantForm = useForm<{ tenant_ids: number[] }>({ tenant_ids: [] });
     const createIsPlatformRole = PLATFORM_ROLES.includes(createForm.data.role);
 
     function submitCreate(e: FormEvent) {
@@ -122,12 +159,23 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
         });
     }
 
-    function assignTenant(user: AppUser, tenantId: string) {
-        router.put(
-            route('platform.users.assign-tenant', user.id),
-            { tenant_id: tenantId || null },
-            { preserveScroll: true, preserveState: true },
-        );
+    function openManageTenants(user: AppUser) {
+        setManagingTenants(user);
+        tenantForm.setData('tenant_ids', user.tenant_ids ?? []);
+        tenantForm.clearErrors();
+    }
+
+    function submitTenants(e: FormEvent) {
+        e.preventDefault();
+
+        if (!managingTenants) {
+            return;
+        }
+
+        tenantForm.put(route('platform.users.assign-tenant', managingTenants.id), {
+            preserveScroll: true,
+            onSuccess: () => setManagingTenants(null),
+        });
     }
 
     function assignRole(user: AppUser, role: string) {
@@ -240,22 +288,20 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                                     </Table.Cell>
                                     {viewingAllTenants && (
                                         <Table.Cell label="Tenant">
-                                            {canAssignTenant && user.id !== auth.user?.id ? (
-                                                <Select
-                                                    value={user.tenant_id ?? ''}
-                                                    onChange={(e) => assignTenant(user, e.target.value)}
-                                                    style={{ maxWidth: '180px' }}
-                                                >
-                                                    <option value="">Unassigned</option>
-                                                    {tenants.map((tenant) => (
-                                                        <option key={tenant.id} value={tenant.id}>
-                                                            {tenant.name}
-                                                        </option>
-                                                    ))}
-                                                </Select>
-                                            ) : (
-                                                user.tenant_name
-                                            )}
+                                            <div className="d-flex align-items-center gap-2">
+                                                <span>{user.tenant_name || 'Unassigned'}</span>
+                                                {canAssignTenant && user.id !== auth.user?.id && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm p-1"
+                                                        style={{ color: 'var(--af-label)' }}
+                                                        onClick={() => openManageTenants(user)}
+                                                        aria-label="Manage tenants"
+                                                    >
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </Table.Cell>
                                     )}
                                     {canManage && (
@@ -305,19 +351,45 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                         <RoleOptions roles={availableRoles} />
                     </Select>
                     {!createIsPlatformRole && (
-                        <Select label="Tenant" value={createForm.data.tenant_id} onChange={(e) => createForm.setData('tenant_id', e.target.value)} error={createForm.errors.tenant_id}>
-                            <option value="">Select a tenant…</option>
-                            {tenants.map((tenant) => (
-                                <option key={tenant.id} value={tenant.id}>
-                                    {tenant.name}
-                                </option>
-                            ))}
-                        </Select>
+                        <TenantCheckboxes
+                            tenants={tenants}
+                            value={createForm.data.tenant_ids}
+                            onChange={(next) => createForm.setData('tenant_ids', next)}
+                            error={createForm.errors.tenant_ids}
+                        />
                     )}
                     <Select label="Status" value={createForm.data.status} onChange={(e) => createForm.setData('status', e.target.value as UserStatus)} error={createForm.errors.status}>
                         <option value="active">Active</option>
                         <option value="suspended">Suspended</option>
                     </Select>
+                </form>
+            </Modal>
+
+            <Modal
+                open={managingTenants !== null}
+                onClose={() => setManagingTenants(null)}
+                title={managingTenants ? `Tenants for ${managingTenants.name}` : ''}
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setManagingTenants(null)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={submitTenants} loading={tenantForm.processing}>
+                            Save tenants
+                        </Button>
+                    </>
+                }
+            >
+                <form onSubmit={submitTenants}>
+                    <TenantCheckboxes
+                        tenants={tenants}
+                        value={tenantForm.data.tenant_ids}
+                        onChange={(next) => tenantForm.setData('tenant_ids', next)}
+                        error={tenantForm.errors.tenant_ids}
+                    />
+                    <div style={{ fontSize: '12px', color: 'var(--af-label)', marginTop: '8px' }}>
+                        The first tenant they were given stays their default; they can switch between the others from the top bar.
+                    </div>
                 </form>
             </Modal>
 

@@ -21,7 +21,7 @@ class DevSwitchUserController extends Controller
         Auth::login($user);
 
         $request->session()->regenerate();
-        $request->session()->forget('acting_tenant_id');
+        $request->session()->forget(['acting_tenant_id', 'active_tenant_id']);
 
         return redirect()->route('dashboard')->with('success', "Switched to {$user->name}.");
     }

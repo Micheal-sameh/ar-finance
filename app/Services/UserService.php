@@ -19,11 +19,12 @@ class UserService
     }
 
     /**
-     * @param  array{name: string, email: ?string, phone: ?string, password: string, tenant_id: ?int, status: string}  $attributes
+     * @param  array{name: string, email: ?string, phone: ?string, password: string, status: string}  $attributes
+     * @param  array<int, int>  $tenantIds
      */
-    public function create(array $attributes, string $role): User
+    public function create(array $attributes, array $tenantIds, string $role): User
     {
-        return $this->users->create($attributes, $role);
+        return $this->users->create($attributes, $tenantIds, $role);
     }
 
     public function update(User $user, UserStatus $status, string $role): User
@@ -31,9 +32,12 @@ class UserService
         return $this->users->update($user, $status->value, $role);
     }
 
-    public function assignTenant(User $user, ?int $tenantId): User
+    /**
+     * @param  array<int, int>  $tenantIds
+     */
+    public function assignTenants(User $user, array $tenantIds): User
     {
-        return $this->users->assignTenant($user, $tenantId);
+        return $this->users->assignTenants($user, $tenantIds);
     }
 
     public function assignRole(User $user, string $role): User

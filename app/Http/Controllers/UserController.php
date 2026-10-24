@@ -43,8 +43,8 @@ class UserController extends Controller
                 'membership_code' => $user->avarewase_membership_code,
                 'status' => $user->status->value,
                 'roles' => $user->roles->pluck('name')->all(),
-                'tenant_name' => $viewingAllTenants ? $user->tenant?->name : null,
-                'tenant_id' => $viewingAllTenants ? $user->tenant_id : null,
+                'tenant_name' => $viewingAllTenants ? $user->tenants->pluck('name')->implode(', ') : null,
+                'tenant_ids' => $viewingAllTenants ? $user->tenants->pluck('id')->all() : null,
             ]);
 
         $canAssignTenant = $viewingAllTenants && $request->user()->can('tenants.manage');
@@ -88,9 +88,10 @@ class UserController extends Controller
     {
         $data = $request->validated();
         $role = $data['role'];
-        unset($data['role']);
+        $tenantIds = $data['tenant_ids'];
+        unset($data['role'], $data['tenant_ids']);
 
-        $this->users->create($data, $role);
+        $this->users->create($data, $tenantIds, $role);
 
         return back()->with('success', 'User created.');
     }
@@ -116,7 +117,7 @@ class UserController extends Controller
             return back()->with('error', "You can't reassign your own account.");
         }
 
-        $this->users->assignTenant($user, $request->validated('tenant_id'));
+        $this->users->assignTenants($user, array_map('intval', $request->validated('tenant_ids') ?? []));
 
         return redirect()->route('users.index')->with('success', 'User reassigned.');
     }
@@ -147,6 +148,8 @@ class UserController extends Controller
             return;
         }
 
-        abort_unless($target->tenant_id === $actor->tenant_id && ! $target->isPlatformAdmin(), 403);
+        $tenantId = $this->tenantContext->id();
+
+        abort_unless($tenantId !== null && $target->canAccessTenant($tenantId) && ! $target->isPlatformAdmin(), 403);
     }
 }

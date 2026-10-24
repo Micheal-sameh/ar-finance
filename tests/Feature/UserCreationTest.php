@@ -41,7 +41,7 @@ class UserCreationTest extends TestCase
             'phone' => '+20 100 555 0101',
             'password' => 'temporary-pass-1',
             'role' => 'Accountant',
-            'tenant_id' => $this->tenant->id,
+            'tenant_ids' => [$this->tenant->id],
             'status' => 'active',
         ], $overrides);
     }
@@ -75,7 +75,7 @@ class UserCreationTest extends TestCase
     public function test_platform_roles_are_created_without_a_tenant(): void
     {
         $this->actingAs($this->actor('Platform Admin'))
-            ->post(route('platform.users.store'), $this->payload(['role' => 'Portal Manager', 'tenant_id' => $this->tenant->id]))
+            ->post(route('platform.users.store'), $this->payload(['role' => 'Portal Manager', 'tenant_ids' => [$this->tenant->id]]))
             ->assertSessionHasNoErrors();
 
         $this->assertNull(User::query()->where('email', 'new.person@example.com')->firstOrFail()->tenant_id);
@@ -84,8 +84,8 @@ class UserCreationTest extends TestCase
     public function test_a_tenant_role_requires_a_tenant(): void
     {
         $this->actingAs($this->actor('Platform Admin'))
-            ->post(route('platform.users.store'), $this->payload(['tenant_id' => null]))
-            ->assertSessionHasErrors('tenant_id');
+            ->post(route('platform.users.store'), $this->payload(['tenant_ids' => []]))
+            ->assertSessionHasErrors('tenant_ids');
     }
 
     public function test_email_or_phone_is_required_and_both_must_be_unique(): void

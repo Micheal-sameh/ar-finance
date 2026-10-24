@@ -43,8 +43,37 @@ class HandleInertiaRequests extends Middleware
                 'activeTenantId' => $tenantContext->id(),
                 'isImpersonating' => $tenantContext->isImpersonating(),
             ] : null,
+            'memberTenants' => $this->memberTenants($user, $tenantContext),
             'devUsers' => app()->environment('local') && $user ? $this->devUsers($tenantContext) : null,
         ]);
+    }
+
+    /**
+     * The tenant switcher for an ordinary user who belongs to more than one
+     * tenant; null for everyone else (Platform Admins use the platform share).
+     *
+     * @return array{tenants: array<int, array{id: int, name: string}>, activeTenantId: int|null}|null
+     */
+    private function memberTenants(?User $user, TenantContext $tenantContext): ?array
+    {
+        if ($user === null || $user->isPlatformAdmin()) {
+            return null;
+        }
+
+        if ($user->loadMissing('tenants')->tenants->count() < 2) {
+            return null;
+        }
+
+        $tenants = $user->tenants()->where('is_active', true)->get();
+
+        if ($tenants->count() < 2) {
+            return null;
+        }
+
+        return [
+            'tenants' => $tenants->sortBy('name')->map(fn ($tenant) => ['id' => $tenant->id, 'name' => $tenant->name])->values()->all(),
+            'activeTenantId' => $tenantContext->id(),
+        ];
     }
 
     /**
@@ -66,7 +95,7 @@ class HandleInertiaRequests extends Middleware
             ->where('status', UserStatus::Active)
             ->where(function ($query) use ($tenantId) {
                 if ($tenantId) {
-                    $query->where('tenant_id', $tenantId);
+                    $query->whereHas('tenants', fn ($tenantQuery) => $tenantQuery->whereKey($tenantId));
                 }
 
                 $query->orWhereHas('roles', fn ($roleQuery) => $roleQuery->whereIn('name', ['Platform Admin', 'Portal Manager']));

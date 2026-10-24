@@ -14,7 +14,8 @@ class AssignUserTenantRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'tenant_id' => ['nullable', 'integer', 'exists:tenants,id'],
+            'tenant_ids' => ['nullable', 'array'],
+            'tenant_ids.*' => ['integer', 'distinct', 'exists:tenants,id'],
         ];
     }
 }

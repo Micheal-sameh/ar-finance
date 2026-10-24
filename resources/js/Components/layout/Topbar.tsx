@@ -3,6 +3,7 @@ import { LogOut, Menu, User as UserIcon } from 'lucide-react';
 import { Dropdown } from 'react-bootstrap';
 import { DevUserSwitcher, type DevUser } from './DevUserSwitcher';
 import { GlobalSearch } from './GlobalSearch';
+import { MemberTenantSwitcher, type MemberTenants } from './MemberTenantSwitcher';
 
 interface AuthUser {
     name: string;
@@ -10,9 +11,10 @@ interface AuthUser {
 }
 
 export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
-    const { auth, devUsers } = usePage<{
+    const { auth, devUsers, memberTenants } = usePage<{
         auth: { user: AuthUser | null };
         devUsers: DevUser[] | null;
+        memberTenants: MemberTenants | null;
     }>().props;
     const user = auth.user;
 
@@ -36,6 +38,7 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
                 <GlobalSearch />
             </div>
             <div className="top-actions">
+                {memberTenants && <MemberTenantSwitcher memberTenants={memberTenants} />}
                 {devUsers && <DevUserSwitcher users={devUsers} />}
                 <Dropdown align="end">
                     <Dropdown.Toggle as="button" bsPrefix="af-topbar-toggle" className="top-avatar border-0" aria-label="Account menu">

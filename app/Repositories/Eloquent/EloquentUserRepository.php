@@ -15,12 +15,12 @@ class EloquentUserRepository implements UserRepositoryInterface
         $tenantId = app(TenantContext::class)->id();
 
         return User::query()
-            ->with(['roles', 'tenant:id,name'])
-            ->when($tenantId !== null, fn ($query) => $query->where('tenant_id', $tenantId))
+            ->with(['roles', 'tenants:id,name'])
+            ->when($tenantId !== null, fn ($query) => $query->whereHas('tenants', fn ($q) => $q->whereKey($tenantId)))
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['role'] ?? null, fn ($query, $role) => $query->whereHas('roles', fn ($q) => $q->where('name', $role)))
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(
-                fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"),
+                fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%"),
             ))
             ->orderBy('name')
             ->paginate($perPage)
@@ -32,19 +32,20 @@ class EloquentUserRepository implements UserRepositoryInterface
         $tenantId = app(TenantContext::class)->id();
 
         return User::query()
-            ->when($tenantId !== null, fn ($query) => $query->where('tenant_id', $tenantId))
+            ->when($tenantId !== null, fn ($query) => $query->whereHas('tenants', fn ($q) => $q->whereKey($tenantId)))
             ->find($id);
     }
 
-    public function create(array $attributes, string $role): User
+    public function create(array $attributes, array $tenantIds, string $role): User
     {
-        $user = User::query()->create($attributes);
+        $user = User::query()->create($attributes + ['tenant_id' => $tenantIds[0] ?? null]);
+        $user->tenants()->syncWithoutDetaching($tenantIds);
         $user->forceFill(['email_verified_at' => now()])->save();
         $user->syncRoles([$role]);
 
-        $this->audit($user, [], ['tenant_id' => $user->tenant_id, 'status' => $user->status->value, 'role' => [$role]], 'created');
+        $this->audit($user, [], ['tenant_ids' => $tenantIds, 'status' => $user->status->value, 'role' => [$role]], 'created');
 
-        return $user->fresh(['roles', 'tenant']);
+        return $user->fresh(['roles', 'tenants']);
     }
 
     public function update(User $user, string $status, string $role): User
@@ -59,15 +60,19 @@ class EloquentUserRepository implements UserRepositoryInterface
         return $user->fresh('roles');
     }
 
-    public function assignTenant(User $user, ?int $tenantId): User
+    public function assignTenants(User $user, array $tenantIds): User
     {
-        $before = ['tenant_id' => $user->tenant_id];
+        $before = ['tenant_ids' => $user->tenants()->pluck('tenants.id')->all()];
 
-        $user->update(['tenant_id' => $tenantId]);
+        $user->tenants()->sync($tenantIds);
 
-        $this->audit($user, $before, ['tenant_id' => $tenantId]);
+        // The default tenant must stay one of the user's tenants.
+        $defaultTenantId = in_array($user->tenant_id, $tenantIds, true) ? $user->tenant_id : ($tenantIds[0] ?? null);
+        $user->update(['tenant_id' => $defaultTenantId]);
 
-        return $user->fresh('tenant');
+        $this->audit($user, $before, ['tenant_ids' => $tenantIds]);
+
+        return $user->fresh(['tenant', 'tenants']);
     }
 
     public function assignRole(User $user, string $role): User

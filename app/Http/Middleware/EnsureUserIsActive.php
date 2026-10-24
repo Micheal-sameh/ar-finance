@@ -3,8 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Enums\UserStatus;
-use App\Models\Tenant;
 use App\Models\User;
+use App\Support\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,11 +16,13 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class EnsureUserIsActive
 {
+    public function __construct(private readonly TenantContext $tenantContext) {}
+
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
 
-        if ($user instanceof User && ($user->status === UserStatus::Suspended || $this->belongsToDeactivatedTenant($user))) {
+        if ($user instanceof User && ($user->status === UserStatus::Suspended || $this->hasNoActiveTenant($user))) {
             auth()->guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -33,14 +35,26 @@ class EnsureUserIsActive
 
     /**
      * Platform-level accounts have no tenant of their own, so only ordinary
-     * users are cut off when their tenant is deactivated.
+     * users are cut off — and only when every one of their tenants is
+     * deactivated. If just the tenant they are working in was deactivated,
+     * they are moved to one that is still active.
      */
-    private function belongsToDeactivatedTenant(User $user): bool
+    private function hasNoActiveTenant(User $user): bool
     {
         if ($user->tenant_id === null || $user->isPlatformAdmin()) {
             return false;
         }
 
-        return Tenant::query()->whereKey($user->tenant_id)->where('is_active', false)->exists();
+        $activeTenants = $user->tenants()->where('is_active', true)->get();
+
+        if ($activeTenants->isEmpty()) {
+            return true;
+        }
+
+        if (! $activeTenants->contains('id', $this->tenantContext->id())) {
+            session(['active_tenant_id' => $activeTenants->first()->id]);
+        }
+
+        return false;
     }
 }
