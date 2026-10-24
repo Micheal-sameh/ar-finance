@@ -78,6 +78,7 @@ Route::middleware(['auth', 'active', 'permission:platform.access', 'throttle:240
 
     Route::resource('tenants', TenantController::class)->only(['index', 'store', 'update']);
 
+    Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::put('users/{user}/tenant', [UserController::class, 'assignTenant'])->name('users.assign-tenant');
     Route::put('users/{user}/role', [UserController::class, 'assignRole'])->name('users.assign-role');
 

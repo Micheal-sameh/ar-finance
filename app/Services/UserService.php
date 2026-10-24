@@ -18,6 +18,14 @@ class UserService
         return $this->users->paginate($filters, $perPage);
     }
 
+    /**
+     * @param  array{name: string, email: ?string, phone: ?string, password: string, tenant_id: ?int, status: string}  $attributes
+     */
+    public function create(array $attributes, string $role): User
+    {
+        return $this->users->create($attributes, $role);
+    }
+
     public function update(User $user, UserStatus $status, string $role): User
     {
         return $this->users->update($user, $status->value, $role);

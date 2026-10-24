@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Users\AssignUserRoleRequest;
 use App\Http\Requests\Users\AssignUserTenantRequest;
+use App\Http\Requests\Users\StoreUserRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Models\Tenant;
 use App\Models\User;
@@ -38,6 +39,7 @@ class UserController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'phone' => $user->phone,
                 'membership_code' => $user->avarewase_membership_code,
                 'status' => $user->status->value,
                 'roles' => $user->roles->pluck('name')->all(),
@@ -55,6 +57,7 @@ class UserController extends Controller
             'canManage' => $viewingAllTenants ? false : $request->user()->can('manage', User::class),
             'canAssignTenant' => $canAssignTenant,
             'canAssignRole' => $canAssignRole,
+            'canCreate' => $canAssignTenant,
             'availableRoles' => Role::query()->where('guard_name', 'web')
                 ->when(! $canGrantPlatformAdmin, fn ($query) => $query->where('name', '!=', 'Platform Admin'))
                 ->orderBy('name')
@@ -79,6 +82,17 @@ class UserController extends Controller
         ]);
 
         return $this->exportXlsx('users.xlsx', ['Name', 'Email', 'Membership Code', 'Roles', 'Status'], $rows);
+    }
+
+    public function store(StoreUserRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+        $role = $data['role'];
+        unset($data['role']);
+
+        $this->users->create($data, $role);
+
+        return back()->with('success', 'User created.');
     }
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse

@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Pencil, ShieldCheck } from 'lucide-react';
+import { Pencil, Plus, ShieldCheck } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
@@ -50,20 +50,44 @@ interface Props {
     canManage: boolean;
     canAssignTenant: boolean;
     canAssignRole: boolean;
+    canCreate: boolean;
     availableRoles: string[];
     tenants: Pick<Tenant, 'id' | 'name'>[];
     viewingAllTenants: boolean;
 }
 
-export default function UsersIndex({ users, filters, canManage, canAssignTenant, canAssignRole, availableRoles, tenants, viewingAllTenants }: Props) {
+export default function UsersIndex({ users, filters, canManage, canAssignTenant, canAssignRole, canCreate, availableRoles, tenants, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [editing, setEditing] = useState<AppUser | null>(null);
+    const [creating, setCreating] = useState(false);
     const { auth } = usePage<{ auth: { user: { id: number } | null } }>().props;
 
     const form = useForm<{ status: UserStatus; role: string }>({
         status: 'active',
         role: '',
     });
+
+    const createForm = useForm({
+        name: '',
+        email: '',
+        phone: '',
+        password: '',
+        role: '',
+        tenant_id: '',
+        status: 'active' as UserStatus,
+    });
+    const createIsPlatformRole = PLATFORM_ROLES.includes(createForm.data.role);
+
+    function submitCreate(e: FormEvent) {
+        e.preventDefault();
+        createForm.post(route('platform.users.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setCreating(false);
+                createForm.reset();
+            },
+        });
+    }
 
     function runSearch(e: FormEvent) {
         e.preventDefault();
@@ -117,7 +141,15 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
             <PageHeader
                 title="Users"
                 subtitle={viewingAllTenants ? 'Every tenant’s users, combined. Switch into a tenant to manage one.' : 'Everyone with access to this tenant.'}
-                action={!viewingAllTenants && <ExportButton href={route('users.export', filters)} />}
+                action={
+                    canCreate ? (
+                        <Button onClick={() => setCreating(true)}>
+                            <Plus size={15} /> Add user
+                        </Button>
+                    ) : (
+                        !viewingAllTenants && <ExportButton href={route('users.export', filters)} />
+                    )
+                }
             />
 
             <Card padded={false}>
@@ -165,7 +197,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                     <Table cards>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
-                            <Table.HeadCell>Email</Table.HeadCell>
+                            <Table.HeadCell>Email / Phone</Table.HeadCell>
                             <Table.HeadCell>Membership Code</Table.HeadCell>
                             <Table.HeadCell>Roles</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
@@ -176,7 +208,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                             {users.data.map((user) => (
                                 <Table.Row key={user.id}>
                                     <Table.Cell className="ps-3" label="Name">{user.name}</Table.Cell>
-                                    <Table.Cell label="Email">{user.email}</Table.Cell>
+                                    <Table.Cell label="Email">{user.email ?? user.phone ?? '—'}</Table.Cell>
                                     <Table.Cell label="Membership Code">{user.membership_code ?? '—'}</Table.Cell>
                                     <Table.Cell label="Roles">
                                         {viewingAllTenants && canAssignRole && user.id !== auth.user?.id ? (
@@ -247,6 +279,47 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                     </Table>
                 )}
             </Card>
+
+            <Modal
+                open={creating}
+                onClose={() => setCreating(false)}
+                title="Add user"
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setCreating(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={submitCreate} loading={createForm.processing}>
+                            Create user
+                        </Button>
+                    </>
+                }
+            >
+                <form onSubmit={submitCreate} className="d-flex flex-column gap-3">
+                    <Input label="Name" value={createForm.data.name} onChange={(e) => createForm.setData('name', e.target.value)} error={createForm.errors.name} />
+                    <Input label="Email" type="email" value={createForm.data.email} onChange={(e) => createForm.setData('email', e.target.value)} error={createForm.errors.email} />
+                    <Input label="Phone" value={createForm.data.phone} onChange={(e) => createForm.setData('phone', e.target.value)} error={createForm.errors.phone} />
+                    <Input label="Temporary password" type="password" autoComplete="new-password" value={createForm.data.password} onChange={(e) => createForm.setData('password', e.target.value)} error={createForm.errors.password} />
+                    <Select label="Role" value={createForm.data.role} onChange={(e) => createForm.setData('role', e.target.value)} error={createForm.errors.role}>
+                        <option value="">Select a role…</option>
+                        <RoleOptions roles={availableRoles} />
+                    </Select>
+                    {!createIsPlatformRole && (
+                        <Select label="Tenant" value={createForm.data.tenant_id} onChange={(e) => createForm.setData('tenant_id', e.target.value)} error={createForm.errors.tenant_id}>
+                            <option value="">Select a tenant…</option>
+                            {tenants.map((tenant) => (
+                                <option key={tenant.id} value={tenant.id}>
+                                    {tenant.name}
+                                </option>
+                            ))}
+                        </Select>
+                    )}
+                    <Select label="Status" value={createForm.data.status} onChange={(e) => createForm.setData('status', e.target.value as UserStatus)} error={createForm.errors.status}>
+                        <option value="active">Active</option>
+                        <option value="suspended">Suspended</option>
+                    </Select>
+                </form>
+            </Modal>
 
             <Modal
                 open={editing !== null}

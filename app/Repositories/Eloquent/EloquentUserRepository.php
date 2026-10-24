@@ -36,6 +36,17 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->find($id);
     }
 
+    public function create(array $attributes, string $role): User
+    {
+        $user = User::query()->create($attributes);
+        $user->forceFill(['email_verified_at' => now()])->save();
+        $user->syncRoles([$role]);
+
+        $this->audit($user, [], ['tenant_id' => $user->tenant_id, 'status' => $user->status->value, 'role' => [$role]], 'created');
+
+        return $user->fresh(['roles', 'tenant']);
+    }
+
     public function update(User $user, string $status, string $role): User
     {
         $before = ['status' => $user->status->value, 'role' => $user->getRoleNames()->all()];
@@ -74,14 +85,14 @@ class EloquentUserRepository implements UserRepositoryInterface
      * @param  array<string, mixed>  $before
      * @param  array<string, mixed>  $after
      */
-    private function audit(User $user, array $before, array $after): void
+    private function audit(User $user, array $before, array $after, string $action = 'updated'): void
     {
         AuditLog::create([
             'tenant_id' => $user->tenant_id,
             'user_id' => auth()->id(),
             'auditable_type' => User::class,
             'auditable_id' => $user->id,
-            'action' => 'updated',
+            'action' => $action,
             'before' => $before,
             'after' => $after,
         ]);

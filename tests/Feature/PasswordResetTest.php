@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
@@ -69,6 +70,7 @@ class PasswordResetTest extends TestCase
 
     public function test_local_environment_logs_in_without_mfa(): void
     {
+        $this->withoutMiddleware(PreventRequestForgery::class);
         $this->app['env'] = 'local';
         $user = User::factory()->create(['email' => 'person@example.com']);
 

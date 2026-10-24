@@ -424,7 +424,8 @@ export type UserStatus = 'active' | 'suspended';
 export interface AppUser {
     id: number;
     name: string;
-    email: string;
+    email: string | null;
+    phone?: string | null;
     membership_code: string | null;
     status: UserStatus;
     roles: string[];
