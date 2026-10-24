@@ -9,7 +9,6 @@ use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\CurrencyRevaluationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DevComponentsController;
-use App\Http\Controllers\DevLoginController;
 use App\Http\Controllers\DevSwitchUserController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExchangeRateController;
@@ -19,6 +18,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JournalEntryController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\LogoutController;
+use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\Platform\DashboardController as PlatformDashboardController;
 use App\Http\Controllers\Platform\ReportController as PlatformReportController;
@@ -27,26 +27,31 @@ use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TwoFactorChallengeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VendorController;
 use Illuminate\Support\Facades\Route;
 
-// Branded landing page with a "Continue with Avarewase" button — guests
-// land here (see redirectGuestsTo in bootstrap/app.php) rather than being
-// silently bounced straight to the SSO server.
-Route::get('/login', LoginController::class)->name('login');
+// Email-or-phone + password sign-in. A correct password is never enough on
+// its own: LoginController::store parks the user in the session and the
+// two-factor routes below finish (or first enrol) the MFA step.
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:10,1')->name('login.store');
 
-// Email/password fallback so the app can be exercised without a live SSO
-// server. Gated to local by DevLoginController/DevLoginRequest as well —
-// route is only registered here for defense in depth.
+    Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'store'])->middleware('throttle:5,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:5,1')->name('password.update');
+
+    Route::get('/two-factor', [TwoFactorChallengeController::class, 'show'])->name('two-factor.show');
+    Route::post('/two-factor', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:10,1')->name('two-factor.store');
+});
+
 if (app()->environment('local')) {
-    // Not behind auth: a static preview of the ui/ primitive library, useful
-    // without a live SSO server. Local only so it never ships to production.
+    // Not behind auth: a static preview of the ui/ primitive library.
+    // Local only so it never ships to production.
     Route::get('/dev/components', DevComponentsController::class)->name('dev.components');
-
-    Route::post('/dev-login', DevLoginController::class)
-        ->middleware('throttle:10,1')
-        ->name('dev-login');
 
     // Quick "log in as" user switcher in the navbar (see DevUserSwitcher.tsx
     // and HandleInertiaRequests' `devUsers` share). Gated to local by
@@ -57,15 +62,9 @@ if (app()->environment('local')) {
         ->name('dev-switch-user');
 }
 
-// avarewase/sso-client logs the user into a normal session guard (see
-// avarewase.login / avarewase.callback, registered by the package) — so
-// every app route past that point is protected the standard Laravel way,
-// not by the package's separate bearer-token `avarewase.auth` middleware
-// (that one's for a resource server taking an Authorization header on
-// every request, which doesn't fit a cookie-session Inertia app).
-
 // Not behind `tenant`: a Platform Admin with no active tenant must still be
 // able to log out rather than being bounced to /platform.
+Route::get('two-factor/recovery-codes', [TwoFactorChallengeController::class, 'recoveryCodes'])->middleware('auth')->name('two-factor.recovery-codes');
 Route::post('logout', LogoutController::class)->middleware(['auth', 'throttle:240,1'])->name('logout');
 
 // Platform Admin area: cross-tenant dashboard/reports and tenant

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
  * in the navbar). No password check — DevSwitchUserRequest::authorize()
  * and the route registration in routes/web.php both re-gate this to
  * app()->environment('local') as well, same defense-in-depth pattern as
- * DevLoginController.
+ * the local login flow.
  */
 class DevSwitchUserController extends Controller
 {

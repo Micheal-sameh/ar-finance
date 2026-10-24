@@ -4,76 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "29db04b13da64b0876195ecbed7e1709",
+    "content-hash": "8fab226d136cd99e82cca828764250bf",
     "packages": [
-        {
-            "name": "avarewase/sso-client",
-            "version": "v1.6.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/Micheal-sameh/ar-sso-handler.git",
-                "reference": "c29f99f9e538da68b867e648d515c43d5b0542ff"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/Micheal-sameh/ar-sso-handler/zipball/c29f99f9e538da68b867e648d515c43d5b0542ff",
-                "reference": "c29f99f9e538da68b867e648d515c43d5b0542ff",
-                "shasum": ""
-            },
-            "require": {
-                "guzzlehttp/guzzle": "^7.8",
-                "illuminate/auth": "^10.0|^11.0|^12.0|^13.0",
-                "illuminate/http": "^10.0|^11.0|^12.0|^13.0",
-                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
-                "php": "^8.2"
-            },
-            "require-dev": {
-                "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
-                "phpunit/phpunit": "^10.5|^11.0|^12.0",
-                "spatie/laravel-medialibrary": "^10.0|^11.0"
-            },
-            "suggest": {
-                "doctrine/dbal": "Required on Laravel 10 to run the published migration that makes users.email nullable.",
-                "spatie/laravel-medialibrary": "Store the SSO profile picture in the user's `avatar` media collection instead of only the avarewase_avatar URL column."
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Avarewase\\SsoClient\\Providers\\AvarewaseSsoServiceProvider"
-                    ],
-                    "aliases": {
-                        "AvarewaseSso": "Avarewase\\SsoClient\\Facades\\AvarewaseSso"
-                    }
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Avarewase\\SsoClient\\": "src/"
-                }
-            },
-            "autoload-dev": {
-                "psr-4": {
-                    "Avarewase\\SsoClient\\Tests\\": "tests/"
-                }
-            },
-            "license": [
-                "proprietary"
-            ],
-            "description": "Laravel client SDK for \"Login with Avarewase\" SSO (OAuth2/OIDC + PKCE) — guard, controllers, and a resilient HTTP client for auth.avarewase.com.",
-            "keywords": [
-                "avarewase",
-                "laravel",
-                "oauth2",
-                "oidc",
-                "sso"
-            ],
-            "support": {
-                "source": "https://github.com/Micheal-sameh/ar-sso-handler/tree/v1.6.1",
-                "issues": "https://github.com/Micheal-sameh/ar-sso-handler/issues"
-            },
-            "time": "2026-09-17T08:05:02+00:00"
-        },
         {
             "name": "brick/math",
             "version": "0.18.0",

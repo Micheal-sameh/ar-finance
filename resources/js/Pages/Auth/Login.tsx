@@ -1,243 +1,120 @@
-import { Head, useForm } from '@inertiajs/react';
-import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Link, useForm } from '@inertiajs/react';
+import { Eye, EyeOff, Lock, User } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { AuthShell } from '@/Components/auth/AuthShell';
 import { Button } from '@/Components/ui/Button';
-import { Card } from '@/Components/ui/Card';
 
-interface LoginProps {
-    devLoginEnabled: boolean;
-}
-
-export default function Login({ devLoginEnabled }: LoginProps) {
-    const form = useForm({ email: '', password: '' });
+export default function Login() {
+    const form = useForm({ identifier: '', password: '', remember: false });
     const [showPassword, setShowPassword] = useState(false);
 
-    function submitDevLogin(e: FormEvent) {
+    function submit(e: FormEvent) {
         e.preventDefault();
-        form.post(route('dev-login'));
+        form.post(route('login.store'), { onFinish: () => form.reset('password') });
     }
 
     return (
-        <div
-            className="d-flex flex-column"
-            style={{
-                minHeight: '100vh',
-                background: 'var(--af-bg)',
-            }}
+        <AuthShell
+            title="Log in"
+            heading="Welcome back"
+            description="Sign in with your email or phone number and password."
         >
-            <Head title="Log in" />
-
-            <div className="d-flex align-items-center justify-content-between" style={{ padding: '16px 32px' }}>
-                <div className="d-flex align-items-center gap-2">
-                    <div
-                        className="d-flex align-items-center justify-content-center"
-                        style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: 'var(--af-navy)' }}
-                    >
-                        <ShieldCheck size={16} color="var(--af-gold)" />
-                    </div>
-                    <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--af-navy)' }}>
-                        Avarewase <span style={{ color: 'var(--af-gold)' }}>Finance</span>
-                    </span>
-                </div>
-
-                <div className="d-flex align-items-center gap-2">
-                    <span
-                        className="d-flex align-items-center gap-1"
-                        style={{
-                            fontSize: '11px',
-                            color: 'var(--af-label)',
-                            backgroundColor: 'var(--af-surface)',
-                            border: '1px solid var(--af-border)',
-                            borderRadius: 999,
-                            padding: '4px 10px',
-                        }}
-                    >
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--af-success)', display: 'inline-block' }} />
-                        SSO Shield 2.4 Active
-                    </span>
-                    <span
-                        className="d-flex align-items-center gap-1"
-                        style={{
-                            fontSize: '11px',
-                            color: 'var(--af-label)',
-                            backgroundColor: 'var(--af-surface)',
-                            border: '1px solid var(--af-border)',
-                            borderRadius: 999,
-                            padding: '4px 10px',
-                        }}
-                    >
-                        <Lock size={11} />
-                        FIPS 140-2 Compliant
-                    </span>
-                </div>
-            </div>
-
-            <div className="d-flex align-items-center justify-content-center flex-grow-1" style={{ padding: '24px' }}>
-                <div style={{ width: '100%', maxWidth: '420px' }}>
-                    <Card
-                        style={{
-                            borderRadius: 16,
-                            boxShadow: 'var(--af-shadow), 0 16px 40px rgba(41,57,64,0.10)',
-                            padding: '32px',
-                        }}
-                    >
-                        <div
-                            className="d-flex align-items-center justify-content-center mx-auto mb-3"
-                            style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: '#f4f0e7' }}
-                        >
-                            <ShieldCheck size={22} color="var(--af-gold)" />
-                        </div>
-
-                        <div className="text-center mb-4">
-                            <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--af-navy)', marginBottom: '6px' }}>
-                                Welcome back
-                            </h1>
-                            <p style={{ fontSize: '13px', color: 'var(--af-label)', margin: 0, lineHeight: 1.5 }}>
-                                Sign in with your centralized <strong>Avarewase enterprise account</strong> to access
-                                General Ledger, AP/AR &amp; Treasury suites.
-                            </p>
-                        </div>
-
-                        <a
-                            href={route('avarewase.login')}
-                            className="d-flex align-items-center justify-content-center gap-2 text-decoration-none fw-medium w-100 mb-3"
+            <form onSubmit={submit}>
+                <div className="mb-3">
+                    <label htmlFor="identifier" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
+                        Email or phone number
+                    </label>
+                    <div className="position-relative">
+                        <User
+                            size={15}
+                            color="var(--af-label)"
+                            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}
+                        />
+                        <input
+                            id="identifier"
+                            type="text"
+                            name="identifier"
+                            autoComplete="username"
+                            autoFocus
+                            value={form.data.identifier}
+                            onChange={(e) => form.setData('identifier', e.target.value)}
+                            className="form-control"
                             style={{
-                                backgroundColor: 'var(--af-primary)',
-                                color: '#fff',
+                                borderColor: form.errors.identifier ? 'var(--af-danger)' : 'var(--af-border)',
                                 borderRadius: 'var(--af-radius-sm)',
-                                padding: '11px 16px',
                                 fontSize: '14px',
+                                paddingLeft: 34,
                             }}
-                        >
-                            <ShieldCheck size={16} />
-                            Continue with Avarewase SSO
-                            <ArrowRight size={16} />
-                        </a>
-
-                        {devLoginEnabled && (
-                            <>
-                                <div className="d-flex align-items-center gap-2 mb-4">
-                                    <div style={{ flex: 1, height: 1, backgroundColor: 'var(--af-border)' }} />
-                                    <span style={{ fontSize: '10px', letterSpacing: '0.05em', color: 'var(--af-label)' }}>
-                                        DIRECT AUTH / DEV MODE
-                                    </span>
-                                    <div style={{ flex: 1, height: 1, backgroundColor: 'var(--af-border)' }} />
-                                </div>
-
-                                <form onSubmit={submitDevLogin}>
-                                    <div className="mb-3">
-                                        <label htmlFor="email" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                                            Work Email Address
-                                        </label>
-                                        <div className="position-relative">
-                                            <Mail
-                                                size={15}
-                                                color="var(--af-label)"
-                                                style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}
-                                            />
-                                            <input
-                                                id="email"
-                                                type="email"
-                                                name="email"
-                                                autoComplete="username"
-                                                value={form.data.email}
-                                                onChange={(e) => form.setData('email', e.target.value)}
-                                                className="form-control"
-                                                style={{
-                                                    borderColor: form.errors.email ? 'var(--af-danger)' : 'var(--af-border)',
-                                                    borderRadius: 'var(--af-radius-sm)',
-                                                    fontSize: '14px',
-                                                    paddingLeft: 34,
-                                                }}
-                                            />
-                                        </div>
-                                        {form.errors.email && (
-                                            <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>
-                                                {form.errors.email}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="mb-3">
-                                        <label htmlFor="password" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                                            Password
-                                        </label>
-                                        <div className="position-relative">
-                                            <Lock
-                                                size={15}
-                                                color="var(--af-label)"
-                                                style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}
-                                            />
-                                            <input
-                                                id="password"
-                                                type={showPassword ? 'text' : 'password'}
-                                                name="password"
-                                                autoComplete="current-password"
-                                                value={form.data.password}
-                                                onChange={(e) => form.setData('password', e.target.value)}
-                                                className="form-control"
-                                                style={{
-                                                    borderColor: form.errors.password ? 'var(--af-danger)' : 'var(--af-border)',
-                                                    borderRadius: 'var(--af-radius-sm)',
-                                                    fontSize: '14px',
-                                                    paddingLeft: 34,
-                                                    paddingRight: 34,
-                                                }}
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassword((v) => !v)}
-                                                className="btn p-0 border-0 bg-transparent"
-                                                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--af-label)' }}
-                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                            >
-                                                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                                            </button>
-                                        </div>
-                                        {form.errors.password && (
-                                            <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>
-                                                {form.errors.password}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <Button type="submit" variant="outline" loading={form.processing} className="w-100 justify-content-center">
-                                        Sign in with password
-                                    </Button>
-                                </form>
-                            </>
-                        )}
-                    </Card>
-
-                    <div className="text-center mt-4">
-                        <p style={{ fontSize: '12px', color: 'var(--af-navy)', margin: 0, fontWeight: 500 }}>
-                            Identity and roles are managed centrally by Avarewase Auth.
-                        </p>
-                        <p style={{ fontSize: '11px', color: 'var(--af-label)', margin: '4px 0 0' }}>
-                            End-to-End Encrypted • Active Session Auditing • Zero Trust Architecture
-                        </p>
+                        />
                     </div>
+                    {form.errors.identifier && (
+                        <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>{form.errors.identifier}</div>
+                    )}
                 </div>
-            </div>
 
-            <div
-                className="d-flex align-items-center justify-content-between"
-                style={{ padding: '12px 32px', fontSize: '11px', color: 'var(--af-label)' }}
-            >
-                <div className="d-flex align-items-center gap-3">
-                    <span>Tenant: Avarewase Corp (Holding)</span>
-                    <span>Region: Cairo North (eg-cai-01)</span>
+                <div className="mb-3">
+                    <label htmlFor="password" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
+                        Password
+                    </label>
+                    <div className="position-relative">
+                        <Lock
+                            size={15}
+                            color="var(--af-label)"
+                            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}
+                        />
+                        <input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            autoComplete="current-password"
+                            value={form.data.password}
+                            onChange={(e) => form.setData('password', e.target.value)}
+                            className="form-control"
+                            style={{
+                                borderColor: form.errors.password ? 'var(--af-danger)' : 'var(--af-border)',
+                                borderRadius: 'var(--af-radius-sm)',
+                                fontSize: '14px',
+                                paddingLeft: 34,
+                                paddingRight: 34,
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="btn p-0 border-0 bg-transparent"
+                            style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--af-label)' }}
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                    </div>
+                    {form.errors.password && (
+                        <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>{form.errors.password}</div>
+                    )}
                 </div>
-                <div className="d-flex align-items-center gap-3">
-                    <span className="d-flex align-items-center gap-1">
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--af-success)', display: 'inline-block' }} />
-                        SOC2 / EAS 8 Audit
-                    </span>
-                    <span>System Status</span>
-                    <span>Finance Helpdesk</span>
-                    <span>Security Policy</span>
+
+                <div className="d-flex align-items-center justify-content-between mb-4">
+                    <div className="form-check mb-0">
+                        <input
+                            id="remember"
+                            type="checkbox"
+                            className="form-check-input"
+                            checked={form.data.remember}
+                            onChange={(e) => form.setData('remember', e.target.checked)}
+                        />
+                        <label htmlFor="remember" className="form-check-label" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                            Keep me signed in
+                        </label>
+                    </div>
+                    <Link href={route('password.request')} style={{ fontSize: '13px' }}>
+                        Forgot password?
+                    </Link>
                 </div>
-            </div>
-        </div>
+
+                <Button type="submit" loading={form.processing} className="w-100 justify-content-center">
+                    Continue
+                </Button>
+            </form>
+        </AuthShell>
     );
 }

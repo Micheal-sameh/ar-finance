@@ -32,13 +32,14 @@ class DatabaseSeeder extends Seeder
 
         $user->assignRole('Super Admin');
 
-        // Dev-login account (see DevLoginController) — recreated on every
+        // Local login account — recreated on every
         // seed/migrate:fresh so it survives database resets during local
         // development instead of silently disappearing.
         $devUser = User::updateOrCreate(
             ['email' => 'micheal.sameh@avarewase.com'],
             [
                 'name' => 'Micheal Sameh',
+                'phone' => '+201000000001',
                 'tenant_id' => $tenant->id,
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
@@ -49,9 +50,9 @@ class DatabaseSeeder extends Seeder
 
         $this->callWith(ChartOfAccountsSeeder::class, ['tenantId' => $tenant->id]);
 
-        // Platform Admin dev-login account — cross-tenant, no tenant_id of
+        // Platform Admin account — cross-tenant, no tenant_id of
         // its own (see TenantContext). Recreated on every seed/migrate:fresh
-        // like the tenant dev-login account above.
+        // like the tenant account above.
         $platformAdmin = User::updateOrCreate(
             ['email' => 'platform-admin@avarewase.com'],
             [

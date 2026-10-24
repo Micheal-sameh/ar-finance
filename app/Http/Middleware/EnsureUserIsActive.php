@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * A suspended user (see UserStatus) keeps a valid SSO session but is
+ * A suspended user (see UserStatus) keeps a valid session but is
  * cut off from the app itself — logged out on their next request rather
  * than mid-session, since we don't revoke sessions out of band.
  */
