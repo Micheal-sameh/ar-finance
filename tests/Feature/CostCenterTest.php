@@ -117,13 +117,13 @@ class CostCenterTest extends TestCase
             'date' => now()->toDateString(),
             'description' => 'Software subscription',
             'lines' => [
-                ['account_id' => $expense->id, 'debit' => 99, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 99, 'cost_center_id' => $center->id],
+                ['account_id' => $cash->id, 'debit' => 99, 'credit' => 0, 'cost_center_id' => $center->id],
+                ['account_id' => $expense->id, 'debit' => 0, 'credit' => 99, 'cost_center_id' => $center->id],
             ],
         ]);
 
         $response->assertRedirect();
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $expense->id, 'cost_center_id' => $center->id, 'debit' => 99]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $expense->id, 'cost_center_id' => $center->id, 'credit' => 99]);
     }
 
     private function csvFile(string $contents): UploadedFile

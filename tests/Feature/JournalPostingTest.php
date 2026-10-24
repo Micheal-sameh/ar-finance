@@ -45,15 +45,15 @@ class JournalPostingTest extends TestCase
     {
         $cash = $this->account('1000', 'Cash', AccountType::Asset, 'debit');
         $revenue = $this->account('4000', 'Sales Revenue', AccountType::Revenue, 'credit');
-        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'cost']);
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'profit']);
 
         $response = $this->actingAs($this->user)->post(route('journals.store'), [
             'date' => now()->toDateString(),
             'description' => 'Cash sale',
             'reference' => 'INV-001',
             'lines' => [
-                ['account_id' => $cash->id, 'debit' => 150, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 150, 'cost_center_id' => $center->id],
+                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 150, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 150, 'credit' => 0, 'cost_center_id' => $center->id],
             ],
         ]);
 
@@ -61,22 +61,22 @@ class JournalPostingTest extends TestCase
         $response->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('journal_entries', ['description' => 'Cash sale']);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $cash->id, 'debit' => 150]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $revenue->id, 'credit' => 150]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $cash->id, 'credit' => 150]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $revenue->id, 'debit' => 150]);
     }
 
     public function test_unbalanced_journal_entry_is_rejected_with_no_rows_written(): void
     {
         $cash = $this->account('1000', 'Cash', AccountType::Asset, 'debit');
         $revenue = $this->account('4000', 'Sales Revenue', AccountType::Revenue, 'credit');
-        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'cost']);
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'profit']);
 
         $response = $this->actingAs($this->user)->post(route('journals.store'), [
             'date' => now()->toDateString(),
             'description' => 'Broken entry',
             'lines' => [
-                ['account_id' => $cash->id, 'debit' => 100, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 90, 'cost_center_id' => $center->id],
+                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 100, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 90, 'credit' => 0, 'cost_center_id' => $center->id],
             ],
         ]);
 
@@ -88,14 +88,14 @@ class JournalPostingTest extends TestCase
     {
         $cash = $this->account('1000', 'Cash', AccountType::Asset, 'debit');
         $revenue = $this->account('4000', 'Sales Revenue', AccountType::Revenue, 'credit');
-        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'cost']);
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'profit']);
 
         $this->actingAs($this->user)->post(route('journals.store'), [
             'date' => now()->toDateString(),
             'description' => 'Cash sale',
             'lines' => [
-                ['account_id' => $cash->id, 'debit' => 200, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 200, 'cost_center_id' => $center->id],
+                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 200, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 200, 'credit' => 0, 'cost_center_id' => $center->id],
             ],
         ])->assertSessionHasNoErrors();
 
@@ -113,14 +113,14 @@ class JournalPostingTest extends TestCase
     {
         $cash = $this->account('1000', 'Cash', AccountType::Asset, 'debit');
         $revenue = $this->account('4000', 'Sales Revenue', AccountType::Revenue, 'credit');
-        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'cost']);
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'profit']);
 
         $this->actingAs($this->user)->post(route('journals.store'), [
             'date' => now()->subDays(10)->toDateString(),
             'description' => 'Earlier sale',
             'lines' => [
-                ['account_id' => $cash->id, 'debit' => 500, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 500, 'cost_center_id' => $center->id],
+                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 500, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 500, 'credit' => 0, 'cost_center_id' => $center->id],
             ],
         ])->assertSessionHasNoErrors();
 
@@ -128,8 +128,8 @@ class JournalPostingTest extends TestCase
             'date' => now()->toDateString(),
             'description' => 'Cash sale in range',
             'lines' => [
-                ['account_id' => $cash->id, 'debit' => 200, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 200, 'cost_center_id' => $center->id],
+                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 200, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 200, 'credit' => 0, 'cost_center_id' => $center->id],
             ],
         ])->assertSessionHasNoErrors();
 
@@ -159,7 +159,7 @@ class JournalPostingTest extends TestCase
             'description' => 'Missing cost center',
             'lines' => [
                 ['account_id' => $cash->id, 'debit' => 100, 'credit' => 0],
-                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 100],
+                ['account_id' => $revenue->id, 'debit' => 100, 'credit' => 0],
             ],
         ]);
 
@@ -173,14 +173,14 @@ class JournalPostingTest extends TestCase
         $cash = $this->account('1110', 'Cash', AccountType::Asset, 'debit');
         $cash->update(['parent_id' => $parent->id]);
         $revenue = $this->account('4000', 'Sales Revenue', AccountType::Revenue, 'credit');
-        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'cost']);
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'profit']);
 
         $response = $this->actingAs($this->user)->post(route('journals.store'), [
             'date' => now()->toDateString(),
             'description' => 'Posting to a parent account',
             'lines' => [
-                ['account_id' => $parent->id, 'debit' => 100, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 100, 'cost_center_id' => $center->id],
+                ['account_id' => $parent->id, 'debit' => 0, 'credit' => 100, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 100, 'credit' => 0, 'cost_center_id' => $center->id],
             ],
         ]);
 
@@ -192,19 +192,56 @@ class JournalPostingTest extends TestCase
     {
         $cash = $this->account('1000', 'Cash', AccountType::Asset, 'debit');
         $revenue = $this->account('4000', 'Sales Revenue', AccountType::Revenue, 'credit');
-        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'cost']);
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'General', 'type' => 'profit']);
 
         $this->actingAs($this->user)->post(route('journals.store'), [
             'date' => now()->toDateString(),
             'description' => 'Cash sale',
             'lines' => [
-                ['account_id' => $cash->id, 'debit' => 50, 'credit' => 0, 'cost_center_id' => $center->id],
-                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 50, 'cost_center_id' => $center->id],
+                ['account_id' => $cash->id, 'debit' => 0, 'credit' => 50, 'cost_center_id' => $center->id],
+                ['account_id' => $revenue->id, 'debit' => 50, 'credit' => 0, 'cost_center_id' => $center->id],
             ],
         ]);
 
         $this->actingAs($this->user)->delete(route('accounts.destroy', $cash));
 
         $this->assertDatabaseHas('accounts', ['id' => $cash->id]);
+    }
+
+    public function test_revenue_is_forced_to_debit_and_expense_to_credit_regardless_of_column_entered(): void
+    {
+        $revenue = $this->account('4000', 'Sales', AccountType::Revenue, 'credit');
+        $expense = $this->account('5000', 'Rent', AccountType::Expense, 'debit');
+        $profit = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Shop', 'type' => 'profit']);
+        $cost = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Admin', 'type' => 'cost']);
+
+        $this->actingAs($this->user)->post(route('journals.store'), [
+            'date' => now()->toDateString(),
+            'description' => 'Forced sides',
+            'lines' => [
+                ['account_id' => $revenue->id, 'debit' => 0, 'credit' => 80, 'cost_center_id' => $profit->id],
+                ['account_id' => $expense->id, 'debit' => 80, 'credit' => 0, 'cost_center_id' => $cost->id],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $revenue->id, 'debit' => 80, 'credit' => 0]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $expense->id, 'debit' => 0, 'credit' => 80]);
+    }
+
+    public function test_revenue_and_expense_lines_reject_the_wrong_center_type(): void
+    {
+        $revenue = $this->account('4000', 'Sales', AccountType::Revenue, 'credit');
+        $expense = $this->account('5000', 'Rent', AccountType::Expense, 'debit');
+        $profit = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Shop', 'type' => 'profit']);
+        $cost = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Admin', 'type' => 'cost']);
+
+        $this->actingAs($this->user)->post(route('journals.store'), [
+            'date' => now()->toDateString(),
+            'description' => 'Wrong centers',
+            'lines' => [
+                ['account_id' => $revenue->id, 'debit' => 80, 'credit' => 0, 'cost_center_id' => $cost->id],
+                ['account_id' => $expense->id, 'debit' => 0, 'credit' => 80, 'cost_center_id' => $profit->id],
+            ],
+        ])->assertSessionHasErrors(['lines.0.cost_center_id', 'lines.1.cost_center_id']);
     }
 }

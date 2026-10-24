@@ -1,5 +1,7 @@
 import { Icon } from '@/Components/layout/Icon';
 import { AccountPicker } from './AccountPicker';
+import { useAccounts } from '@/hooks/useAccounts';
+import type { AccountType, CostCenterType } from '@/types/finance';
 import { CostCenterPicker } from './CostCenterPicker';
 
 export interface JournalLineInput {
@@ -13,6 +15,8 @@ export interface JournalLineInput {
 export function emptyJournalLine(): JournalLineInput {
     return { account_id: null, debit: '', credit: '', cost_center_id: null, description: '' };
 }
+
+const CENTER_TYPE_BY_ACCOUNT_TYPE: Partial<Record<AccountType, CostCenterType>> = { revenue: 'profit', expense: 'cost' };
 
 function hasAmount(line: JournalLineInput): boolean {
     return (parseFloat(line.debit) || 0) > 0 || (parseFloat(line.credit) || 0) > 0;
@@ -31,6 +35,10 @@ export interface JournalLineEditorProps {
  * the other, matching how a real ledger line works.
  */
 export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineEditorProps) {
+    const { accounts } = useAccounts();
+    const requiredCenterType = (accountId: number | null): CostCenterType | null =>
+        CENTER_TYPE_BY_ACCOUNT_TYPE[accounts.find((a) => a.id === accountId)?.type as AccountType] ?? null;
+
     function updateLine(index: number, patch: Partial<JournalLineInput>) {
         onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
     }
@@ -50,7 +58,7 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                 <span>DESCRIPTION</span>
                 <span className='text-end'>DEBIT</span>
                 <span className='text-end'>CREDIT</span>
-                <span>COST CENTER *</span>
+                <span>PROFIT / COST CENTER *</span>
                 <span />
             </div>
 
@@ -59,7 +67,7 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                     <div>
                         <AccountPicker
                             value={line.account_id}
-                            onChange={(accountId) => updateLine(index, { account_id: accountId })}
+                            onChange={(accountId) => updateLine(index, { account_id: accountId, cost_center_id: null })}
                             error={errors[`lines.${index}.account_id`]}
                         />
                     </div>
@@ -111,6 +119,7 @@ export function JournalLineEditor({ lines, onChange, errors = {} }: JournalLineE
                     <div>
                         <CostCenterPicker
                             value={line.cost_center_id}
+                            filterType={requiredCenterType(line.account_id)}
                             onChange={(costCenterId) => updateLine(index, { cost_center_id: costCenterId })}
                             error={errors[`lines.${index}.cost_center_id`]}
                             disabled={!hasAmount(line)}

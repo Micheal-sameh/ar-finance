@@ -22,8 +22,10 @@ interface JournalRepositoryInterface
     /**
      * All posted journal lines in a date range, with account eager-loaded.
      * Single query — callers (Trial Balance, GL) group in PHP, never loop-query.
+     * $withEntryDate also loads each line's journal entry date, for callers
+     * that fetch one wide range and split it into periods in PHP.
      */
-    public function postedLinesWithAccounts(?string $from = null, ?string $to = null): Collection;
+    public function postedLinesWithAccounts(?string $from = null, ?string $to = null, bool $withEntryDate = false): Collection;
 
     /**
      * $costCenterFilter narrows to one center's lines when an int, to

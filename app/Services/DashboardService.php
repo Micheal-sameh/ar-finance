@@ -134,21 +134,22 @@ class DashboardService
      */
     private function monthlyTrend(int $months, Carbon $endingAt): array
     {
-        $rows = [];
+        $periods = [];
+        $labels = [];
 
         for ($i = $months - 1; $i >= 0; $i--) {
             $start = $endingAt->copy()->subMonthsNoOverflow($i)->startOfMonth();
-            $end = $endingAt->copy()->subMonthsNoOverflow($i)->endOfMonth();
-            $pnl = $this->reports->profitAndLoss($start->toDateString(), $end->toDateString());
-
-            $rows[] = [
-                'month' => $start->format('M Y'),
-                'revenue' => $pnl['total_revenue']['current'],
-                'expenses' => $pnl['total_expenses']['current'],
-            ];
+            $periods[$start->format('Y-m')] = [$start->toDateString(), $endingAt->copy()->subMonthsNoOverflow($i)->endOfMonth()->toDateString()];
+            $labels[$start->format('Y-m')] = $start->format('M Y');
         }
 
-        return $rows;
+        $totals = $this->reports->revenueAndExpensesByPeriod($periods);
+
+        return collect($labels)->map(fn (string $label, string $key) => [
+            'month' => $label,
+            'revenue' => $totals[$key]['revenue'],
+            'expenses' => $totals[$key]['expenses'],
+        ])->values()->all();
     }
 
     /**

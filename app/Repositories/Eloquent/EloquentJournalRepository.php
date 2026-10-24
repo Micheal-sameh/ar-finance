@@ -65,9 +65,9 @@ class EloquentJournalRepository implements JournalRepositoryInterface
         return $entry->load(['lines.account']);
     }
 
-    public function postedLinesWithAccounts(?string $from = null, ?string $to = null): Collection
+    public function postedLinesWithAccounts(?string $from = null, ?string $to = null, bool $withEntryDate = false): Collection
     {
-        $key = $this->tenantCacheKey().'|'.($from ?? '').'|'.($to ?? '');
+        $key = $this->tenantCacheKey().'|'.($from ?? '').'|'.($to ?? '').'|'.($withEntryDate ? 'dated' : '');
 
         if (array_key_exists($key, $this->postedLinesWithAccountsCache)) {
             return $this->postedLinesWithAccountsCache[$key];
@@ -79,6 +79,7 @@ class EloquentJournalRepository implements JournalRepositoryInterface
                     ->when($from, fn ($query, $value) => $query->whereDate('date', '>=', $value))
                     ->when($to, fn ($query, $value) => $query->whereDate('date', '<=', $value));
             })
+            ->when($withEntryDate, fn ($query) => $query->with('journalEntry:id,date'))
             ->get();
 
         $accounts = $this->accounts();

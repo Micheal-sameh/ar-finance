@@ -19,6 +19,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Rate Limiter Cache Store
+    |--------------------------------------------------------------------------
+    |
+    | The throttle middleware reads and writes its counters several times per
+    | request. Keep them off the database cache store; null uses the default.
+    |
+    */
+
+    'limiter' => env('CACHE_LIMITER_STORE'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Cache Stores
     |--------------------------------------------------------------------------
     |

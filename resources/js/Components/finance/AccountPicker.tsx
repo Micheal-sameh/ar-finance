@@ -119,6 +119,7 @@ export function AccountPicker({
                     className={`position-absolute w-100 py-1 ${dropUp ? 'mb-1' : 'mt-1'}`}
                     style={{
                         zIndex: 20,
+                        minWidth: '280px',
                         maxHeight: '260px',
                         overflowY: 'auto',
                         backgroundColor: 'var(--af-surface)',

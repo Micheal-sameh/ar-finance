@@ -418,10 +418,14 @@ class ReportService
         $totalRevenue = [];
         $totalExpenses = [];
 
+        $flowsByColumn = $groupBy === 'cost_center'
+            ? []
+            : $this->flowBalancesByPeriod(collect($columns)->mapWithKeys(fn ($column) => [$column['key'] => [$column['from'], $column['to']]])->all());
+
         foreach ($columns as $column) {
             $flows = $groupBy === 'cost_center'
                 ? $this->flowBalancesByType($from, $to, [AccountType::Revenue, AccountType::Expense], $column['cost_center_filter'])
-                : $this->flowBalancesByType($column['from'], $column['to'], [AccountType::Revenue, AccountType::Expense]);
+                : $flowsByColumn[$column['key']];
 
             $revenueRows = $flows->get(AccountType::Revenue->value, collect());
             $expenseRows = $flows->get(AccountType::Expense->value, collect());
@@ -468,6 +472,52 @@ class ReportService
             'total_expenses' => $totalExpensesRow,
             'net_profit' => ['amounts' => $netProfitAmounts, 'total' => round(array_sum($netProfitAmounts), 2)],
         ];
+    }
+
+    /**
+     * Monthly revenue and expense totals for each [from, to] period, from a
+     * single query over the whole span instead of one per period.
+     *
+     * @param  array<string, array{0: string, 1: string}>  $periods  keyed by any label
+     * @return array<string, array{revenue: float, expenses: float}>
+     */
+    public function revenueAndExpensesByPeriod(array $periods): array
+    {
+        return collect($this->flowBalancesByPeriod($periods))->map(fn (Collection $flows) => [
+            'revenue' => round((float) $flows->get(AccountType::Revenue->value, collect())->sum('current'), 2),
+            'expenses' => round((float) $flows->get(AccountType::Expense->value, collect())->sum('current'), 2),
+        ])->all();
+    }
+
+    /**
+     * Revenue/expense flows for several date ranges using one query for the
+     * whole span (see flowBalancesByType for the per-range shape).
+     *
+     * @param  array<string, array{0: string, 1: string}>  $periods
+     * @return array<string, Collection<string, Collection<int, array{account_id: int, code: string, name: string, current: float}>>>
+     */
+    private function flowBalancesByPeriod(array $periods): array
+    {
+        if ($periods === []) {
+            return [];
+        }
+
+        $spanFrom = min(array_column($periods, 0));
+        $spanTo = max(array_column($periods, 1));
+        $lines = $this->journals->postedLinesWithAccounts($spanFrom, $spanTo, withEntryDate: true);
+
+        $flows = [];
+        foreach ($periods as $key => [$from, $to]) {
+            $periodLines = $lines->filter(function ($line) use ($from, $to) {
+                $date = $line->journalEntry->date->toDateString();
+
+                return $date >= $from && $date <= $to;
+            });
+
+            $flows[$key] = $this->flowBalancesByType($from, $to, [AccountType::Revenue, AccountType::Expense], null, $periodLines);
+        }
+
+        return $flows;
     }
 
     /**
@@ -902,9 +952,9 @@ class ReportService
      * @param  AccountType[]  $types
      * @return Collection<string, Collection<int, array{account_id: int, code: string, name: string, current: float}>>
      */
-    private function flowBalancesByType(string $from, string $to, array $types, int|string|null $costCenterFilter = null): Collection
+    private function flowBalancesByType(string $from, string $to, array $types, int|string|null $costCenterFilter = null, ?Collection $prefetchedLines = null): Collection
     {
-        $lines = $this->journals->postedLinesWithAccounts($from, $to)
+        $lines = ($prefetchedLines ?? $this->journals->postedLinesWithAccounts($from, $to))
             ->filter(fn ($line) => in_array($line->account->type, $types, true));
 
         if ($costCenterFilter === 'unassigned') {
