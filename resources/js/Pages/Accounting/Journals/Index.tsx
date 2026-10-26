@@ -70,9 +70,9 @@ export default function JournalsIndex({ entries, filters, authorOptions, viewing
                         : 'Every posted transaction in the general ledger.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <ExportButton href={route('journals.export', filters)} />
+                            {!viewingAllTenants && <ExportButton href={route('journals.export', filters)} />}
                             <Link href={route('journals.create')}>
                                 <Button leadingIcon={<Plus size={16} />}>New Entry</Button>
                             </Link>
@@ -149,7 +149,7 @@ export default function JournalsIndex({ entries, filters, authorOptions, viewing
                         title="No journal entries yet"
                         description="Post your first manual journal entry to see it here."
                         action={
-                            !viewingAllTenants && (
+                            (
                                 <Link href={route('journals.create')}>
                                     <Button>New Entry</Button>
                                 </Link>
@@ -170,8 +170,8 @@ export default function JournalsIndex({ entries, filters, authorOptions, viewing
                             {entries.data.map((entry) => (
                                 <Table.Row
                                     key={entry.id}
-                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
-                                    onClick={viewingAllTenants ? undefined : () => router.get(route('journals.show', entry.id))}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('journals.show', entry.id))}
                                 >
                                     <Table.Cell className="ps-3" label="Date">{formatDate(entry.date)}</Table.Cell>
                                     <Table.Cell label="Description">{entry.description}</Table.Cell>

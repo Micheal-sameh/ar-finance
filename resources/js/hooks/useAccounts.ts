@@ -13,7 +13,7 @@ interface UseAccountsResult {
  * the app (AccountPicker, journal line rows, report filters, ...).
  * Fetched once per mount from GET /accounts/options.
  */
-export function useAccounts(): UseAccountsResult {
+export function useAccounts(tenantId: number | null = null): UseAccountsResult {
     const [accounts, setAccounts] = useState<AccountOption[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export function useAccounts(): UseAccountsResult {
     useEffect(() => {
         let cancelled = false;
 
-        api.get<AccountOption[]>(route('accounts.options'))
+        api.get<AccountOption[]>(route('accounts.options'), { params: tenantId !== null ? { for_tenant: tenantId } : undefined })
             .then((response) => {
                 if (!cancelled) setAccounts(response.data);
             })
@@ -35,7 +35,7 @@ export function useAccounts(): UseAccountsResult {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [tenantId]);
 
     return { accounts, loading, error };
 }

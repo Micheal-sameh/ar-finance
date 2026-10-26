@@ -20,6 +20,7 @@ class BookingTypeResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'bookable_items_count' => $this->bookable_items_count,
+            'tenant_id' => $this->tenant_id,
             'tenant_name' => app(TenantContext::class)->isViewingAllTenants() ? $this->tenant?->name : null,
         ];
     }

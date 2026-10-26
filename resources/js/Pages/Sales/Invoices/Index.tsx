@@ -70,11 +70,11 @@ export default function InvoicesIndex({ invoices, filters, statusCounts, viewing
                 title="Invoices"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s invoices, combined. Switch into a service to manage one.'
+                        ? 'Every service’s invoices, combined.'
                         : 'Create, send, and track customer invoices.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <Link href={route('invoices.create')} className="button primary">
                             <Icon name="plus" size={17} />
                             New invoice
@@ -145,8 +145,8 @@ export default function InvoicesIndex({ invoices, filters, statusCounts, viewing
                             {invoices.data.map((invoice) => (
                                 <tr
                                     key={invoice.id}
-                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
-                                    onClick={viewingAllTenants ? undefined : () => router.get(route('invoices.show', invoice.id))}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('invoices.show', invoice.id))}
                                 >
                                     <td>
                                         <b className="link">{invoice.invoice_number}</b>

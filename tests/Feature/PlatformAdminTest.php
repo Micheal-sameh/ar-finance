@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\AccountType;
 use App\Models\Account;
+use App\Models\Client;
 use App\Models\CostCenter;
 use App\Models\Tenant;
 use App\Models\User;
@@ -441,13 +442,14 @@ class PlatformAdminTest extends TestCase
         $calendarResponse->assertJsonFragment([
             'id' => $booking->id,
             'tenant_name' => 'Alpha Co',
-            'can_cancel' => false,
-            'can_mark_paid' => false,
-            'can_pay_deposit' => false,
+            'tenant_id' => $booking->tenant_id,
+            'can_cancel' => true,
+            'can_mark_paid' => true,
+            'can_pay_deposit' => true,
         ]);
     }
 
-    public function test_platform_admin_without_an_active_tenant_cannot_create_a_booking(): void
+    public function test_platform_admin_books_an_item_in_the_items_own_tenant_without_switching(): void
     {
         $admin = $this->platformAdmin();
 
@@ -475,7 +477,82 @@ class PlatformAdminTest extends TestCase
             'ends_at' => '2026-10-10 12:00:00',
         ]);
 
-        $response->assertRedirect(route('platform.dashboard'));
-        $this->assertDatabaseCount('bookings', 0);
+        $response->assertRedirect();
+        $this->assertDatabaseHas('bookings', ['tenant_id' => $tenant->id, 'bookable_item_id' => $item->id]);
+    }
+
+    public function test_platform_admin_can_edit_and_delete_a_tenants_record_without_switching_into_it(): void
+    {
+        $admin = $this->platformAdmin();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+        $client = Client::create(['tenant_id' => $tenant->id, 'name' => 'Old Name', 'currency' => 'EGP']);
+
+        $this->actingAs($admin)->put(route('clients.update', $client), ['name' => 'New Name', 'currency' => 'EGP'])
+            ->assertRedirect(route('clients.index'));
+
+        $this->assertDatabaseHas('clients', ['id' => $client->id, 'tenant_id' => $tenant->id, 'name' => 'New Name']);
+
+        $this->actingAs($admin)->delete(route('clients.destroy', $client))
+            ->assertRedirect(route('clients.index'));
+
+        $this->assertDatabaseMissing('clients', ['id' => $client->id]);
+        $this->assertNull(session('acting_tenant_id'));
+    }
+
+    public function test_platform_admin_can_create_a_record_in_a_named_tenant_without_switching_into_it(): void
+    {
+        $admin = $this->platformAdmin();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+
+        $this->actingAs($admin)->post(route('clients.store'), [
+            'for_tenant' => $tenant->id,
+            'name' => 'Fresh Client',
+            'currency' => 'EGP',
+        ])->assertRedirect(route('clients.index'));
+
+        $this->assertDatabaseHas('clients', ['tenant_id' => $tenant->id, 'name' => 'Fresh Client']);
+    }
+
+    public function test_platform_admin_opening_a_create_page_without_a_service_is_asked_to_pick_one(): void
+    {
+        $admin = $this->platformAdmin();
+        $tenant = Tenant::create(['name' => 'Acme', 'slug' => 'acme', 'base_currency' => 'EGP']);
+
+        $this->actingAs($admin)->get(route('invoices.create'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Platform/ChooseService')
+                ->where('tenants.0.id', $tenant->id)
+            );
+    }
+
+    public function test_platform_admin_cannot_name_an_inactive_tenant_to_create_into(): void
+    {
+        $admin = $this->platformAdmin();
+        $tenant = Tenant::create(['name' => 'Gone', 'slug' => 'gone', 'base_currency' => 'EGP', 'is_active' => false]);
+
+        $this->actingAs($admin)->post(route('clients.store'), [
+            'for_tenant' => $tenant->id,
+            'name' => 'Ghost',
+            'currency' => 'EGP',
+        ])->assertRedirect(route('platform.dashboard'));
+
+        $this->assertDatabaseMissing('clients', ['name' => 'Ghost']);
+    }
+
+    public function test_ordinary_user_cannot_use_for_tenant_to_reach_another_tenant(): void
+    {
+        $own = Tenant::create(['name' => 'Own Co', 'slug' => 'own-co', 'base_currency' => 'EGP']);
+        $other = Tenant::create(['name' => 'Other Co', 'slug' => 'other-co', 'base_currency' => 'EGP']);
+        $user = User::factory()->create(['tenant_id' => $own->id]);
+        $user->assignRole('Admin');
+
+        $this->actingAs($user)->post(route('clients.store'), [
+            'for_tenant' => $other->id,
+            'name' => 'Sneaky',
+            'currency' => 'EGP',
+        ]);
+
+        $this->assertDatabaseMissing('clients', ['tenant_id' => $other->id, 'name' => 'Sneaky']);
     }
 }

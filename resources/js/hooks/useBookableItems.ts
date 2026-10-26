@@ -12,11 +12,6 @@ interface UseBookableItemsResult {
  * Active bookable items for the calendar's "new booking" picker. Fetched
  * once per mount from GET /bookable-items/options — same pattern as
  * useCostCenters().
- *
- * That endpoint is tenant-gated and redirects (HTML, not JSON) for a
- * Platform Admin browsing "All tenants", so callers in that mode should
- * pass `enabled: false` — booking isn't available there anyway. The
- * response is still checked defensively in case that redirect is ever hit.
  */
 export function useBookableItems(enabled: boolean = true): UseBookableItemsResult {
     const [items, setItems] = useState<BookableItemOption[]>([]);

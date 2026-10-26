@@ -3,6 +3,7 @@ import { Select, type SelectProps } from '@/Components/ui/Select';
 import type { CostCenterType } from '@/types/finance';
 
 export interface CostCenterPickerProps extends Omit<SelectProps, 'value' | 'onChange'> {
+    tenantId?: number | null;
     value: number | null;
     onChange: (costCenterId: number | null) => void;
     /** Only list centers of this type (e.g. profit centers for revenue lines). */
@@ -19,8 +20,8 @@ const GROUPS: { type: CostCenterType; label: string }[] = [
  * Cost centers are a short, flat-ish list per tenant, so a plain select
  * is enough — no need for AccountPicker's searchable combobox treatment.
  */
-export function CostCenterPicker({ value, onChange, filterType = null, ...rest }: CostCenterPickerProps) {
-    const { costCenters, loading } = useCostCenters();
+export function CostCenterPicker({ value, onChange, filterType = null, tenantId = null, ...rest }: CostCenterPickerProps) {
+    const { costCenters, loading } = useCostCenters(tenantId);
 
     return (
         <Select

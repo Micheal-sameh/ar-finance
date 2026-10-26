@@ -10,6 +10,7 @@ use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Services\EmployeeService;
 use App\Services\PayrollRunService;
+use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -25,15 +26,25 @@ class PayrollRunController extends Controller
     public function __construct(
         private readonly PayrollRunService $payrollRuns,
         private readonly EmployeeService $employees,
+        private readonly TenantContext $tenantContext,
     ) {}
 
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', PayrollRun::class);
 
+        $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
+
+        $payrollRuns = $this->payrollRuns->paginate($request->only(['status', 'from', 'to']))
+            ->through(fn (PayrollRun $run) => [
+                ...$run->toArray(),
+                'tenant_name' => $viewingAllTenants ? $run->tenant?->name : null,
+            ]);
+
         return Inertia::render('Payroll/PayrollRuns/Index', [
-            'payrollRuns' => $this->payrollRuns->paginate($request->only(['status', 'from', 'to'])),
+            'payrollRuns' => $payrollRuns,
             'filters' => $request->only(['status', 'from', 'to']),
+            'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 

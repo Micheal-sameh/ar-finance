@@ -114,6 +114,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('bills', [BillController::class, 'index'])->name('bills.index');
     Route::get('fixed-assets', [FixedAssetController::class, 'index'])->name('fixed-assets.index');
     Route::get('employees', [EmployeeController::class, 'index'])->name('employees.index');
+    Route::get('payroll-runs', [PayrollRunController::class, 'index'])->name('payroll-runs.index');
     Route::get('bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts.index');
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::get('exchange-rates', [ExchangeRateController::class, 'index'])->name('exchange-rates.index');
@@ -181,7 +182,7 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::resource('employees', EmployeeController::class)->only(['store', 'update', 'destroy']);
 
     Route::get('payroll-runs/export', [PayrollRunController::class, 'export'])->name('payroll-runs.export');
-    Route::resource('payroll-runs', PayrollRunController::class)->only(['index', 'create', 'store', 'show']);
+    Route::resource('payroll-runs', PayrollRunController::class)->only(['create', 'store', 'show']);
     Route::post('payroll-runs/{payroll_run}/approve', [PayrollRunController::class, 'approve'])->name('payroll-runs.approve');
     Route::post('payroll-runs/{payroll_run}/pay', [PayrollRunController::class, 'markPaid'])->name('payroll-runs.mark-paid');
     Route::get('payroll-runs/{payroll_run}/payslips/{payslip}/pdf', [PayrollRunController::class, 'payslipPdf'])->name('payroll-runs.payslips.pdf');

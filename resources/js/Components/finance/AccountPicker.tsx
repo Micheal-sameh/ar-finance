@@ -26,6 +26,8 @@ export interface AccountPickerProps {
     /** Parent accounts (those with children) are label-only and can't be posted to, so they're hidden by default. Pass true when picking a parent for another account. */
     includeParents?: boolean;
     dropUp?: boolean;
+    /** Service whose chart to list, for a Platform Admin creating from the combined view. */
+    tenantId?: number | null;
 }
 
 /**
@@ -43,8 +45,9 @@ export function AccountPicker({
     includeAncestor = false,
     includeParents = false,
     dropUp = false,
+    tenantId = null,
 }: AccountPickerProps) {
-    const { accounts, loading } = useAccounts();
+    const { accounts, loading } = useAccounts(tenantId);
     const [query, setQuery] = useState('');
 
     const parentIds = useMemo(() => new Set(accounts.filter((a) => a.parent_id).map((a) => a.parent_id)), [accounts]);

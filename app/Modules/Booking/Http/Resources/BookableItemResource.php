@@ -25,6 +25,7 @@ class BookableItemResource extends JsonResource
                 'rate_type' => $type->pivot->rate_type,
                 'price' => $type->pivot->price,
             ])->values(),
+            'tenant_id' => $this->tenant_id,
             'tenant_name' => app(TenantContext::class)->isViewingAllTenants() ? $this->tenant?->name : null,
         ];
     }

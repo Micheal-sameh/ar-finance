@@ -3,6 +3,7 @@ import { Pencil, Plus, Trash2, Users2 } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import { ServiceField } from '@/Components/layout/ServiceField';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
@@ -25,6 +26,7 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Employee | null>(null);
+    const [serviceId, setServiceId] = useState<number | null>(null);
 
     const form = useForm({
         name: '',
@@ -37,6 +39,7 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
 
     function openCreate() {
         setEditing(null);
+        setServiceId(null);
         form.reset();
         form.clearErrors();
         setModalOpen(true);
@@ -58,6 +61,8 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
 
     function submit(e: FormEvent) {
         e.preventDefault();
+
+        form.transform((data) => (editing ? data : { ...data, for_tenant: serviceId }));
 
         if (editing) {
             form.put(route('employees.update', editing.id), { onSuccess: () => setModalOpen(false) });
@@ -90,13 +95,13 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                 title="Employees"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s employees, combined. Switch into a service to manage one.'
+                        ? 'Every service’s employees, combined.'
                         : 'Everyone on payroll.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <ExportButton href={route('employees.export', filters)} />
+                            {!viewingAllTenants && <ExportButton href={route('employees.export', filters)} />}
                             <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
                                 New Employee
                             </Button>
@@ -120,7 +125,7 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                         icon={<Users2 size={20} />}
                         title="No employees yet"
                         description="Add an employee before running payroll."
-                        action={!viewingAllTenants && <Button onClick={openCreate}>New Employee</Button>}
+                        action={<Button onClick={openCreate}>New Employee</Button>}
                     />
                 ) : (
                     <Table>
@@ -130,7 +135,7 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                             <Table.HeadCell className="text-end">Salary</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
                             {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
-                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
+                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {employees.data.map((employee) => (
@@ -146,7 +151,7 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                                         </Badge>
                                     </Table.Cell>
                                     {viewingAllTenants && <Table.Cell>{employee.tenant_name}</Table.Cell>}
-                                    {!viewingAllTenants && (
+                                    {(
                                         <Table.Cell className="text-end pe-3">
                                             <div className="d-flex justify-content-end gap-1">
                                                 <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(employee)} aria-label="Edit">
@@ -181,6 +186,9 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    {viewingAllTenants && !editing && (
+                        <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
+                    )}
                     <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                     <Input label="Email" type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
                     <Input label="Job title" value={form.data.job_title} onChange={(e) => form.setData('job_title', e.target.value)} error={form.errors.job_title} />

@@ -17,6 +17,7 @@ import { formatDate } from '@/utils/finance';
 interface Props {
     payrollRuns: Paginated<PayrollRun>;
     filters: { status?: string; from?: string; to?: string };
+    viewingAllTenants: boolean;
 }
 
 const PAYROLL_RUN_STATUSES: { value: PayrollRunStatus; label: string }[] = [
@@ -33,7 +34,7 @@ function totalNet(run: PayrollRun): number {
     return run.payslips.reduce((sum, p) => sum + parseFloat(p.net_pay), 0);
 }
 
-export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
+export default function PayrollRunsIndex({ payrollRuns, filters, viewingAllTenants }: Props) {
     function runFilters(next: Partial<Props['filters']>) {
         router.get(route('payroll-runs.index'), { ...filters, ...next }, { preserveState: true });
     }
@@ -51,7 +52,7 @@ export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
                 subtitle="Approving posts Payroll Expense against Salaries Payable."
                 action={
                     <div className="d-flex gap-2">
-                        <ExportButton href={route('payroll-runs.export', filters)} />
+                        {!viewingAllTenants && <ExportButton href={route('payroll-runs.export', filters)} />}
                         <Link href={route('payroll-runs.create')}>
                             <Button leadingIcon={<Plus size={16} />}>New Payroll Run</Button>
                         </Link>
@@ -111,6 +112,7 @@ export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
                     <Table>
                         <Table.Head>
                             <Table.HeadCell className="ps-3">Period</Table.HeadCell>
+                            {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
                             <Table.HeadCell>Pay date</Table.HeadCell>
                             <Table.HeadCell>Employees</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
@@ -121,6 +123,7 @@ export default function PayrollRunsIndex({ payrollRuns, filters }: Props) {
                                 <Table.Row key={run.id} style={{ cursor: 'pointer' }} onClick={() => router.get(route('payroll-runs.show', run.id))}>
                                     <Table.Cell className="ps-3">{formatDate(run.period_start)} – {formatDate(run.period_end)}</Table.Cell>
                                     <Table.Cell>{formatDate(run.pay_date)}</Table.Cell>
+                                    {viewingAllTenants && <Table.Cell>{run.tenant_name}</Table.Cell>}
                                     <Table.Cell>{run.payslips.length}</Table.Cell>
                                     <Table.Cell>
                                         <Badge variant={statusVariant(run.status)}>{run.status}</Badge>

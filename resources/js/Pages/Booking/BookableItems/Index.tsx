@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { CostCenterPicker } from '@/Components/finance/CostCenterPicker';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import { ServiceField } from '@/Components/layout/ServiceField';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
@@ -24,18 +25,21 @@ interface BookingTypeRow {
 
 interface Props {
     items: BookableItemsPage;
-    bookingTypeOptions: { id: number; name: string }[];
+    bookingTypeOptions: { id: number; name: string; tenant_id: number }[];
     filters: { search?: string };
     viewingAllTenants: boolean;
     canManage: boolean;
 }
 
 export default function BookableItemsIndex({ items, bookingTypeOptions, filters, viewingAllTenants, canManage }: Props) {
-    const canWrite = canManage && !viewingAllTenants;
+    const canWrite = canManage;
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<BookableItem | null>(null);
+    const [serviceId, setServiceId] = useState<number | null>(null);
+    const formTenantId = editing ? ((editing as { tenant_id?: number }).tenant_id ?? null) : serviceId;
+    const typeOptions = viewingAllTenants ? bookingTypeOptions.filter((option) => option.tenant_id === formTenantId) : bookingTypeOptions;
 
     const form = useForm<{
         name: string;
@@ -61,6 +65,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
 
     function openCreate() {
         setEditing(null);
+        setServiceId(null);
         form.reset();
         form.clearErrors();
         setModalOpen(true);
@@ -99,6 +104,8 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
 
     function submit(e: FormEvent) {
         e.preventDefault();
+
+        form.transform((data) => (editing ? data : { ...data, for_tenant: serviceId }));
 
         if (editing) {
             form.put(route('bookable-items.update', editing.id), { onSuccess: () => setModalOpen(false) });
@@ -244,6 +251,9 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    {viewingAllTenants && !editing && (
+                        <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
+                    )}
                     <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                     <Input
                         label="Description (optional)"
@@ -279,7 +289,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                                 Add type
                             </Button>
                         </div>
-                        {bookingTypeOptions.length === 0 && (
+                        {typeOptions.length === 0 && (
                             <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
                                 No booking types yet — <Link href={route('booking-types.index')}>create some first</Link>.
                             </div>
@@ -293,7 +303,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                                         error={(form.errors as Record<string, string>)[`booking_types.${index}.booking_type_id`]}
                                     >
                                         <option value="">Select a type</option>
-                                        {bookingTypeOptions.map((option) => (
+                                        {typeOptions.map((option) => (
                                             <option
                                                 key={option.id}
                                                 value={option.id}
@@ -345,6 +355,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                             Revenue account
                         </label>
                         <AccountPicker
+                            tenantId={formTenantId}
                             value={form.data.account_id}
                             onChange={(id) => form.setData('account_id', id)}
                             filterType="revenue"
@@ -359,6 +370,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                                     Deferred revenue account
                                 </label>
                                 <AccountPicker
+                                    tenantId={formTenantId}
                                     value={form.data.deferred_revenue_account_id}
                                     onChange={(id) => form.setData('deferred_revenue_account_id', id)}
                                     filterType="liability"
@@ -371,6 +383,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                                     Deposit received into
                                 </label>
                                 <AccountPicker
+                                    tenantId={formTenantId}
                                     value={form.data.deposit_payment_account_id}
                                     onChange={(id) => form.setData('deposit_payment_account_id', id)}
                                     filterType="asset"
@@ -384,7 +397,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
                             Cost/profit center
                         </label>
-                        <CostCenterPicker value={form.data.cost_center_id} onChange={(id) => form.setData('cost_center_id', id)} error={form.errors.cost_center_id} />
+                        <CostCenterPicker tenantId={formTenantId} value={form.data.cost_center_id} onChange={(id) => form.setData('cost_center_id', id)} error={form.errors.cost_center_id} />
                     </div>
                 </form>
             </Modal>

@@ -3,6 +3,7 @@ import { Landmark, Pencil, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import { ServiceField } from '@/Components/layout/ServiceField';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
@@ -32,6 +33,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<BankAccount | null>(null);
+    const [serviceId, setServiceId] = useState<number | null>(null);
 
     const form = useForm<{
         name: string;
@@ -49,6 +51,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
 
     function openCreate() {
         setEditing(null);
+        setServiceId(null);
         form.reset();
         form.clearErrors();
         setModalOpen(true);
@@ -69,6 +72,8 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
 
     function submit(e: FormEvent) {
         e.preventDefault();
+
+        form.transform((data) => (editing ? data : { ...data, for_tenant: serviceId }));
 
         if (editing) {
             form.put(route('bank-accounts.update', editing.id), { onSuccess: () => setModalOpen(false) });
@@ -110,13 +115,13 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                 title="Bank Accounts"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s bank accounts, combined. Switch into a service to manage one.'
+                        ? 'Every service’s bank accounts, combined.'
                         : 'Each links to a Chart of Accounts cash/bank account for reconciliation.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <ExportButton href={route('bank-accounts.export', filters)} />
+                            {!viewingAllTenants && <ExportButton href={route('bank-accounts.export', filters)} />}
                             <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
                                 New Bank Account
                             </Button>
@@ -164,7 +169,7 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                         icon={<Landmark size={20} />}
                         title="No bank accounts yet"
                         description="Add a bank account to start importing and reconciling transactions."
-                        action={!viewingAllTenants && <Button onClick={openCreate}>New Bank Account</Button>}
+                        action={<Button onClick={openCreate}>New Bank Account</Button>}
                     />
                 ) : (
                     <Table cards>
@@ -173,20 +178,20 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                             <Table.HeadCell>GL Account</Table.HeadCell>
                             <Table.HeadCell>Bank</Table.HeadCell>
                             {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
-                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
+                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {bankAccounts.data.map((bankAccount) => (
                                 <Table.Row
                                     key={bankAccount.id}
-                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
-                                    onClick={viewingAllTenants ? undefined : () => router.get(route('bank-accounts.show', bankAccount.id))}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('bank-accounts.show', bankAccount.id))}
                                 >
                                     <Table.Cell className="ps-3" label="Name">{bankAccount.name}</Table.Cell>
                                     <Table.Cell label="GL Account">{bankAccount.account ? `${bankAccount.account.code} · ${bankAccount.account.name}` : '—'}</Table.Cell>
                                     <Table.Cell label="Bank">{bankAccount.bank_name ?? '—'}</Table.Cell>
                                     {viewingAllTenants && <Table.Cell label="Service">{bankAccount.tenant_name}</Table.Cell>}
-                                    {!viewingAllTenants && (
+                                    {(
                                         <Table.Cell className="text-end pe-3" label="Actions" onClick={(e) => e.stopPropagation()}>
                                             <div className="d-flex justify-content-end gap-1">
                                                 <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => openEdit(bankAccount)} aria-label="Edit">
@@ -221,12 +226,15 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    {viewingAllTenants && !editing && (
+                        <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
+                    )}
                     <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} placeholder="e.g. Main Checking" />
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
                             GL account
                         </label>
-                        <AccountPicker value={form.data.account_id} onChange={(id) => form.setData('account_id', id)} error={form.errors.account_id} placeholder="e.g. Bank" />
+                        <AccountPicker value={form.data.account_id} tenantId={editing ? (editing as { tenant_id?: number }).tenant_id ?? null : serviceId} onChange={(id) => form.setData('account_id', id)} error={form.errors.account_id} placeholder="e.g. Bank" />
                     </div>
                     <Input label="Bank name" value={form.data.bank_name} onChange={(e) => form.setData('bank_name', e.target.value)} error={form.errors.bank_name} />
                     <Input label="Account number" value={form.data.account_number} onChange={(e) => form.setData('account_number', e.target.value)} error={form.errors.account_number} />

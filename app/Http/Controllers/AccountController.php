@@ -94,6 +94,7 @@ class AccountController extends Controller
                         'tenant_id' => $account->tenant_id,
                         'tenant_name' => $account->tenant?->name,
                         'account_id' => $account->id,
+                        'parent_id' => $account->parent_id,
                         'balance' => $balances[$account->id] ?? 0.0,
                         'is_active' => $account->is_active,
                     ])->values()->all(),

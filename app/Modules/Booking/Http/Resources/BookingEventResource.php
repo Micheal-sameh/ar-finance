@@ -43,9 +43,10 @@ class BookingEventResource extends JsonResource
             'balance_due' => $this->balanceDue(),
             'is_overdue' => $this->isOverdue(),
             'tenant_name' => $viewingAllTenants ? $this->tenant?->name : null,
-            'can_cancel' => ! $viewingAllTenants && $request->user()->can('cancel', $this->resource),
-            'can_mark_paid' => ! $viewingAllTenants && $request->user()->can('manage', $this->resource),
-            'can_pay_deposit' => ! $viewingAllTenants && $request->user()->can('manage', $this->resource),
+            'tenant_id' => $this->tenant_id,
+            'can_cancel' => $request->user()->can('cancel', $this->resource),
+            'can_mark_paid' => $request->user()->can('manage', $this->resource),
+            'can_pay_deposit' => $request->user()->can('manage', $this->resource),
             'is_mine' => $this->user_id === $request->user()->id,
         ];
     }

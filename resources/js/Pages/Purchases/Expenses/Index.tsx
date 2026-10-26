@@ -52,13 +52,13 @@ export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: 
                 title="Expenses"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s expenses, combined. Switch into a service to manage one.'
+                        ? 'Every service’s expenses, combined.'
                         : 'Spend recorded against the business.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <ExportButton href={route('expenses.export', filters)} />
+                            {!viewingAllTenants && <ExportButton href={route('expenses.export', filters)} />}
                             <Link href={route('expenses.create')}>
                                 <Button leadingIcon={<Plus size={16} />}>New Expense</Button>
                             </Link>
@@ -123,7 +123,7 @@ export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: 
                         title="No expenses yet"
                         description="Record your first expense."
                         action={
-                            !viewingAllTenants && (
+                            (
                                 <Link href={route('expenses.create')}>
                                     <Button>New Expense</Button>
                                 </Link>
@@ -145,8 +145,8 @@ export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: 
                             {expenses.data.map((expense) => (
                                 <Table.Row
                                     key={expense.id}
-                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
-                                    onClick={viewingAllTenants ? undefined : () => router.get(route('expenses.show', expense.id))}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('expenses.show', expense.id))}
                                 >
                                     <Table.Cell className="ps-3" label="Date">{formatDate(expense.date)}</Table.Cell>
                                     <Table.Cell label="Description">{expense.description}</Table.Cell>

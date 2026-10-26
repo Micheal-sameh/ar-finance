@@ -51,13 +51,13 @@ export default function FixedAssetsIndex({ fixedAssets, filters, viewingAllTenan
                 title="Fixed Assets"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s fixed assets, combined. Switch into a service to manage one.'
+                        ? 'Every service’s fixed assets, combined.'
                         : 'Depreciation register — straight-line, posted monthly.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <ExportButton href={route('fixed-assets.export', filters)} />
+                            {!viewingAllTenants && <ExportButton href={route('fixed-assets.export', filters)} />}
                             <Button variant="outline" leadingIcon={<Zap size={16} />} onClick={runDepreciation}>
                                 Run This Month's Depreciation
                             </Button>
@@ -85,7 +85,7 @@ export default function FixedAssetsIndex({ fixedAssets, filters, viewingAllTenan
                         title="No fixed assets yet"
                         description="Add an asset to start tracking its depreciation."
                         action={
-                            !viewingAllTenants && (
+                            (
                                 <Link href={route('fixed-assets.create')}>
                                     <Button>New Asset</Button>
                                 </Link>
@@ -106,8 +106,8 @@ export default function FixedAssetsIndex({ fixedAssets, filters, viewingAllTenan
                             {fixedAssets.data.map((asset) => (
                                 <Table.Row
                                     key={asset.id}
-                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
-                                    onClick={viewingAllTenants ? undefined : () => router.get(route('fixed-assets.show', asset.id))}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('fixed-assets.show', asset.id))}
                                 >
                                     <Table.Cell className="ps-3" label="Name">{asset.name}</Table.Cell>
                                     <Table.Cell label="Purchase date">{formatDate(asset.purchase_date)}</Table.Cell>

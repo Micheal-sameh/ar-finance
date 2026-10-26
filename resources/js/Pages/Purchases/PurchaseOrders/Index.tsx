@@ -65,13 +65,13 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters, viewingAl
                 title="Purchase Orders"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s purchase orders, combined. Switch into a service to manage one.'
+                        ? 'Every service’s purchase orders, combined.'
                         : 'Pre-commitments to vendors — convert one to a bill once the goods or work arrive.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <ExportButton href={route('purchase-orders.export', filters)} />
+                            {!viewingAllTenants && <ExportButton href={route('purchase-orders.export', filters)} />}
                             <Link href={route('purchase-orders.create')}>
                                 <Button leadingIcon={<Plus size={16} />}>New Purchase Order</Button>
                             </Link>
@@ -132,7 +132,7 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters, viewingAl
                         title="No purchase orders yet"
                         description="Create a purchase order to commit to a vendor before billing."
                         action={
-                            !viewingAllTenants && (
+                            (
                                 <Link href={route('purchase-orders.create')}>
                                     <Button>New Purchase Order</Button>
                                 </Link>
@@ -153,8 +153,8 @@ export default function PurchaseOrdersIndex({ purchaseOrders, filters, viewingAl
                             {purchaseOrders.data.map((po) => (
                                 <Table.Row
                                     key={po.id}
-                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
-                                    onClick={viewingAllTenants ? undefined : () => router.get(route('purchase-orders.show', po.id))}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('purchase-orders.show', po.id))}
                                 >
                                     <Table.Cell className="ps-3">{po.po_number}</Table.Cell>
                                     <Table.Cell>{po.vendor?.name ?? '—'}</Table.Cell>

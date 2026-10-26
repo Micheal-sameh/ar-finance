@@ -13,13 +13,13 @@ use Illuminate\Support\Facades\Route;
 // specific tenant, so those stay in the tenant-gated group below.
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('bookable-items', [BookableItemController::class, 'index'])->name('bookable-items.index');
+    Route::get('bookable-items/options', [BookableItemController::class, 'options'])->name('bookable-items.options');
     Route::get('booking-types', [BookingTypeController::class, 'index'])->name('booking-types.index');
     Route::get('bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::get('bookings/calendar', [BookingController::class, 'calendar'])->name('bookings.calendar');
 });
 
 Route::middleware(['auth', 'active', 'tenant'])->group(function () {
-    Route::get('bookable-items/options', [BookableItemController::class, 'options'])->name('bookable-items.options');
     Route::resource('bookable-items', BookableItemController::class)->only(['store', 'update', 'destroy']);
 
     Route::resource('booking-types', BookingTypeController::class)->only(['store', 'update', 'destroy']);

@@ -4,6 +4,7 @@ import { Fragment, FormEvent, useMemo, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import { ServiceField } from '@/Components/layout/ServiceField';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
@@ -28,6 +29,7 @@ interface MergedAccountTenant {
     tenant_id: number;
     tenant_name: string;
     account_id: number;
+    parent_id: number | null;
     balance: number;
     is_active: boolean;
 }
@@ -269,6 +271,7 @@ interface MergedAccountTreeRowsProps {
     onToggle: (code: string) => void;
     expandedTenantsFor: Set<string>;
     onToggleTenants: (code: string) => void;
+    onEditTenantAccount: (node: MergedAccountNode, tenant: MergedAccountTenant) => void;
     baseCurrency: string;
 }
 
@@ -284,8 +287,17 @@ function MergedAccountTreeRows({
     onToggle,
     expandedTenantsFor,
     onToggleTenants,
+    onEditTenantAccount,
     baseCurrency,
 }: MergedAccountTreeRowsProps) {
+    const confirm = useConfirm();
+
+    async function removeTenantAccount(tenant: MergedAccountTenant) {
+        if (await confirm(`Delete ${node.code} ${node.name} from ${tenant.tenant_name}?`, { variant: 'danger', confirmLabel: 'Delete' })) {
+            router.delete(route('accounts.destroy', tenant.account_id));
+        }
+    }
+
     const hasChildren = node.children.length > 0;
     const isExpanded = !collapsedCodes.has(node.code);
     const tenantsExpanded = expandedTenantsFor.has(node.code);
@@ -353,6 +365,12 @@ function MergedAccountTreeRows({
                         </Table.Cell>
                         <Table.Cell>
                             <Badge variant={tenant.is_active ? 'success' : 'neutral'}>{tenant.is_active ? 'Active' : 'Inactive'}</Badge>
+                            <button type="button" className="btn btn-sm p-1 ms-2" style={{ color: 'var(--af-label)' }} onClick={() => onEditTenantAccount(node, tenant)} aria-label="Edit">
+                                <Pencil size={14} />
+                            </button>
+                            <button type="button" className="btn btn-sm p-1 ms-2" style={{ color: 'var(--af-danger)' }} onClick={() => removeTenantAccount(tenant)} aria-label="Delete">
+                                <Trash2 size={14} />
+                            </button>
                         </Table.Cell>
                     </Table.Row>
                 ))}
@@ -367,6 +385,7 @@ function MergedAccountTreeRows({
                         onToggle={onToggle}
                         expandedTenantsFor={expandedTenantsFor}
                         onToggleTenants={onToggleTenants}
+                        onEditTenantAccount={onEditTenantAccount}
                         baseCurrency={baseCurrency}
                     />
                 ))}
@@ -388,6 +407,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Account | null>(null);
+    const [serviceId, setServiceId] = useState<number | null>(null);
     const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
     const [collapsedCodes, setCollapsedCodes] = useState<Set<string>>(new Set());
     const [expandedTenantsFor, setExpandedTenantsFor] = useState<Set<string>>(new Set());
@@ -458,9 +478,22 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
 
     function openCreate() {
         setEditing(null);
+        setServiceId(null);
         form.reset();
         form.clearErrors();
         setModalOpen(true);
+    }
+
+    function editTenantAccount(node: MergedAccountNode, tenant: MergedAccountTenant) {
+        openEdit({
+            id: tenant.account_id,
+            tenant_id: tenant.tenant_id,
+            code: node.code,
+            name: node.name,
+            type: node.type,
+            currency: node.currency,
+            parent_id: tenant.parent_id,
+        } as unknown as Account);
     }
 
     function openEdit(account: Account) {
@@ -479,6 +512,8 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
 
     function submit(e: FormEvent) {
         e.preventDefault();
+
+        form.transform((data) => (editing ? data : { ...data, for_tenant: serviceId }));
 
         if (editing) {
             form.put(route('accounts.update', editing.id), { onSuccess: () => setModalOpen(false) });
@@ -529,16 +564,18 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                 title="Chart of Accounts"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s chart of accounts, combined. Switch into a service to manage it.'
+                        ? 'Every service’s chart of accounts, combined.'
                         : 'Every posting account in the ledger, grouped by type.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex flex-wrap gap-2">
-                            <ExportButton href={route('accounts.export', filters)} />
-                            <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={openImport}>
+                            {!viewingAllTenants && <ExportButton href={route('accounts.export', filters)} />}
+                            {!viewingAllTenants && (
+                                <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={openImport}>
                                 Import from Excel
                             </Button>
+                            )}
                             <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
                                 New Account
                             </Button>
@@ -595,7 +632,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                         icon={<ListTree size={20} />}
                         title="No accounts yet"
                         description="Create your first account to start building the chart of accounts."
-                        action={!viewingAllTenants && <Button onClick={openCreate}>New Account</Button>}
+                        action={<Button onClick={openCreate}>New Account</Button>}
                     />
                 ) : viewingAllTenants ? (
                     <Table>
@@ -633,6 +670,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                                                 onToggle={toggleCode}
                                                 expandedTenantsFor={expandedTenantsFor}
                                                 onToggleTenants={toggleTenantsFor}
+                                                onEditTenantAccount={editTenantAccount}
                                                 baseCurrency={baseCurrency}
                                             />
                                         ))}
@@ -704,6 +742,9 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    {viewingAllTenants && !editing && (
+                        <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
+                    )}
                     <Input
                         label="Code"
                         value={form.data.code}
@@ -747,6 +788,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                             Parent account (optional)
                         </label>
                         <AccountPicker
+                            tenantId={editing ? ((editing as { tenant_id?: number }).tenant_id ?? null) : serviceId}
                             value={form.data.parent_id}
                             onChange={(id) => form.setData('parent_id', id)}
                             error={form.errors.parent_id}

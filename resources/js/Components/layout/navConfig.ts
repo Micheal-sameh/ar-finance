@@ -95,9 +95,9 @@ export const navConfig: NavConfigGroup[] = [
         ],
     },
     {
-        // Every tenant's own data, combined and read-only — see
-        // TenantContext::isViewingAllTenants(). Switch into a tenant (nav
-        // dropdown) to create/edit/delete instead.
+        // Every tenant's own data, combined — see
+        // TenantContext::isViewingAllTenants(). Edit/delete act on the row's
+        // own service; creating asks which service it is for.
         label: 'All Services',
         platformOnly: true,
         items: [
@@ -109,9 +109,11 @@ export const navConfig: NavConfigGroup[] = [
             { label: 'Invoices', routeName: 'invoices.index', icon: FileText },
             { label: 'Expenses', routeName: 'expenses.index', icon: Receipt },
             { label: 'Bills', routeName: 'bills.index', icon: ReceiptText },
+            { label: 'Purchase Orders', routeName: 'purchase-orders.index', icon: ClipboardList },
             { label: 'Clients', routeName: 'clients.index', icon: Users },
             { label: 'Vendors', routeName: 'vendors.index', icon: Truck },
             { label: 'Employees', routeName: 'employees.index', icon: Users2 },
+            { label: 'Payroll Runs', routeName: 'payroll-runs.index', icon: LandmarkIcon },
             { label: 'Bank Accounts', routeName: 'bank-accounts.index', icon: Building2 },
             { label: 'Exchange Rates', routeName: 'exchange-rates.index', icon: ArrowLeftRight },
             { label: 'Users', routeName: 'users.index', icon: ShieldCheck },

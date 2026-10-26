@@ -39,7 +39,7 @@ interface Props {
 export default function CalendarIndex({ viewingAllTenants }: Props) {
     const calendarRef = useRef<FullCalendar>(null);
     const [isNarrowScreen] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767.98px)').matches);
-    const { items, loading: itemsLoading } = useBookableItems(!viewingAllTenants);
+    const { items, loading: itemsLoading } = useBookableItems();
 
     const [selection, setSelection] = useState<{ start: string; end: string } | null>(null);
     const [bookableItemId, setBookableItemId] = useState<number | null>(null);
@@ -299,7 +299,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                 title="Booking Calendar"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s bookings, combined and read-only. Switch into a service to book, cancel, or collect payment.'
+                        ? 'Every service’s bookings, combined. Pick an item to book it in its own service; click a day in month view to see that day’s bookings.'
                         : 'Select a time slot on the calendar to book it.'
                 }
             />
@@ -318,9 +318,10 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                         footerToolbar={isNarrowScreen ? { center: 'dayGridMonth,timeGridWeek,timeGridDay' } : undefined}
                         titleFormat={isNarrowScreen ? { month: 'short', day: 'numeric', year: 'numeric' } : undefined}
                         dayHeaderFormat={isNarrowScreen ? { weekday: 'short', day: 'numeric' } : undefined}
-                        selectable={!viewingAllTenants}
-                        select={viewingAllTenants ? undefined : handleSelect}
-                        dateClick={viewingAllTenants ? openDayView : undefined}
+                        selectable
+                        select={handleSelect}
+                        views={viewingAllTenants ? { dayGridMonth: { selectable: false } } : undefined}
+                        dateClick={viewingAllTenants ? (info: DateClickArg) => info.view.type === 'dayGridMonth' && openDayView(info) : undefined}
                         eventClick={(info: EventClickArg) => setSelectedEvent(info.event.extendedProps as BookingEvent)}
                         height="auto"
                         slotMinTime="06:00:00"
@@ -399,7 +400,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                         <option value="">{itemsLoading ? 'Loading…' : 'Select an item'}</option>
                         {items.map((item) => (
                             <option key={item.id} value={item.id}>
-                                {item.name} {item.is_exclusive ? '' : '(shared)'}
+                                {item.name}{viewingAllTenants && item.tenant_name ? ` · ${item.tenant_name}` : ''} {item.is_exclusive ? '' : '(shared)'}
                             </option>
                         ))}
                     </Select>
@@ -596,7 +597,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                     <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
                                         Received into
                                     </label>
-                                    <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" />
+                                    <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" tenantId={selectedEvent.tenant_id ?? null} />
                                 </div>
                             </div>
                         )}
@@ -613,7 +614,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                     <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
                                         Received into
                                     </label>
-                                    <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" />
+                                    <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" tenantId={selectedEvent.tenant_id ?? null} />
                                 </div>
                                 <Input
                                     type="datetime-local"

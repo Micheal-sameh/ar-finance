@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { Pencil, Plus, Trash2, Users } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import { ServiceField } from '@/Components/layout/ServiceField';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
@@ -31,6 +32,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Client | null>(null);
+    const [serviceId, setServiceId] = useState<number | null>(null);
 
     const form = useForm({
         name: '',
@@ -43,6 +45,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
 
     function openCreate() {
         setEditing(null);
+        setServiceId(null);
         form.reset();
         form.clearErrors();
         setModalOpen(true);
@@ -64,6 +67,8 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
 
     function submit(e: FormEvent) {
         e.preventDefault();
+
+        form.transform((data) => (editing ? data : { ...data, for_tenant: serviceId }));
 
         if (editing) {
             form.put(route('clients.update', editing.id), { onSuccess: () => setModalOpen(false) });
@@ -103,11 +108,11 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
 
             <PageHeader
                 title="Clients"
-                subtitle={viewingAllTenants ? 'Every service’s clients, combined. Switch into a service to manage one.' : 'Everyone you invoice.'}
+                subtitle={viewingAllTenants ? 'Every service’s clients, combined.' : 'Everyone you invoice.'}
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <ExportButton href={route('clients.export', filters)} />
+                            {!viewingAllTenants && <ExportButton href={route('clients.export', filters)} />}
                             <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
                                 New Client
                             </Button>
@@ -155,7 +160,7 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
                         icon={<Users size={20} />}
                         title="No clients yet"
                         description="Add a client before creating your first invoice."
-                        action={!viewingAllTenants && <Button onClick={openCreate}>New Client</Button>}
+                        action={<Button onClick={openCreate}>New Client</Button>}
                     />
                 ) : (
                     <Table cards>
@@ -165,21 +170,21 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
                             <Table.HeadCell>Phone</Table.HeadCell>
                             <Table.HeadCell>Currency</Table.HeadCell>
                             {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
-                            {!viewingAllTenants && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
+                            <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
                         </Table.Head>
                         <tbody>
                             {clients.data.map((client) => (
                                 <Table.Row
                                     key={client.id}
-                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
-                                    onClick={viewingAllTenants ? undefined : () => router.get(route('clients.show', client.id))}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('clients.show', client.id))}
                                 >
                                     <Table.Cell className="ps-3" label="Name">{client.name}</Table.Cell>
                                     <Table.Cell label="Email">{client.email ?? '—'}</Table.Cell>
                                     <Table.Cell label="Phone">{client.phone ?? '—'}</Table.Cell>
                                     <Table.Cell label="Currency">{client.currency}</Table.Cell>
                                     {viewingAllTenants && <Table.Cell label="Service">{client.tenant_name}</Table.Cell>}
-                                    {!viewingAllTenants && (
+                                    {(
                                         <Table.Cell className="text-end pe-3" label="Actions">
                                             <div className="d-flex justify-content-end gap-1">
                                                 <button
@@ -232,6 +237,9 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    {viewingAllTenants && !editing && (
+                        <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
+                    )}
                     <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                     <Input label="Email" type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
                     <Input label="Phone" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} />

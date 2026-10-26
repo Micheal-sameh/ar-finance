@@ -446,6 +446,7 @@ export interface Payslip {
 
 export interface PayrollRun {
     id: number;
+    tenant_name?: string | null;
     period_start: string;
     period_end: string;
     pay_date: string;

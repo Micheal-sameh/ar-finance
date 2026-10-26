@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Tenant;
 use Closure;
+use Illuminate\Http\Request;
 
 /**
  * Resolves the tenant_id that scoping (TenantScope/BelongsToTenant) and
@@ -23,6 +24,10 @@ class TenantContext
 
     private ?int $override = null;
 
+    private ?Request $requestedFor = null;
+
+    private ?int $requested = null;
+
     public function id(): ?int
     {
         if ($this->overriding) {
@@ -36,7 +41,7 @@ class TenantContext
         }
 
         if ($user->isPlatformAdmin()) {
-            return session('acting_tenant_id');
+            return session('acting_tenant_id') ?? $this->requestedTenantId();
         }
 
         // A multi-tenant user works in whichever of their tenants they last
@@ -48,6 +53,42 @@ class TenantContext
         }
 
         return $user->tenant_id;
+    }
+
+    /**
+     * The service a Platform Admin names for this one request, without
+     * switching into it — `for_tenant` in the query string or body. Writes
+     * (POST/PUT/DELETE) and JSON option lookups fall back to the same
+     * param on the Referer, so a create page opened with `?for_tenant=3`
+     * keeps its form submit and picker fetches scoped to service 3 without
+     * every form having to echo the id back. Inertia page visits do not use
+     * the Referer, so list pages stay in the combined "All services" view.
+     */
+    private function requestedTenantId(): ?int
+    {
+        $request = request();
+
+        if ($this->requestedFor === $request) {
+            return $this->requested;
+        }
+
+        $raw = $request->input('for_tenant');
+
+        if ($raw === null && (! $request->isMethodSafe() || ($request->expectsJson() && ! $request->header('X-Inertia')))) {
+            $referer = $request->headers->get('referer');
+
+            if ($referer !== null && parse_url($referer, PHP_URL_HOST) === $request->getHost()) {
+                parse_str((string) parse_url($referer, PHP_URL_QUERY), $query);
+                $raw = $query['for_tenant'] ?? null;
+            }
+        }
+
+        $id = is_scalar($raw) && ctype_digit((string) $raw) ? (int) $raw : null;
+
+        $this->requestedFor = $request;
+        $this->requested = $id !== null && Tenant::whereKey($id)->where('is_active', true)->exists() ? $id : null;
+
+        return $this->requested;
     }
 
     public function tenant(): ?Tenant

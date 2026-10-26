@@ -30,7 +30,7 @@ class BookingTypeService
      */
     public function options(): Collection
     {
-        return BookingType::query()->orderBy('name')->get(['id', 'name']);
+        return BookingType::query()->orderBy('name')->get(['id', 'name', 'tenant_id']);
     }
 
     public function create(string $name): BookingType

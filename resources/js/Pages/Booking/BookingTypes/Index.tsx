@@ -2,6 +2,7 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { Pencil, Plus, Tags, Trash2 } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import { ServiceField } from '@/Components/layout/ServiceField';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
@@ -18,15 +19,17 @@ interface Props {
 }
 
 export default function BookingTypesIndex({ types, viewingAllTenants, canManage }: Props) {
-    const canWrite = canManage && !viewingAllTenants;
+    const canWrite = canManage;
     const confirm = useConfirm();
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<BookingTypeSummary | null>(null);
+    const [serviceId, setServiceId] = useState<number | null>(null);
 
     const form = useForm({ name: '' });
 
     function openCreate() {
         setEditing(null);
+        setServiceId(null);
         form.reset();
         form.clearErrors();
         setModalOpen(true);
@@ -41,6 +44,8 @@ export default function BookingTypesIndex({ types, viewingAllTenants, canManage 
 
     function submit(e: FormEvent) {
         e.preventDefault();
+
+        form.transform((data) => (editing ? data : { ...data, for_tenant: serviceId }));
 
         if (editing) {
             form.put(route('booking-types.update', editing.id), { onSuccess: () => setModalOpen(false) });
@@ -136,7 +141,10 @@ export default function BookingTypesIndex({ types, viewingAllTenants, canManage 
                     </>
                 }
             >
-                <form onSubmit={submit}>
+                <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    {viewingAllTenants && !editing && (
+                        <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
+                    )}
                     <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                 </form>
             </Modal>

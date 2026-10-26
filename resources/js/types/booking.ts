@@ -34,6 +34,7 @@ export interface BookableItem {
 /** Lightweight shape returned by /bookable-items/options for the calendar's item picker. */
 export interface BookableItemOption {
     id: number;
+    tenant_name?: string | null;
     name: string;
     is_exclusive: boolean;
     deposit_percent: string | null;
@@ -59,6 +60,7 @@ export interface Booking {
 /** Shape returned by GET /bookings/calendar, ready for FullCalendar. */
 export interface BookingEvent {
     id: number;
+    tenant_id?: number | null;
     title: string;
     start: string;
     end: string;

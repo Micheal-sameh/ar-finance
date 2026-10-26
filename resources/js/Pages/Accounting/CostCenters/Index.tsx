@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { CostCenterPicker } from '@/Components/finance/CostCenterPicker';
 import { Icon } from '@/Components/layout/Icon';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import { ServiceField } from '@/Components/layout/ServiceField';
 import { Button } from '@/Components/ui/Button';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { ExportButton } from '@/Components/ui/ExportButton';
@@ -39,6 +40,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
     const [modalOpen, setModalOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
     const [editing, setEditing] = useState<CostCenter | null>(null);
+    const [serviceId, setServiceId] = useState<number | null>(null);
 
     const form = useForm<{
         name: string;
@@ -54,6 +56,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
 
     function openCreate() {
         setEditing(null);
+        setServiceId(null);
         form.reset();
         form.clearErrors();
         setModalOpen(true);
@@ -73,6 +76,8 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
 
     function submit(e: FormEvent) {
         e.preventDefault();
+
+        form.transform((data) => (editing ? data : { ...data, for_tenant: serviceId }));
 
         if (editing) {
             form.put(route('cost-centers.update', editing.id), { onSuccess: () => setModalOpen(false) });
@@ -120,16 +125,18 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                 title="P&C Centers"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s cost/profit centers, combined. Switch into a service to manage one.'
+                        ? 'Every service’s cost/profit centers, combined.'
                         : `Budget vs actual, ${filters.from} to ${filters.to}.`
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={() => setImportOpen(true)}>
+                            {!viewingAllTenants && (
+                                <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={() => setImportOpen(true)}>
                                 Import from Excel
                             </Button>
-                            <ExportButton href={route('cost-centers.export', filters)} />
+                            )}
+                            {!viewingAllTenants && <ExportButton href={route('cost-centers.export', filters)} />}
                             <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
                                 New Center
                             </Button>
@@ -196,7 +203,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                     </div>
                     <h2>No centers yet</h2>
                     <p>Create a cost or profit center to start tagging expenses and journal lines.</p>
-                    {!viewingAllTenants && (
+                    {(
                         <button type="button" className="button primary" onClick={openCreate}>
                             <Icon name="plus" size={16} />
                             New center
@@ -226,7 +233,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                                             {viewingAllTenants && costCenter.tenant_name && ` · ${costCenter.tenant_name}`}
                                         </p>
                                     </div>
-                                    {!viewingAllTenants && (
+                                    {(
                                         <>
                                             <button type="button" className="icon-btn" onClick={() => openEdit(costCenter)} aria-label="Edit">
                                                 <Pencil size={15} />
@@ -288,6 +295,9 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    {viewingAllTenants && !editing && (
+                        <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
+                    )}
                     <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                     <Select
                         label="Type"
@@ -312,7 +322,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
                             Parent (optional)
                         </label>
-                        <CostCenterPicker value={form.data.parent_id} onChange={(id) => form.setData('parent_id', id)} error={form.errors.parent_id} />
+                        <CostCenterPicker tenantId={editing ? ((editing as { tenant_id?: number }).tenant_id ?? null) : serviceId} value={form.data.parent_id} onChange={(id) => form.setData('parent_id', id)} error={form.errors.parent_id} />
                     </div>
                 </form>
             </Modal>

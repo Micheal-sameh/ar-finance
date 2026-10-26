@@ -60,13 +60,13 @@ export default function BillsIndex({ bills, filters, viewingAllTenants }: Props)
                 title="Bills"
                 subtitle={
                     viewingAllTenants
-                        ? 'Every service’s bills, combined. Switch into a service to manage one.'
+                        ? 'Every service’s bills, combined.'
                         : 'Vendor bills — approving posts spend to the ledger.'
                 }
                 action={
-                    !viewingAllTenants && (
+                    (
                         <div className="d-flex gap-2">
-                            <ExportButton href={route('bills.export', filters)} />
+                            {!viewingAllTenants && <ExportButton href={route('bills.export', filters)} />}
                             <Link href={route('bills.create')}>
                                 <Button leadingIcon={<Plus size={16} />}>New Bill</Button>
                             </Link>
@@ -127,7 +127,7 @@ export default function BillsIndex({ bills, filters, viewingAllTenants }: Props)
                         title="No bills yet"
                         description="Create a bill directly, or convert a purchase order into one."
                         action={
-                            !viewingAllTenants && (
+                            (
                                 <Link href={route('bills.create')}>
                                     <Button>New Bill</Button>
                                 </Link>
@@ -148,8 +148,8 @@ export default function BillsIndex({ bills, filters, viewingAllTenants }: Props)
                             {bills.data.map((bill) => (
                                 <Table.Row
                                     key={bill.id}
-                                    style={viewingAllTenants ? undefined : { cursor: 'pointer' }}
-                                    onClick={viewingAllTenants ? undefined : () => router.get(route('bills.show', bill.id))}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => router.get(route('bills.show', bill.id))}
                                 >
                                     <Table.Cell className="ps-3" label="Bill Number">{bill.bill_number}</Table.Cell>
                                     <Table.Cell label="Vendor">{bill.vendor?.name ?? '—'}</Table.Cell>

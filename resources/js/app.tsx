@@ -1,12 +1,13 @@
 import '../css/app.css';
 
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { route as routeFn } from 'ziggy-js';
 import { ConfirmProvider } from '@/Components/ui/ConfirmProvider';
 import { AppLayout } from '@/Layouts/AppLayout';
+import { setApiTenant } from '@/lib/api';
 
 declare global {
     const route: typeof routeFn;
@@ -31,6 +32,12 @@ createInertiaApp({
             return module;
         }),
     setup({ el, App, props }) {
+        const tenantOf = (page: { props: Record<string, unknown> }) =>
+            (page.props.platform as { activeTenantId: number | null } | null)?.activeTenantId ?? null;
+
+        setApiTenant(tenantOf(props.initialPage));
+        router.on('navigate', (event) => setApiTenant(tenantOf(event.detail.page)));
+
         const root = createRoot(el);
 
         root.render(

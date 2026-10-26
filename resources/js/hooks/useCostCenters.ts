@@ -13,7 +13,7 @@ interface UseCostCentersResult {
  * (JournalLineEditor rows, expense tagging, ...). Fetched once per mount
  * from GET /cost-centers/options.
  */
-export function useCostCenters(): UseCostCentersResult {
+export function useCostCenters(tenantId: number | null = null): UseCostCentersResult {
     const [costCenters, setCostCenters] = useState<CostCenterOption[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -21,7 +21,7 @@ export function useCostCenters(): UseCostCentersResult {
     useEffect(() => {
         let cancelled = false;
 
-        api.get<CostCenterOption[]>(route('cost-centers.options'))
+        api.get<CostCenterOption[]>(route('cost-centers.options'), { params: tenantId !== null ? { for_tenant: tenantId } : undefined })
             .then((response) => {
                 if (!cancelled) setCostCenters(response.data);
             })
@@ -35,7 +35,7 @@ export function useCostCenters(): UseCostCentersResult {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [tenantId]);
 
     return { costCenters, loading, error };
 }
