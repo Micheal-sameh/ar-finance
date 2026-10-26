@@ -327,7 +327,7 @@ export interface CostCenterSummaryRow {
 }
 
 export type PurchaseOrderStatus = 'draft' | 'sent' | 'closed' | 'cancelled';
-export type BillStatus = 'draft' | 'approved' | 'paid';
+export type BillStatus = 'draft' | 'approved' | 'partially_paid' | 'paid';
 
 export interface PurchaseOrderLine {
     id: number;
@@ -360,6 +360,16 @@ export interface BillLine {
     account?: Account;
 }
 
+export interface BillPayment {
+    id: number;
+    bill_id: number;
+    payment_account_id: number;
+    payment_account?: Account;
+    amount: string;
+    paid_on: string;
+    reference: string | null;
+}
+
 export interface Bill {
     id: number;
     vendor_id: number;
@@ -377,6 +387,8 @@ export interface Bill {
     cost_center_id: number | null;
     paid_at: string | null;
     lines: BillLine[];
+    payments?: BillPayment[];
+    tenant_id?: number;
     tenant_name?: string | null;
 }
 

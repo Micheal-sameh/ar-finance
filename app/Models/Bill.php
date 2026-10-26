@@ -59,6 +59,11 @@ class Bill extends Model
         return $this->belongsTo(Account::class, 'tax_receivable_account_id');
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(BillPayment::class);
+    }
+
     public function lines(): HasMany
     {
         return $this->hasMany(BillLine::class);
@@ -77,5 +82,18 @@ class Bill extends Model
     public function total(): float
     {
         return round($this->subtotal() + $this->totalTax(), 2);
+    }
+
+    public function amountPaid(): float
+    {
+        return round($this->payments->sum(fn (BillPayment $payment) => (float) $payment->amount), 2);
+    }
+
+    /**
+     * What is still owed to the vendor. Only meaningful once approved.
+     */
+    public function balanceDue(): float
+    {
+        return round($this->total() - $this->amountPaid(), 2);
     }
 }

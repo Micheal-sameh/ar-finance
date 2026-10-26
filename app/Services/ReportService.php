@@ -1189,7 +1189,7 @@ class ReportService
             fn ($bill) => $bill->vendor_id,
             fn ($bill) => $bill->vendor->name,
             fn ($bill) => $bill->due_date->toDateString(),
-            fn ($bill) => $bill->total(),
+            fn ($bill) => $bill->balanceDue(),
         );
     }
 

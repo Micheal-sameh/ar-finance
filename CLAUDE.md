@@ -196,3 +196,21 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - IMPORTANT: Activate `inertia-react-development` when working with Inertia React client-side patterns.
 
 </laravel-boost-guidelines>
+
+# Application Architecture (project conventions — follow for every change)
+
+Request flow, outside in. Keep each layer thin and put logic in the layer that owns it.
+
+1. **Route** (`routes/web.php`): named routes only. Authenticated tenant routes live in the `['auth', 'active', 'tenant', 'throttle:240,1']` group. Put fixed paths (`export`, `pay-batch`) before `{model}` paths.
+2. **FormRequest** (`app/Http/Requests/<Area>/`): one custom request per action, including GET lists and actions with no input (e.g. `ListBillsRequest`, `ApproveBillRequest`). It owns `authorize()` (a `can('x.manage')` permission), `rules()` (use `ExistsInTenant` for tenant-owned ids) and typed accessors that cast input (`amount(): ?float`, `filters(): array`, `toDto()`). Controllers never call `$request->validate()`, `$request->only()`, `filled()` or cast values themselves.
+3. **Controller** (`app/Http/Controllers/`): no business logic. It may `authorize()` via a policy, call exactly one service method, catch the service's `RuntimeException` (or a domain exception) and `return back()->with('error', ...)`, then return a redirect or `Inertia::render`. No query building, no loops/maps/arithmetic, no status-dependent branching, no row/export building. Use the `ExportsExcel` and `GeneratesPdf` traits.
+4. **Service** (`app/Services/`): all business rules, validation of state, `DB::transaction`, posting to the ledger via `JournalService`, building list rows, export rows and report data. Throws `RuntimeException` (or a named exception in `app/Exceptions/`) with a user-readable message.
+5. **Repository** (`app/Repositories/Contracts/` + `Eloquent/`, bound in `RepositoryServiceProvider`): all Eloquent queries, locks (`lockForUpdate`), eager loading. Services depend on the interface.
+6. **Model** (`app/Models/`): relations, casts, small pure calculations (`total()`, `balanceDue()`). Tenant-owned models use `BelongsToTenant`; financially sensitive ones use `Auditable`.
+7. **DTO / Enum** (`app/DTOs/`, `app/Enums/`): DTOs carry validated input to services; enums hold status logic (`isPayable()`, `label()`).
+
+Ledger rules: money only moves through `JournalService::postJournalEntry` with balanced lines; every posting is its own entry. Multi-record actions are all-or-nothing in one transaction. Bills/invoices keep their payments in a child table (e.g. `bill_payments`); amounts owed come from `total() - amountPaid()`, never from status alone.
+
+Frontend (`resources/js`): Inertia pages in `Pages/<Area>/`, shared UI in `Components/ui`, shared helpers and status labels/variants in `utils/finance.ts`, types in `types/finance.ts`. Every form field gets a `help="..."` (rendered as the click-to-open ⓘ `InfoTip`) written for a first-time user and checked against the real behaviour in the code.
+
+Tests: feature tests in `tests/Feature/` per area. Cover the happy path, each rejection (amount, date, status), permission (a `Viewer` gets 403), cross-tenant access (404), and that reports reflect the change.

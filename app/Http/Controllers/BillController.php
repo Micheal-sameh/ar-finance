@@ -4,14 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Controllers\Concerns\GeneratesPdf;
+use App\Http\Requests\Bills\ApproveBillRequest;
+use App\Http\Requests\Bills\ListBillsRequest;
 use App\Http\Requests\Bills\MarkBillPaidRequest;
+use App\Http\Requests\Bills\PayBillsRequest;
 use App\Http\Requests\Bills\StoreBillRequest;
 use App\Models\Bill;
 use App\Services\BillService;
 use App\Services\VendorService;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use RuntimeException;
@@ -28,40 +30,24 @@ class BillController extends Controller
         private readonly TenantContext $tenantContext,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(ListBillsRequest $request): Response
     {
-        $this->authorize('viewAny', Bill::class);
-
         $viewingAllTenants = $this->tenantContext->isViewingAllTenants();
 
-        $bills = $this->bills->paginate($request->only(['status', 'from', 'to', 'search']))
-            ->through(fn (Bill $bill) => [
-                ...$bill->toArray(),
-                'tenant_name' => $viewingAllTenants ? $bill->tenant?->name : null,
-            ]);
-
         return Inertia::render('Purchases/Bills/Index', [
-            'bills' => $bills,
-            'filters' => $request->only(['status', 'from', 'to', 'search']),
+            'bills' => $this->bills->listing($request->filters(), $viewingAllTenants),
+            'filters' => $request->filters(),
             'viewingAllTenants' => $viewingAllTenants,
         ]);
     }
 
-    public function export(Request $request): StreamedResponse
+    public function export(ListBillsRequest $request): StreamedResponse
     {
-        $this->authorize('viewAny', Bill::class);
-
-        $bills = $this->bills->paginate($request->only(['status', 'from', 'to', 'search']), $this->exportMaxRows());
-
-        $rows = collect($bills->items())->map(fn (Bill $bill) => [
-            $bill->bill_number,
-            $bill->vendor?->name,
-            $bill->due_date->toDateString(),
-            $bill->status->value,
-            (float) $bill->lines->sum(fn ($line) => $line->quantity * $line->unit_price),
-        ]);
-
-        return $this->exportXlsx('bills.xlsx', ['Bill Number', 'Vendor', 'Due Date', 'Status', 'Total'], $rows);
+        return $this->exportXlsx(
+            'bills.xlsx',
+            ['Bill Number', 'Vendor', 'Due Date', 'Status', 'Total', 'Paid', 'Balance Due'],
+            $this->bills->exportRows($request->filters(), $this->exportMaxRows()),
+        );
     }
 
     public function create(): Response
@@ -89,7 +75,7 @@ class BillController extends Controller
         return $this->downloadPdf(
             "{$bill->bill_number}.pdf",
             'pdf.bill',
-            ['bill' => $this->bills->find($bill->id)?->load('tenant')],
+            ['bill' => $this->bills->findForPdf($bill->id)],
         );
     }
 
@@ -100,10 +86,8 @@ class BillController extends Controller
         return redirect()->route('bills.show', $bill)->with('success', 'Bill saved as draft.');
     }
 
-    public function approve(Bill $bill): RedirectResponse
+    public function approve(ApproveBillRequest $request, Bill $bill): RedirectResponse
     {
-        $this->authorize('manage', $bill);
-
         try {
             $this->bills->approve($bill);
         } catch (RuntimeException $e) {
@@ -116,11 +100,22 @@ class BillController extends Controller
     public function markPaid(MarkBillPaidRequest $request, Bill $bill): RedirectResponse
     {
         try {
-            $this->bills->markPaid($bill, (int) $request->validated('payment_account_id'));
+            $this->bills->recordPayment($bill, $request->paymentAccountId(), $request->amount(), $request->paidOn(), $request->reference());
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', 'Bill marked as paid.');
+        return back()->with('success', 'Payment recorded.');
+    }
+
+    public function payMany(PayBillsRequest $request): RedirectResponse
+    {
+        try {
+            $paid = $this->bills->payMany($request->billIds(), $request->paymentAccountId(), $request->paidOn(), $request->reference());
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', "Paid {$paid} bill(s).");
     }
 }

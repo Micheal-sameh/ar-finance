@@ -171,6 +171,7 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::get('bills/export', [BillController::class, 'export'])->name('bills.export');
     Route::resource('bills', BillController::class)->only(['create', 'store', 'show']);
     Route::post('bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
+    Route::post('bills/pay-batch', [BillController::class, 'payMany'])->name('bills.pay-batch');
     Route::post('bills/{bill}/pay', [BillController::class, 'markPaid'])->name('bills.mark-paid');
     Route::get('bills/{bill}/pdf', [BillController::class, 'pdf'])->name('bills.pdf');
 

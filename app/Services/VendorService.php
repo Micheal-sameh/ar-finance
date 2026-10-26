@@ -59,7 +59,7 @@ class VendorService
     public function billHistory(Vendor $vendor): Collection
     {
         return $vendor->bills()
-            ->with(['lines', 'payableAccount', 'purchaseOrder'])
+            ->with(['lines', 'payments', 'payableAccount', 'purchaseOrder'])
             ->orderByDesc('bill_date')
             ->orderByDesc('id')
             ->get();
@@ -83,15 +83,13 @@ class VendorService
      */
     public function summarize(Collection $bills): array
     {
-        $billed = $bills->whereIn('status', [BillStatus::Approved, BillStatus::Paid]);
-        $paid = $bills->where('status', BillStatus::Paid);
-        $outstanding = $bills->where('status', BillStatus::Approved);
+        $billed = $bills->whereIn('status', [BillStatus::Approved, BillStatus::PartiallyPaid, BillStatus::Paid]);
 
         return [
             'bill_count' => $bills->count(),
             'total_billed' => round($billed->sum(fn (Bill $bill) => $bill->total()), 2),
-            'total_paid' => round($paid->sum(fn (Bill $bill) => $bill->total()), 2),
-            'outstanding' => round($outstanding->sum(fn (Bill $bill) => $bill->total()), 2),
+            'total_paid' => round($billed->sum(fn (Bill $bill) => $bill->amountPaid()), 2),
+            'outstanding' => round($billed->sum(fn (Bill $bill) => $bill->balanceDue()), 2),
         ];
     }
 

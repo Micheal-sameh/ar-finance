@@ -1,5 +1,5 @@
 import type { Variant } from '@/theme';
-import type { ExpenseStatus, InvoiceStatus } from '@/types/finance';
+import type { Bill, BillStatus, ExpenseStatus, InvoiceStatus } from '@/types/finance';
 
 export function invoiceStatusVariant(status: InvoiceStatus): Variant {
     return {
@@ -41,3 +41,33 @@ export function formatDate(value: string | null | undefined): string {
 
     return new Date(value).toLocaleDateString(undefined, { dateStyle: 'medium' });
 }
+
+/** Tax-inclusive bill total. */
+export function billTotal(bill: Bill): number {
+    return bill.lines.reduce(
+        (sum, line) => sum + parseFloat(line.quantity) * parseFloat(line.unit_price) * (1 + parseFloat(line.tax_rate) / 100),
+        0,
+    );
+}
+
+export function billAmountPaid(bill: Bill): number {
+    return (bill.payments ?? []).reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+}
+
+export function billBalanceDue(bill: Bill): number {
+    return Math.round((billTotal(bill) - billAmountPaid(bill)) * 100) / 100;
+}
+
+/** Posted to the ledger and still owing something to the vendor. */
+export function billIsPayable(bill: Bill): boolean {
+    return bill.status === 'approved' || bill.status === 'partially_paid';
+}
+
+export function billStatusLabel(status: BillStatus): string {
+    return { draft: 'Draft', approved: 'Approved', partially_paid: 'Partially paid', paid: 'Paid' }[status];
+}
+
+export function billStatusVariant(status: BillStatus): Variant {
+    return { draft: 'neutral', approved: 'warning', partially_paid: 'info', paid: 'success' }[status] as Variant;
+}
+

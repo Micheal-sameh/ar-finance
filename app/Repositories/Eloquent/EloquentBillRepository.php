@@ -3,6 +3,7 @@
 namespace App\Repositories\Eloquent;
 
 use App\Models\Bill;
+use App\Models\BillPayment;
 use App\Repositories\Contracts\BillRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -12,7 +13,7 @@ class EloquentBillRepository implements BillRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return Bill::query()
-            ->with(['vendor', 'lines', 'tenant:id,name'])
+            ->with(['vendor', 'lines', 'payments', 'tenant:id,name'])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['from'] ?? null, fn ($query, $from) => $query->whereDate('bill_date', '>=', $from))
             ->when($filters['to'] ?? null, fn ($query, $to) => $query->whereDate('bill_date', '<=', $to))
@@ -30,7 +31,7 @@ class EloquentBillRepository implements BillRepositoryInterface
 
     public function find(int $id): ?Bill
     {
-        return Bill::query()->with(['vendor', 'lines.account', 'payableAccount', 'purchaseOrder'])->find($id);
+        return Bill::query()->with(['vendor', 'lines.account', 'payableAccount', 'purchaseOrder', 'payments.paymentAccount'])->find($id);
     }
 
     public function create(array $attributes, array $lines): Bill
@@ -48,11 +49,33 @@ class EloquentBillRepository implements BillRepositoryInterface
         return $bill;
     }
 
+    public function createPayment(Bill $bill, array $attributes): BillPayment
+    {
+        return $bill->payments()->create($attributes);
+    }
+
+    public function findForPayment(int $id): ?Bill
+    {
+        return Bill::query()
+            ->with(['vendor', 'lines', 'payments'])
+            ->lockForUpdate()
+            ->find($id);
+    }
+
+    public function payableByIds(array $ids): Collection
+    {
+        return Bill::query()
+            ->with(['lines', 'payments'])
+            ->whereIn('id', $ids)
+            ->whereIn('status', ['approved', 'partially_paid'])
+            ->get();
+    }
+
     public function postedBetween(string $from, string $to): Collection
     {
         return Bill::query()
             ->with('lines')
-            ->whereIn('status', ['approved', 'paid'])
+            ->whereIn('status', ['approved', 'partially_paid', 'paid'])
             ->whereDate('bill_date', '>=', $from)
             ->whereDate('bill_date', '<=', $to)
             ->get();
@@ -61,8 +84,8 @@ class EloquentBillRepository implements BillRepositoryInterface
     public function outstanding(): Collection
     {
         return Bill::query()
-            ->with(['vendor', 'lines'])
-            ->where('status', 'approved')
+            ->with(['vendor', 'lines', 'payments'])
+            ->whereIn('status', ['approved', 'partially_paid'])
             ->orderBy('due_date')
             ->get();
     }

@@ -7,8 +7,8 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
 import { Table } from '@/Components/ui/Table';
-import type { Bill, BillStatus, PurchaseOrder, PurchaseOrderStatus, Vendor } from '@/types/finance';
-import { formatDate, formatDateTime } from '@/utils/finance';
+import type { Bill, PurchaseOrder, PurchaseOrderStatus, Vendor } from '@/types/finance';
+import { billStatusLabel, billStatusVariant, billTotal, formatDate, formatDateTime } from '@/utils/finance';
 
 interface Summary {
     bill_count: number;
@@ -24,23 +24,12 @@ interface Props {
     summary: Summary;
 }
 
-function billStatusVariant(status: BillStatus) {
-    return { draft: 'neutral', approved: 'warning', paid: 'success' }[status] as 'neutral' | 'warning' | 'success';
-}
-
 function poStatusVariant(status: PurchaseOrderStatus) {
     return { draft: 'neutral', sent: 'info', closed: 'success', cancelled: 'danger' }[status] as
         | 'neutral'
         | 'info'
         | 'success'
         | 'danger';
-}
-
-function billTotal(bill: Bill): number {
-    return bill.lines.reduce(
-        (sum, line) => sum + parseFloat(line.quantity) * parseFloat(line.unit_price) * (1 + parseFloat(line.tax_rate) / 100),
-        0,
-    );
 }
 
 function poTotal(po: PurchaseOrder): number {
@@ -130,7 +119,7 @@ export default function VendorsShow({ vendor, bills, purchaseOrders, summary }: 
                                     <Table.Cell>{formatDate(bill.bill_date)}</Table.Cell>
                                     <Table.Cell>{formatDate(bill.due_date)}</Table.Cell>
                                     <Table.Cell>
-                                        <Badge variant={billStatusVariant(bill.status)}>{bill.status}</Badge>
+                                        <Badge variant={billStatusVariant(bill.status)}>{billStatusLabel(bill.status)}</Badge>
                                     </Table.Cell>
                                     <Table.Cell className="text-end">
                                         <MoneyDisplay amount={billTotal(bill)} />
