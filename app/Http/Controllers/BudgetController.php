@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BudgetImportException;
 use App\Http\Controllers\Concerns\ExportsExcel;
+use App\Http\Requests\Budgets\ImportBudgetRequest;
 use App\Http\Requests\Budgets\SaveBudgetRequest;
 use App\Models\Budget;
 use App\Services\BudgetService;
 use App\Services\CostCenterService;
+use App\Support\Excel\BudgetImportTemplate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -39,8 +42,43 @@ class BudgetController extends Controller
 
         return Inertia::render('Accounting/Budgets/Edit', [
             'budget' => $this->budgets->editorData($year),
+            'imported' => session('budget_import'),
             'costCenters' => $this->costCenters->all()->map(fn ($center) => ['id' => $center->id, 'name' => $center->name])->values(),
         ]);
+    }
+
+    public function importTemplate(): StreamedResponse
+    {
+        $this->authorize('viewAny', Budget::class);
+
+        return BudgetImportTemplate::download($this->budgets->templateAccounts(), $this->budgets->costCenterNames());
+    }
+
+    public function export(int $year): StreamedResponse
+    {
+        $this->authorize('viewAny', Budget::class);
+        abort_unless($year >= 2000 && $year <= 2100, 404);
+
+        return BudgetImportTemplate::export("budget-{$year}.xlsx", $this->budgets->exportRows($year), $this->budgets->costCenterNames());
+    }
+
+    /**
+     * Reads the spreadsheet and sends the lines back to the budget page for
+     * review — nothing is saved until the user clicks Save budget.
+     */
+    public function import(ImportBudgetRequest $request, int $year): RedirectResponse
+    {
+        abort_unless($year >= 2000 && $year <= 2100, 404);
+
+        try {
+            $lines = $this->budgets->resolveImport($request->rows());
+        } catch (BudgetImportException $e) {
+            return back()->withErrors(['file' => implode("\n", $e->rowErrors())]);
+        }
+
+        return redirect()->route('budgets.edit', $year)
+            ->with('budget_import', $lines)
+            ->with('success', count($lines).' budget line(s) read from the file. Review them, then click Save budget.');
     }
 
     public function update(SaveBudgetRequest $request, int $year): RedirectResponse

@@ -217,6 +217,9 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::post('revaluation', [CurrencyRevaluationController::class, 'revalue'])->name('revaluation.revalue');
 
     Route::get('budgets', [BudgetController::class, 'index'])->name('budgets.index');
+    Route::get('budgets/import-template', [BudgetController::class, 'importTemplate'])->name('budgets.import-template');
+    Route::get('budgets/{year}/export', [BudgetController::class, 'export'])->whereNumber('year')->name('budgets.export');
+    Route::post('budgets/{year}/import', [BudgetController::class, 'import'])->whereNumber('year')->name('budgets.import');
     Route::get('budgets/{year}', [BudgetController::class, 'edit'])->whereNumber('year')->name('budgets.edit');
     Route::put('budgets/{year}', [BudgetController::class, 'update'])->whereNumber('year')->name('budgets.update');
     Route::delete('budgets/{year}', [BudgetController::class, 'destroy'])->whereNumber('year')->name('budgets.destroy');

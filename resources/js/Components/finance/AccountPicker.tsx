@@ -26,6 +26,8 @@ export interface AccountPickerProps {
     /** Parent accounts (those with children) are label-only and can't be posted to, so they're hidden by default. Pass true when picking a parent for another account. */
     includeParents?: boolean;
     dropUp?: boolean;
+    /** Render the list in a portal positioned next to the field, so it is not clipped by a scrolling or overflow-hidden parent (e.g. inside a wide table). */
+    floating?: boolean;
     /** Service whose chart to list, for a Platform Admin creating from the combined view. */
     tenantId?: number | null;
 }
@@ -45,6 +47,7 @@ export function AccountPicker({
     includeAncestor = false,
     includeParents = false,
     dropUp = false,
+    floating = false,
     tenantId = null,
 }: AccountPickerProps) {
     const { accounts, loading } = useAccounts(tenantId);
@@ -119,17 +122,19 @@ export function AccountPicker({
                 </div>
 
                 <Combobox.Options
-                    className={`position-absolute w-100 py-1 ${dropUp ? 'mb-1' : 'mt-1'}`}
+                    {...(floating ? { anchor: dropUp ? ('top start' as const) : ('bottom start' as const) } : {})}
+                    className={floating ? 'py-1' : `position-absolute w-100 py-1 ${dropUp ? 'mb-1' : 'mt-1'}`}
                     style={{
-                        zIndex: 20,
+                        zIndex: floating ? 2000 : 20,
                         minWidth: '280px',
+                        ...(floating ? { width: 'var(--input-width)' } : {}),
                         maxHeight: '260px',
                         overflowY: 'auto',
                         backgroundColor: 'var(--af-surface)',
                         border: '1px solid var(--af-border)',
                         borderRadius: 'var(--af-radius-sm)',
                         boxShadow: '0 10px 15px -3px rgb(15 23 42 / 0.1)',
-                        ...(dropUp ? { bottom: '100%' } : { top: '100%' }),
+                        ...(floating ? {} : dropUp ? { bottom: '100%' } : { top: '100%' }),
                     }}
                 >
                     {filtered.length === 0 && (

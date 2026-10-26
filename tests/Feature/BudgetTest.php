@@ -16,6 +16,10 @@ use App\Services\JournalService;
 use App\Services\ReportService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
 
 class BudgetTest extends TestCase
@@ -212,5 +216,166 @@ class BudgetTest extends TestCase
         // A budgeted account with no activity yet still appears.
         $this->assertEquals(300, collect($report['revenue'])->firstWhere('account_id', $this->sales->id)['budget']);
         $this->assertEquals(200, $report['net_profit']['budget']);
+    }
+
+    private function budgetCsv(string $contents): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent('budget.csv', $contents);
+    }
+
+    public function test_the_import_template_lists_budgetable_accounts_only(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('budgets.import-template'));
+
+        $response->assertOk()->assertDownload('budget-import-template.xlsx');
+
+        $path = tempnam(sys_get_temp_dir(), 'tpl').'.xlsx';
+        file_put_contents($path, $response->streamedContent());
+        $codes = collect(IOFactory::load($path)->getActiveSheet()->toArray())->pluck(0)->slice(2)->values()->all();
+        unlink($path);
+
+        $this->assertSame(['4000', '5000'], $codes);
+    }
+
+    public function test_an_uploaded_sheet_fills_the_page_for_review_without_saving(): void
+    {
+        $csv = "Code,Account,Applies to,Jan,Feb,Mar\n4000,Sales,,1000,\"1,200\",\n5000,Rent,,300,300,300\n";
+
+        $response = $this->actingAs($this->user)->post(route('budgets.import', 2026), ['file' => $this->budgetCsv($csv)]);
+
+        $response->assertRedirect(route('budgets.edit', 2026));
+        $this->assertDatabaseCount('budgets', 0);
+
+        $this->actingAs($this->user)->followingRedirects()->post(route('budgets.import', 2026), ['file' => $this->budgetCsv($csv)])
+            ->assertInertia(fn ($page) => $page
+                ->component('Accounting/Budgets/Edit')
+                ->has('imported', 2)
+                ->where('imported.0.account_id', $this->sales->id)
+                ->where('imported.0.months.2', 1200)
+                ->where('imported.1.months.3', 300));
+    }
+
+    public function test_an_import_maps_cost_center_names_and_skips_rows_with_no_amounts(): void
+    {
+        $center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Main Hall', 'type' => 'profit', 'is_active' => true]);
+        $csv = "Code,Applies to,Jan\n4000,Main Hall,500\n5000,,\n";
+
+        $this->actingAs($this->user)->followingRedirects()->post(route('budgets.import', 2026), ['file' => $this->budgetCsv($csv)])
+            ->assertInertia(fn ($page) => $page->has('imported', 1)->where('imported.0.cost_center_id', $center->id));
+    }
+
+    public function test_an_import_reports_every_problem_and_changes_nothing(): void
+    {
+        $csv = "Code,Applies to,Jan\n9999,,100\n1000,,50\n4000,Nowhere,70\n";
+
+        $response = $this->actingAs($this->user)->post(route('budgets.import', 2026), ['file' => $this->budgetCsv($csv)]);
+
+        $response->assertSessionHasErrors('file');
+        $message = session('errors')->first('file');
+        $this->assertStringContainsString('9999', $message);
+        $this->assertStringContainsString('not a revenue or expense account', $message);
+        $this->assertStringContainsString('Nowhere', $message);
+        $this->assertDatabaseCount('budgets', 0);
+    }
+
+    public function test_an_import_rejects_bad_amounts_and_a_missing_code_column(): void
+    {
+        $this->actingAs($this->user)->post(route('budgets.import', 2026), ['file' => $this->budgetCsv("Code,Jan\n4000,abc\n")])
+            ->assertSessionHasErrors('file');
+        $this->actingAs($this->user)->post(route('budgets.import', 2026), ['file' => $this->budgetCsv("Account,Jan\nSales,5\n")])
+            ->assertSessionHasErrors('file');
+    }
+
+    public function test_a_saved_budget_exports_in_the_import_layout(): void
+    {
+        $this->actingAs($this->user)->put(route('budgets.update', 2026), ['lines' => [$this->line($this->sales, [1 => 100, 2 => 50])]]);
+
+        $response = $this->actingAs($this->user)->get(route('budgets.export', 2026));
+
+        $response->assertOk()->assertDownload('budget-2026.xlsx');
+
+        $path = tempnam(sys_get_temp_dir(), 'bud').'.xlsx';
+        file_put_contents($path, $response->streamedContent());
+        $rows = IOFactory::load($path)->getActiveSheet()->toArray();
+        unlink($path);
+
+        $this->assertSame(['Code', 'Account', 'Applies to'], array_slice($rows[1], 0, 3));
+        $this->assertEquals(4000, $rows[2][0]);
+        $this->assertEquals(100, $rows[2][3]);
+        $this->assertEquals(150, $rows[2][15]);
+    }
+
+    public function test_a_viewer_cannot_import_a_budget(): void
+    {
+        $viewer = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $viewer->assignRole('Viewer');
+
+        $this->actingAs($viewer)->post(route('budgets.import', 2026), ['file' => $this->budgetCsv("Code,Jan\n4000,5\n")])->assertForbidden();
+        $this->actingAs($viewer)->get(route('budgets.import-template'))->assertOk();
+    }
+
+    public function test_the_workbooks_offer_the_cost_centers_as_an_applies_to_dropdown(): void
+    {
+        CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Main Hall', 'type' => 'profit', 'is_active' => true]);
+        CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Old Wing', 'type' => 'cost', 'is_active' => false]);
+        $this->actingAs($this->user)->put(route('budgets.update', 2026), ['lines' => [$this->line($this->sales, [1 => 100])]]);
+
+        foreach ([route('budgets.import-template'), route('budgets.export', 2026)] as $url) {
+            $path = tempnam(sys_get_temp_dir(), 'dd').'.xlsx';
+            file_put_contents($path, $this->actingAs($this->user)->get($url)->streamedContent());
+            $workbook = IOFactory::load($path);
+            unlink($path);
+
+            $validation = $workbook->getSheetByName('Budget')->getDataValidation('C3');
+            $this->assertSame('list', $validation->getType());
+            $this->assertTrue($validation->getAllowBlank());
+            $this->assertTrue($validation->getShowDropDown(), 'the in-cell dropdown arrow must be shown');
+            $this->assertStringContainsString('Cost centers', $validation->getFormula1());
+            $this->assertSame([['Main Hall']], $workbook->getSheetByName('Cost centers')->toArray());
+            $this->assertSame(Worksheet::SHEETSTATE_HIDDEN, $workbook->getSheetByName('Cost centers')->getSheetState());
+        }
+    }
+
+    public function test_the_workbooks_start_with_a_row_explaining_the_data_and_columns(): void
+    {
+        $this->actingAs($this->user)->put(route('budgets.update', 2026), ['lines' => [$this->line($this->sales, [1 => 100])]]);
+
+        foreach ([route('budgets.import-template'), route('budgets.export', 2026)] as $url) {
+            $path = tempnam(sys_get_temp_dir(), 'cm').'.xlsx';
+            file_put_contents($path, $this->actingAs($this->user)->get($url)->streamedContent());
+            $sheet = IOFactory::load($path)->getSheetByName('Budget');
+            unlink($path);
+
+            $explanation = $sheet->getCell('A1')->getValue();
+            $this->assertStringContainsString('yearly budget', $explanation);
+            $this->assertStringContainsString('Code (required)', $explanation);
+            $this->assertStringContainsString('Applies to', $explanation);
+            $this->assertStringContainsString('Jan – Dec', $explanation);
+            $this->assertContains('A1:O1', array_map(fn ($range) => str_replace('P1', 'O1', $range), $sheet->getMergeCells()));
+            $this->assertSame('Code', $sheet->getCell('A2')->getValue());
+        }
+    }
+
+    public function test_a_filled_in_template_with_the_explanation_row_imports_with_correct_row_numbers(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'imp').'.xlsx';
+        file_put_contents($path, $this->actingAs($this->user)->get(route('budgets.import-template'))->streamedContent());
+        $workbook = IOFactory::load($path);
+        $sheet = $workbook->getSheetByName('Budget');
+        $sheet->setCellValue('D3', 1500);
+        $sheet->setCellValue('D4', 'oops');
+        (new Xlsx($workbook))->save($path);
+
+        $upload = new UploadedFile($path, 'budget.xlsx', null, null, true);
+        $this->actingAs($this->user)->post(route('budgets.import', 2026), ['file' => $upload])->assertSessionHasErrors('file');
+        $this->assertStringContainsString('Row 4', session('errors')->first('file'));
+
+        $sheet->setCellValue('D4', 200);
+        (new Xlsx($workbook))->save($path);
+        $upload = new UploadedFile($path, 'budget.xlsx', null, null, true);
+
+        $this->actingAs($this->user)->followingRedirects()->post(route('budgets.import', 2026), ['file' => $upload])
+            ->assertInertia(fn ($page) => $page->has('imported', 2)->where('imported.0.months.1', 1500)->where('imported.1.months.1', 200));
+        unlink($path);
     }
 }

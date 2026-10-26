@@ -1,12 +1,14 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Copy, History, Save, Trash2 } from 'lucide-react';
-import { ClipboardEvent, useMemo, useState } from 'react';
+import { Copy, History, Save, Trash2, Upload } from 'lucide-react';
+import { ClipboardEvent, useEffect, useMemo, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
+import { ExportButton } from '@/Components/ui/ExportButton';
+import { ImportModal } from '@/Components/ui/ImportModal';
 import { InfoTip } from '@/Components/ui/InfoTip';
 import { useAccounts } from '@/hooks/useAccounts';
 import type { AccountOption, AccountType, BudgetEditorData, BudgetEditorLine, CostCenterOption } from '@/types/finance';
@@ -14,6 +16,8 @@ import type { AccountOption, AccountType, BudgetEditorData, BudgetEditorLine, Co
 interface Props {
     budget: BudgetEditorData;
     costCenters: CostCenterOption[];
+    /** Lines just read from an uploaded spreadsheet, waiting for review. */
+    imported: BudgetEditorLine[] | null;
 }
 
 interface Row {
@@ -66,7 +70,7 @@ function spreadEvenly(total: number): string[] {
     return MONTHS.map((_, index) => amountToText((index === 11 ? base + remainder : base) / 100));
 }
 
-export default function BudgetsEdit({ budget, costCenters }: Props) {
+export default function BudgetsEdit({ budget, costCenters, imported }: Props) {
     const confirm = useConfirm();
     const { auth, errors } = usePage<{ auth: { permissions: string[] }; errors: Record<string, string> }>().props;
     const canManage = auth.permissions.includes('accounts.manage');
@@ -78,6 +82,14 @@ export default function BudgetsEdit({ budget, costCenters }: Props) {
     const [processing, setProcessing] = useState(false);
     const [growth, setGrowth] = useState('0');
     const [pickerKey, setPickerKey] = useState(0);
+    const [importOpen, setImportOpen] = useState(false);
+
+    // An uploaded spreadsheet fills the page for review; nothing is saved until Save budget.
+    useEffect(() => {
+        if (imported) {
+            setRows(imported.map(lineToRow));
+        }
+    }, [imported]);
 
     const dirty = snapshot(rows) !== saved;
     const hasPreviousBudget = budget.previous_budget.length > 0;
@@ -298,6 +310,7 @@ export default function BudgetsEdit({ budget, costCenters }: Props) {
                                     value={null}
                                     onChange={addAccount}
                                     filterType={kind}
+                                    floating
                                     placeholder={kind === 'revenue' ? '+ Add a revenue account…' : '+ Add an expense account…'}
                                 />
                             </div>
@@ -331,6 +344,12 @@ export default function BudgetsEdit({ budget, costCenters }: Props) {
                 action={
                     <div className="d-flex align-items-center gap-2">
                         {dirty && <span style={{ fontSize: '13px', color: 'var(--af-warning)' }}>Unsaved changes</span>}
+                        {canManage && (
+                            <Button variant="outline" leadingIcon={<Upload size={16} />} onClick={() => setImportOpen(true)}>
+                                Import
+                            </Button>
+                        )}
+                        {budget.exists && <ExportButton href={route('budgets.export', budget.year)} />}
                         <Link href={route('reports.budget-vs-actual', { from: `${budget.year}-01-01`, to: `${budget.year}-12-31` })}>
                             <Button variant="outline">Compare with actual</Button>
                         </Link>
@@ -426,6 +445,21 @@ export default function BudgetsEdit({ budget, costCenters }: Props) {
                     </div>
                 )}
             </Card>
+
+            <ImportModal
+                open={importOpen}
+                onClose={() => setImportOpen(false)}
+                action={route('budgets.import', budget.year)}
+                templateHref={route('budgets.import-template')}
+                title={`Import ${budget.year} budget from Excel`}
+                requiredColumns={['Code']}
+                optionalColumns={['Account', 'Applies to', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']}
+                notes={[
+                    'The template lists every revenue and expense account — just fill in the months.',
+                    'Code decides the account. Applies to is a cost center name; leave it empty for the whole service.',
+                    'The amounts replace what is on this page so you can review them. Nothing is saved until you click Save budget.',
+                ]}
+            />
         </>
     );
 }

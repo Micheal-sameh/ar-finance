@@ -248,6 +248,9 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                                 {percent === null ? (
                                     <div className="budget-head">
                                         <span>No budget set</span>
+                                        <button type="button" className="btn btn-link p-0" style={{ fontSize: '12px' }} onClick={() => openEdit(costCenter)}>
+                                            Set budget
+                                        </button>
                                     </div>
                                 ) : (
                                     <>

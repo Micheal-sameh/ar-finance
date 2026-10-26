@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\Enums\AccountType;
+use App\Exceptions\BudgetImportException;
 use App\Models\Budget;
 use App\Models\BudgetLine;
+use App\Repositories\Contracts\AccountRepositoryInterface;
 use App\Repositories\Contracts\BudgetRepositoryInterface;
+use App\Repositories\Contracts\CostCenterRepositoryInterface;
 use App\Support\TenantContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -21,6 +24,8 @@ class BudgetService
     public function __construct(
         private readonly BudgetRepositoryInterface $budgets,
         private readonly ReportService $reports,
+        private readonly AccountRepositoryInterface $accounts,
+        private readonly CostCenterRepositoryInterface $costCenters,
     ) {}
 
     /**
@@ -67,6 +72,115 @@ class BudgetService
             'previous_budget' => $this->formatLines($lines->where('budget.year', $year - 1)),
             'previous_actuals' => $this->reports->actualsByAccountAndMonth($year - 1),
         ];
+    }
+
+    /**
+     * The revenue and expense accounts that can be budgeted (parents only
+     * group, so they are left out) — the rows of the import template.
+     *
+     * @return array<int, array{code: string, name: string, type: string}>
+     */
+    public function templateAccounts(): array
+    {
+        $accounts = $this->accounts->all();
+        $parentIds = $accounts->pluck('parent_id')->filter()->unique();
+
+        return $accounts
+            ->filter(fn ($account) => in_array($account->type, [AccountType::Revenue, AccountType::Expense], true) && ! $parentIds->contains($account->id))
+            ->sortBy(fn ($account) => $account->type === AccountType::Revenue ? '0'.$account->code : '1'.$account->code)
+            ->map(fn ($account) => ['code' => $account->code, 'name' => $account->name, 'type' => $account->type->value])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Names of the active cost centers — the "Applies to" dropdown in the
+     * budget workbooks.
+     *
+     * @return array<int, string>
+     */
+    public function costCenterNames(): array
+    {
+        return $this->costCenters->all()->pluck('name')->values()->all();
+    }
+
+    /**
+     * The saved budget as spreadsheet rows in the same layout the import
+     * reads (code, account, applies to, Jan–Dec) plus a year total, so an
+     * export can be edited in Excel and imported back.
+     *
+     * @return array<int, array<int, mixed>>
+     */
+    public function exportRows(int $year): array
+    {
+        $centerNames = $this->costCenters->allIncludingInactive()->pluck('name', 'id');
+
+        return $this->budgets->linesForYears([$year])
+            ->where('budget.year', $year)
+            ->sortBy(fn (BudgetLine $line) => ($line->account->type === AccountType::Revenue ? '0' : '1').$line->account->code)
+            ->map(function (BudgetLine $line) use ($centerNames) {
+                $months = array_values($line->monthlyAmounts());
+
+                return [$line->account->code, $line->account->name, $line->cost_center_id ? $centerNames->get($line->cost_center_id) : null, ...$months, round(array_sum($months), 2)];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Matches imported rows to real accounts (by code) and cost centers (by
+     * name) and returns them as editor lines, ready to fill the budget page
+     * for review. Nothing is saved. Every problem is reported at once.
+     *
+     * @param  array<int, array{row: int, code: string, cost_center: ?string, months: array<int, float>}>  $rows
+     * @return array<int, array{account_id: int, cost_center_id: ?int, months: array<int, float>}>
+     *
+     * @throws BudgetImportException
+     */
+    public function resolveImport(array $rows): array
+    {
+        $accounts = $this->accounts->all()->keyBy(fn ($account) => strtolower($account->code));
+        $centers = $this->costCenters->allIncludingInactive()->keyBy(fn ($center) => strtolower($center->name));
+        $errors = [];
+        $lines = [];
+
+        foreach ($rows as $row) {
+            $account = $accounts->get(strtolower($row['code']));
+
+            if ($account === null) {
+                $errors[] = "Row {$row['row']}: there is no account with code \"{$row['code']}\".";
+
+                continue;
+            }
+
+            if (! in_array($account->type, [AccountType::Revenue, AccountType::Expense], true)) {
+                $errors[] = "Row {$row['row']}: {$account->code} {$account->name} is not a revenue or expense account, so it cannot be budgeted.";
+
+                continue;
+            }
+
+            $centerId = null;
+
+            if ($row['cost_center'] !== null) {
+                $center = $centers->get(strtolower($row['cost_center']));
+
+                if ($center === null) {
+                    $errors[] = "Row {$row['row']}: there is no cost center named \"{$row['cost_center']}\".";
+
+                    continue;
+                }
+
+                $centerId = $center->id;
+            }
+
+            $lines[] = ['account_id' => $account->id, 'cost_center_id' => $centerId, 'months' => $row['months']];
+        }
+
+        if ($errors !== []) {
+            throw new BudgetImportException($errors);
+        }
+
+        return $lines;
     }
 
     /**
