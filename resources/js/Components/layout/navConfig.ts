@@ -1,4 +1,4 @@
-import { ArrowLeftRight, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
+import { ArrowLeftRight, Gauge, Target, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -60,6 +60,7 @@ export const navConfig: NavConfigGroup[] = [
             { label: 'Chart of Accounts', routeName: 'accounts.index', icon: ListTree, permission: 'accounts.view' },
             { label: 'Journal Entries', routeName: 'journals.index', icon: BookOpen, permission: 'journals.view' },
             { label: 'P&C Centers', routeName: 'cost-centers.index', icon: PiggyBank, permission: 'cost_centers.view' },
+            { label: 'Budgets', routeName: 'budgets.index', icon: Target, permission: 'accounts.view' },
             { label: 'Fixed Assets', routeName: 'fixed-assets.index', icon: Boxes, permission: 'fixed_assets.view' },
             { label: 'Currency Revaluation', routeName: 'revaluation.index', icon: RefreshCw, permission: 'invoices.view' },
         ],
@@ -68,6 +69,7 @@ export const navConfig: NavConfigGroup[] = [
         label: 'Reports',
         items: [
             { label: 'Profit & Loss', routeName: 'reports.profit-and-loss', icon: TrendingUp, permission: 'accounts.view' },
+            { label: 'Budget vs Actual', routeName: 'reports.budget-vs-actual', icon: Gauge, permission: 'accounts.view' },
             { label: 'Balance Sheet', routeName: 'reports.balance-sheet', icon: LandmarkIcon, permission: 'accounts.view' },
             { label: 'Cash Flow', routeName: 'reports.cash-flow', icon: Waves, permission: 'accounts.view' },
             { label: 'Trial Balance', routeName: 'reports.trial-balance', icon: Scale, permission: 'accounts.view' },

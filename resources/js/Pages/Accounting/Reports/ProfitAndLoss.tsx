@@ -1,6 +1,7 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
+import { BudgetComparisonTable } from '@/Components/finance/BudgetComparisonTable';
 import { ProfitLossGroupedSection } from '@/Components/finance/ProfitLossGroupedSection';
 import { ProfitLossSection } from '@/Components/finance/ProfitLossSection';
 import { PageHeader } from '@/Components/layout/PageHeader';
@@ -21,6 +22,7 @@ interface Props {
         compare_from: string | null;
         compare_to: string | null;
         group_by: ProfitAndLossGroupBy | null;
+        show_budget?: boolean;
     };
 }
 
@@ -35,6 +37,7 @@ export default function ProfitAndLoss({ report, filters }: Props) {
     const [compare, setCompare] = useState(Boolean(filters.compare_from));
     const [compareFrom, setCompareFrom] = useState(filters.compare_from ?? '');
     const [compareTo, setCompareTo] = useState(filters.compare_to ?? '');
+    const [showBudget, setShowBudget] = useState(Boolean(filters.show_budget));
 
     function applyFilter(e: FormEvent) {
         e.preventDefault();
@@ -46,6 +49,7 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                 group_by: groupBy === 'none' ? null : groupBy,
                 compare_from: groupBy === 'none' && compare ? compareFrom : null,
                 compare_to: groupBy === 'none' && compare ? compareTo : null,
+                show_budget: groupBy === 'none' && !compare && showBudget ? 1 : null,
             },
             { preserveState: true },
         );
@@ -124,6 +128,20 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                                         </div>
                                     </>
                                 )}
+                                {!compare && (
+                                    <div className="form-check ms-2 mb-2">
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            id="show-budget"
+                                            checked={showBudget}
+                                            onChange={(e) => setShowBudget(e.target.checked)}
+                                        />
+                                        <label className="form-check-label" htmlFor="show-budget" style={{ fontSize: '13px' }}>
+                                            Compare with budget
+                                        </label>
+                                    </div>
+                                )}
                             </>
                         )}
                         <Button type="submit" variant="outline">
@@ -188,6 +206,44 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </>
+                ) : filters.show_budget ? (
+                    <>
+                        {!report.has_budget && (
+                            <p style={{ fontSize: '13px', color: 'var(--af-label)', marginBottom: '16px' }}>
+                                No budget is set for this period, so the budget columns are empty.{' '}
+                                <Link href={route('budgets.edit', Number(report.from.slice(0, 4)))}>Set a budget</Link>
+                            </p>
+                        )}
+
+                        <BudgetComparisonTable
+                            title="Revenue"
+                            kind="revenue"
+                            rows={report.revenue.map((row) => ({ key: row.account_id, label: row.name, actual: row.current, budget: row.budget ?? 0, variance: row.variance ?? 0, accountId: row.account_id }))}
+                            totalLabel="Total Revenue"
+                            total={{ actual: report.total_revenue.current, budget: report.total_revenue.budget ?? 0, variance: report.total_revenue.variance ?? 0 }}
+                            emptyLabel="No revenue posted in this period."
+                            from={report.from}
+                            to={report.to}
+                        />
+
+                        <BudgetComparisonTable
+                            title="Expenses"
+                            kind="expense"
+                            rows={report.expenses.map((row) => ({ key: row.account_id, label: row.name, actual: row.current, budget: row.budget ?? 0, variance: row.variance ?? 0, accountId: row.account_id }))}
+                            totalLabel="Total Expenses"
+                            total={{ actual: report.total_expenses.current, budget: report.total_expenses.budget ?? 0, variance: report.total_expenses.variance ?? 0 }}
+                            emptyLabel="No expenses posted in this period."
+                            from={report.from}
+                            to={report.to}
+                        />
+
+                        <div className="net-profit">
+                            <span>Net profit (budget {(report.net_profit.budget ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+                            <strong className={report.net_profit.current < 0 ? 'negative' : ''}>
+                                <MoneyDisplay amount={report.net_profit.current} />
+                            </strong>
                         </div>
                     </>
                 ) : (

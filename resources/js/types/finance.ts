@@ -187,6 +187,9 @@ export interface ProfitLossRow {
     name: string;
     current: number;
     prior: number;
+    /** Only when the report is run with the budget comparison on. */
+    budget?: number;
+    variance?: number;
 }
 
 export interface ProfitAndLossReport {
@@ -196,9 +199,10 @@ export interface ProfitAndLossReport {
     compare_to: string | null;
     revenue: ProfitLossRow[];
     expenses: ProfitLossRow[];
-    total_revenue: { current: number; prior: number };
-    total_expenses: { current: number; prior: number };
-    net_profit: { current: number; prior: number };
+    total_revenue: { current: number; prior: number; budget?: number; variance?: number };
+    total_expenses: { current: number; prior: number; budget?: number; variance?: number };
+    net_profit: { current: number; prior: number; budget?: number; variance?: number };
+    has_budget?: boolean;
 }
 
 export type ProfitAndLossGroupBy = 'month' | 'quarter' | 'cost_center';
@@ -561,4 +565,72 @@ export interface ReceivedPayment {
     credit_account?: Pick<Account, 'id' | 'name'>;
     reference: string | null;
     tenant_name?: string | null;
+}
+
+export type BudgetHealth = 'good' | 'warn' | 'bad' | 'none';
+
+export interface BudgetComparisonRow {
+    account_id: number;
+    code: string;
+    name: string;
+    budget: number;
+    actual: number;
+    variance: number;
+    percent_used: number | null;
+    health: BudgetHealth;
+}
+
+export interface BudgetComparisonTotals {
+    budget: number;
+    actual: number;
+    variance: number;
+    percent_used: number | null;
+    health: BudgetHealth;
+}
+
+export interface BudgetVsActualReport {
+    from: string;
+    to: string;
+    has_budget: boolean;
+    revenue: BudgetComparisonRow[];
+    expenses: BudgetComparisonRow[];
+    total_revenue: BudgetComparisonTotals;
+    total_expenses: BudgetComparisonTotals;
+    net_profit: BudgetComparisonTotals;
+}
+
+export interface BudgetOverviewRow {
+    year: number;
+    lines: number;
+    revenue: number;
+    expenses: number;
+    net_profit: number;
+    updated_at: string;
+}
+
+export interface BudgetEditorLine {
+    account_id: number;
+    cost_center_id: number | null;
+    /** Month number (1-12) => amount. */
+    months: Record<number, number>;
+}
+
+export interface BudgetEditorData {
+    year: number;
+    exists: boolean;
+    lines: BudgetEditorLine[];
+    previous_budget: BudgetEditorLine[];
+    /** Account id => month number => actual amount last year. */
+    previous_actuals: Record<number, Record<number, number>>;
+}
+
+export interface CostCenterOption {
+    id: number;
+    name: string;
+}
+
+export interface BudgetSummary {
+    has_budget: boolean;
+    revenue: { budget: number; actual: number };
+    expenses: { budget: number; actual: number };
 }

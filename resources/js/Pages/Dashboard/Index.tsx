@@ -2,6 +2,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Icon, type IconName } from '@/Components/layout/Icon';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import type { BudgetSummary } from '@/types/finance';
+import { budgetHealth } from '@/utils/finance';
 
 interface TrendPoint {
     month: string;
@@ -44,6 +46,7 @@ interface Summary {
     expense_breakdown: ExpenseSlice[];
     overdue: { total: number; count: number; rows: OverdueRow[] };
     recent_activity: ActivityRow[];
+    budget?: BudgetSummary;
 }
 
 interface Props {
@@ -506,6 +509,41 @@ export default function DashboardIndex({ summary, baseCurrency }: Props) {
                     </Link>
                 </article>
             </section>
+
+            {summary.budget?.has_budget && (
+                <article className="card" style={{ marginTop: '16px' }}>
+                    <div className="card-head">
+                        <div>
+                            <h2>Budget</h2>
+                            <p>How this period compares with plan</p>
+                        </div>
+                        <Link href={route('reports.budget-vs-actual', { from: summary.period.from, to: summary.period.to })}>Open report</Link>
+                    </div>
+                    {[
+                        { label: 'Revenue', kind: 'revenue' as const, ...summary.budget.revenue },
+                        { label: 'Expenses', kind: 'expense' as const, ...summary.budget.expenses },
+                    ].map((row) => {
+                        const health = budgetHealth(row.kind, row.budget, row.actual);
+                        const percent = row.budget > 0 ? Math.round((row.actual / row.budget) * 100) : null;
+                        const color = health === 'bad' ? 'var(--af-danger)' : health === 'warn' ? 'var(--af-warning)' : 'var(--af-success)';
+
+                        return (
+                            <div key={row.label} style={{ marginBottom: '14px' }}>
+                                <div className="d-flex justify-content-between" style={{ fontSize: '13.5px', marginBottom: '6px' }}>
+                                    <b>{row.label}</b>
+                                    <span>
+                                        {formatMoney(row.actual, baseCurrency)} of {formatMoney(row.budget, baseCurrency)}
+                                        {percent !== null && <b style={{ color, marginLeft: '8px' }}>{percent}%</b>}
+                                    </span>
+                                </div>
+                                <div style={{ height: '8px', borderRadius: '999px', backgroundColor: '#EEF1F6', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: `${Math.min(100, percent ?? 0)}%`, backgroundColor: color, borderRadius: '999px' }} />
+                                </div>
+                            </div>
+                        );
+                    })}
+                </article>
+            )}
         </>
     );
 }

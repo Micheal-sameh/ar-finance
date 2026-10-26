@@ -5,6 +5,7 @@ use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BankTransactionController;
 use App\Http\Controllers\BillController;
+use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CostCenterController;
 use App\Http\Controllers\CurrencyRevaluationController;
@@ -215,6 +216,11 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::get('revaluation/export', [CurrencyRevaluationController::class, 'export'])->name('revaluation.export');
     Route::post('revaluation', [CurrencyRevaluationController::class, 'revalue'])->name('revaluation.revalue');
 
+    Route::get('budgets', [BudgetController::class, 'index'])->name('budgets.index');
+    Route::get('budgets/{year}', [BudgetController::class, 'edit'])->whereNumber('year')->name('budgets.edit');
+    Route::put('budgets/{year}', [BudgetController::class, 'update'])->whereNumber('year')->name('budgets.update');
+    Route::delete('budgets/{year}', [BudgetController::class, 'destroy'])->whereNumber('year')->name('budgets.destroy');
+
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [ReportController::class, 'trialBalance'])->name('trial-balance');
         Route::get('trial-balance/pdf', [ReportController::class, 'trialBalancePdf'])->name('trial-balance.pdf');
@@ -227,5 +233,7 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
         Route::get('cash-flow/pdf', [ReportController::class, 'cashFlowPdf'])->name('cash-flow.pdf');
         Route::get('vat-return', [ReportController::class, 'vatReturn'])->name('vat-return');
         Route::get('aging', [ReportController::class, 'aging'])->name('aging');
+        Route::get('budget-vs-actual', [BudgetController::class, 'report'])->name('budget-vs-actual');
+        Route::get('budget-vs-actual/export', [BudgetController::class, 'reportExport'])->name('budget-vs-actual.export');
     });
 });

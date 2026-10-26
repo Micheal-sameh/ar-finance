@@ -71,3 +71,37 @@ export function billStatusVariant(status: BillStatus): Variant {
     return { draft: 'neutral', approved: 'warning', partially_paid: 'info', paid: 'success' }[status] as Variant;
 }
 
+
+export type BudgetKind = 'revenue' | 'expense';
+
+/**
+ * How a figure is doing against its budget: spending is judged against a
+ * ceiling (over 100% is bad), income against a target (under 80% is bad).
+ * Returns 'none' when there is no budget to judge by.
+ */
+export function budgetHealth(kind: BudgetKind, budget: number, actual: number): 'good' | 'warn' | 'bad' | 'none' {
+    if (budget <= 0) {
+        return 'none';
+    }
+
+    const percent = (actual / budget) * 100;
+
+    if (kind === 'expense') {
+        return percent > 100 ? 'bad' : percent >= 90 ? 'warn' : 'good';
+    }
+
+    return percent >= 100 ? 'good' : percent >= 80 ? 'warn' : 'bad';
+}
+
+/** Short, plain-words label for a budget health, e.g. "Over budget". */
+export function budgetHealthLabel(kind: BudgetKind, health: 'good' | 'warn' | 'bad' | 'none'): string {
+    if (health === 'none') {
+        return 'No budget';
+    }
+
+    if (kind === 'expense') {
+        return { good: 'On track', warn: 'Near limit', bad: 'Over budget' }[health];
+    }
+
+    return { good: 'Target met', warn: 'Close', bad: 'Behind target' }[health];
+}

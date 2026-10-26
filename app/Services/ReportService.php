@@ -521,6 +521,47 @@ class ReportService
     }
 
     /**
+     * Actual revenue and expense per account over a period, optionally for one
+     * cost center (an id) or only the lines with none ('unassigned') — the
+     * "actual" side of a budget comparison.
+     *
+     * @return array{revenue: array<int, array{account_id: int, code: string, name: string, current: float}>, expenses: array<int, array{account_id: int, code: string, name: string, current: float}>}
+     */
+    public function actualsByAccount(string $from, string $to, int|string|null $costCenterFilter = null): array
+    {
+        $flows = $this->flowBalancesByType($from, $to, [AccountType::Revenue, AccountType::Expense], $costCenterFilter);
+
+        return [
+            'revenue' => $flows->get(AccountType::Revenue->value, collect())->all(),
+            'expenses' => $flows->get(AccountType::Expense->value, collect())->all(),
+        ];
+    }
+
+    /**
+     * Each revenue/expense account's actual amount per calendar month of a
+     * year — what a new budget can be pre-filled from.
+     *
+     * @return array<int, array<int, float>> Account id => month number => amount.
+     */
+    public function actualsByAccountAndMonth(int $year): array
+    {
+        $lines = $this->journals->postedLinesWithAccounts("{$year}-01-01", "{$year}-12-31", withEntryDate: true)
+            ->filter(fn ($line) => in_array($line->account->type, [AccountType::Revenue, AccountType::Expense], true));
+
+        return $lines->groupBy('account_id')->map(function ($accountLines) {
+            $isRevenue = $accountLines->first()->account->type === AccountType::Revenue;
+
+            return $accountLines->groupBy(fn ($line) => $line->journalEntry->date->month)->map(function ($monthLines) use ($isRevenue) {
+                $net = $isRevenue
+                    ? (float) $monthLines->sum('credit') - (float) $monthLines->sum('debit')
+                    : (float) $monthLines->sum('debit') - (float) $monthLines->sum('credit');
+
+                return round($net, 2);
+            })->all();
+        })->all();
+    }
+
+    /**
      * @param  array<int, array{key: string}>  $columns
      */
     private function costCenterColumns(): array

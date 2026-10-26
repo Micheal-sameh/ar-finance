@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\GeneratesPdf;
 use App\Models\Account;
 use App\Models\CostCenter;
 use App\Services\AccountService;
+use App\Services\BudgetService;
 use App\Services\ReportService;
 use App\Support\Excel\GeneralLedgerExport;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class ReportController extends Controller
     public function __construct(
         private readonly ReportService $reports,
         private readonly AccountService $accounts,
+        private readonly BudgetService $budgets,
     ) {}
 
     public function trialBalance(Request $request): Response
@@ -118,16 +120,22 @@ class ReportController extends Controller
         $compareTo = $request->string('compare_to')->value() ?: null;
         $groupBy = $this->groupBy($request);
 
+        // Budget columns sit beside a single period, so they replace the
+        // compare-to-another-period and grouped views rather than combine with them.
+        $showBudget = $request->boolean('show_budget') && ! $groupBy && ! $compareFrom;
+        $report = $groupBy
+            ? $this->reports->profitAndLossGrouped($from, $to, $groupBy)
+            : $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo);
+
         return Inertia::render('Accounting/Reports/ProfitAndLoss', [
-            'report' => $groupBy
-                ? $this->reports->profitAndLossGrouped($from, $to, $groupBy)
-                : $this->reports->profitAndLoss($from, $to, $compareFrom, $compareTo),
+            'report' => $showBudget ? $this->budgets->annotateProfitAndLoss($report) : $report,
             'filters' => [
                 'from' => $from,
                 'to' => $to,
                 'compare_from' => $compareFrom,
                 'compare_to' => $compareTo,
                 'group_by' => $groupBy,
+                'show_budget' => $showBudget,
             ],
         ]);
     }

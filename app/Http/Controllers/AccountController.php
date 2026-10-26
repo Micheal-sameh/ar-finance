@@ -11,6 +11,7 @@ use App\Http\Requests\Accounts\UpdateAccountRequest;
 use App\Http\Resources\AccountOptionResource;
 use App\Models\Account;
 use App\Services\AccountService;
+use App\Services\BudgetService;
 use App\Services\ExchangeRateService;
 use App\Services\ReportService;
 use App\Support\Excel\AccountImportTemplate;
@@ -30,6 +31,7 @@ class AccountController extends Controller
     public function __construct(
         private readonly AccountService $accounts,
         private readonly ReportService $reports,
+        private readonly BudgetService $budgets,
         private readonly ExchangeRateService $exchangeRates,
         private readonly TenantContext $tenantContext,
     ) {}
@@ -56,6 +58,7 @@ class AccountController extends Controller
             'baseCurrency' => $this->exchangeRates->baseCurrency(),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
             'viewingAllTenants' => $viewingAllTenants,
+            'accountBudgets' => $viewingAllTenants ? [] : $this->budgets->yearToDateByAccount(now()->year),
         ]);
     }
 

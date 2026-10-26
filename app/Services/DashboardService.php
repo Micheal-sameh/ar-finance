@@ -17,6 +17,7 @@ class DashboardService
         private readonly ReportService $reports,
         private readonly JournalService $journals,
         private readonly BankAccountService $bankAccounts,
+        private readonly BudgetService $budgets,
     ) {}
 
     /**
@@ -33,6 +34,7 @@ class DashboardService
      *     expense_breakdown: array<int, array{label: string, amount: float, percent: float}>,
      *     overdue: array{total: float, count: int, rows: array<int, array{id: int, name: string, amount: float, age_label: string}>},
      *     recent_activity: array<int, array{id: int, date: string, description: string, reference: ?string, source_label: string, amount: float}>,
+     *     budget: array{has_budget: bool, revenue: array{budget: float, actual: float}, expenses: array{budget: float, actual: float}},
      * }
      */
     public function summary(?string $from = null, ?string $to = null): array
@@ -72,6 +74,7 @@ class DashboardService
             'expense_breakdown' => $this->expenseBreakdown($pnl['expenses']),
             'overdue' => $this->overdueSummary($ar['rows']),
             'recent_activity' => $this->recentActivity(8),
+            'budget' => $this->budgets->summary($from, $to),
         ];
     }
 

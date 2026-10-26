@@ -61,6 +61,30 @@ interface Props {
     baseCurrency: string;
     currencyOptions: CurrencyOption[];
     viewingAllTenants: boolean;
+    accountBudgets: Record<number, AccountBudget>;
+}
+
+/** Year-to-date actual against the budget for the same stretch of the year, for revenue and expense accounts. */
+interface AccountBudget {
+    budget: number;
+    actual: number;
+    year_budget: number;
+}
+
+function AccountBudgetCell({ budget }: { budget?: AccountBudget }) {
+    if (!budget || budget.budget === 0) {
+        return <span style={{ color: 'var(--af-label)' }}>—</span>;
+    }
+
+    const percent = Math.round((budget.actual / budget.budget) * 100);
+    const over = percent > 100;
+
+    return (
+        <span title={`Year budget ${budget.year_budget.toLocaleString()}`}>
+            <MoneyDisplay amount={budget.actual} /> of <MoneyDisplay amount={budget.budget} />{' '}
+            <span style={{ color: over ? 'var(--af-danger)' : 'var(--af-label)', fontWeight: over ? 600 : 400 }}>({percent}%)</span>
+        </span>
+    );
 }
 
 interface AccountNode extends Account {
@@ -146,9 +170,11 @@ interface AccountTreeRowsProps {
     onEdit: (account: Account) => void;
     onDelete: (account: Account) => void;
     baseCurrency: string;
+    budgets: Record<number, AccountBudget>;
 }
 
-function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, baseCurrency }: AccountTreeRowsProps) {
+function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, baseCurrency, budgets }: AccountTreeRowsProps) {
+    const hasBudgets = Object.keys(budgets).length > 0;
     const hasChildren = node.children.length > 0;
     const isExpanded = !collapsed.has(node.id);
 
@@ -182,6 +208,11 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                         currency={baseCurrency}
                     />
                 </Table.Cell>
+                {hasBudgets && (
+                    <Table.Cell className="text-end">
+                        <AccountBudgetCell budget={budgets[node.id]} />
+                    </Table.Cell>
+                )}
                 <Table.Cell>
                     <Badge variant={node.is_active ? 'success' : 'neutral'}>{node.is_active ? 'Active' : 'Inactive'}</Badge>
                 </Table.Cell>
@@ -222,6 +253,7 @@ function AccountTreeRows({ node, depth, collapsed, onToggle, onEdit, onDelete, b
                         onEdit={onEdit}
                         onDelete={onDelete}
                         baseCurrency={baseCurrency}
+                        budgets={budgets}
                     />
                 ))}
         </>
@@ -403,7 +435,8 @@ function typeBadgeVariant(type: AccountType) {
         | 'danger';
 }
 
-export default function AccountsIndex({ accounts, filters, baseCurrency, currencyOptions, viewingAllTenants }: Props) {
+export default function AccountsIndex({ accounts, filters, baseCurrency, currencyOptions, viewingAllTenants, accountBudgets = {} }: Props) {
+    const hasBudgets = Object.keys(accountBudgets ?? {}).length > 0;
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
     const [modalOpen, setModalOpen] = useState(false);
@@ -688,6 +721,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                             <Table.HeadCell>Normal Balance</Table.HeadCell>
                             <Table.HeadCell>Currency</Table.HeadCell>
                             <Table.HeadCell className="text-end">Balance</Table.HeadCell>
+                            {hasBudgets && <Table.HeadCell className="text-end">Budget used (year to date)</Table.HeadCell>}
                             <Table.HeadCell>Status</Table.HeadCell>
                             <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
                         </Table.Head>
@@ -700,7 +734,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                                     <Fragment key={value}>
                                         <tr>
                                             <td
-                                                colSpan={7}
+                                                colSpan={hasBudgets ? 8 : 7}
                                                 className="px-3 py-2"
                                                 style={{ backgroundColor: 'var(--af-surface-alt, rgba(0,0,0,0.02))', borderBottom: '1px solid var(--af-border)' }}
                                             >
@@ -717,6 +751,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                                                 onEdit={openEdit}
                                                 onDelete={destroy}
                                                 baseCurrency={baseCurrency}
+                                                budgets={accountBudgets}
                                             />
                                         ))}
                                     </Fragment>
