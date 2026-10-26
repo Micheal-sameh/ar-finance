@@ -21,6 +21,11 @@ class BankTransactionMatchException extends RuntimeException
         return new self('This transaction is part of a finished reconciliation and can no longer be changed.');
     }
 
+    public static function closedPeriod(string $date): self
+    {
+        return new self("This transaction is dated on or before the last reconciled statement ({$date}) and can no longer be matched.");
+    }
+
     public static function alreadyMatched(): self
     {
         return new self('This transaction is already matched — unmatch it first.');

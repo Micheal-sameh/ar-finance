@@ -42,6 +42,10 @@ interface BankTransactionRepositoryInterface
      */
     public function markReconciled(array $transactionIds, int $reconciliationId): void;
 
+    public function releaseReconciliation(int $reconciliationId): void;
+
+    public function earliestTransactionDate(int $bankAccountId): ?string;
+
     /**
      * Transactions with no matched journal line yet (auto-match input).
      */

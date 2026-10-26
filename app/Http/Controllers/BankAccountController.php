@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\BankReconciliationException;
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\BankAccounts\SaveBankAccountRequest;
 use App\Http\Requests\BankTransactions\ImportBankTransactionsRequest;
@@ -67,7 +68,7 @@ class BankAccountController extends Controller
     {
         $this->authorize('view', $bankAccount);
 
-        $lastReconciliation = $this->reconciliation->lastReconciliation($bankAccount);
+        $opening = $this->reconciliation->openingState($bankAccount);
 
         return Inertia::render('Banking/BankAccounts/Show', [
             'bankAccount' => $this->bankAccounts->find($bankAccount->id),
@@ -75,8 +76,10 @@ class BankAccountController extends Controller
             'unmatchedLines' => $this->reconciliation->unmatchedJournalLines($bankAccount),
             'suggestions' => $this->reconciliation->suggestMatches($bankAccount),
             'reconciliations' => $this->reconciliation->history($bankAccount),
-            'openingBalance' => (float) ($lastReconciliation?->statement_ending_balance ?? 0),
-            'hasReconciliation' => $lastReconciliation !== null,
+            'openingBalance' => $opening['opening_balance'],
+            'hasReconciliation' => $opening['has_reconciliation'],
+            'suggestedOpeningBalance' => $this->reconciliation->suggestedOpeningBalance($bankAccount),
+            'foreignCurrency' => $this->reconciliation->isForeignCurrency($bankAccount),
         ]);
     }
 
@@ -122,8 +125,14 @@ class BankAccountController extends Controller
     {
         $this->authorize('update', $bankAccount);
 
-        $imported = $this->reconciliation->importTransactions($bankAccount, $request->rows());
+        try {
+            $result = $this->reconciliation->importTransactions($bankAccount, $request->rows());
+        } catch (BankReconciliationException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
-        return back()->with('success', "Imported {$imported->count()} transaction(s).");
+        $message = "Imported {$result['imported']} transaction(s)";
+
+        return back()->with('success', $result['skipped'] > 0 ? "{$message}, skipped {$result['skipped']} already imported." : "{$message}.");
     }
 }

@@ -1,7 +1,9 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
+import { Button } from '@/Components/ui/Button';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Badge } from '@/Components/ui/Badge';
 import { Card } from '@/Components/ui/Card';
 import { ExportButton } from '@/Components/ui/ExportButton';
@@ -61,6 +63,14 @@ function SummaryRow({ label, amount, currency, bold = false }: { label: string; 
 }
 
 export default function BankAccountsReconciliation({ bankAccount, reconciliation, report }: Props) {
+    const confirm = useConfirm();
+
+    async function reopen() {
+        if (reconciliation && (await confirm('Reopen this reconciliation? Its transactions will be unlocked.', { variant: 'danger', confirmLabel: 'Reopen' }))) {
+            router.delete(route('bank-reconciliations.destroy', reconciliation.id));
+        }
+    }
+
     const balanced = Math.abs(report.difference) < 0.005;
 
     return (
@@ -80,6 +90,11 @@ export default function BankAccountsReconciliation({ bankAccount, reconciliation
                             <ArrowLeft size={14} /> Back
                         </Link>
                         {reconciliation && <ExportButton href={route('bank-reconciliations.export', reconciliation.id)} />}
+                        {reconciliation && (
+                            <Button variant="outline" onClick={reopen}>
+                                Reopen
+                            </Button>
+                        )}
                     </div>
                 }
             />

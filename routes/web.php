@@ -196,6 +196,7 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::post('bank-accounts/{bank_account}/reconciliations', [BankReconciliationController::class, 'store'])->name('bank-reconciliations.store');
     Route::get('bank-accounts/{bank_account}/reconciliation-preview', [BankReconciliationController::class, 'preview'])->name('bank-reconciliations.preview');
     Route::get('bank-reconciliations/{bank_reconciliation}', [BankReconciliationController::class, 'show'])->name('bank-reconciliations.show');
+    Route::delete('bank-reconciliations/{bank_reconciliation}', [BankReconciliationController::class, 'destroy'])->name('bank-reconciliations.destroy');
     Route::get('bank-reconciliations/{bank_reconciliation}/export', [BankReconciliationController::class, 'export'])->name('bank-reconciliations.export');
 
     Route::post('bank-transactions/{bank_transaction}/match', [BankTransactionController::class, 'match'])->name('bank-transactions.match');

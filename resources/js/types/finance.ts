@@ -532,4 +532,5 @@ export interface BankMatchSuggestion {
     bank_transaction_id: number;
     journal_line_id: number;
     score: number;
+    confident: boolean;
 }

@@ -6,6 +6,7 @@ use App\Models\BankTransaction;
 use App\Models\JournalLine;
 use App\Repositories\Contracts\BankTransactionRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 
 class EloquentBankTransactionRepository implements BankTransactionRepositoryInterface
 {
@@ -84,6 +85,20 @@ class EloquentBankTransactionRepository implements BankTransactionRepositoryInte
         BankTransaction::query()
             ->whereIn('id', $transactionIds)
             ->update(['bank_reconciliation_id' => $reconciliationId]);
+    }
+
+    public function earliestTransactionDate(int $bankAccountId): ?string
+    {
+        $date = BankTransaction::query()->where('bank_account_id', $bankAccountId)->min('date');
+
+        return $date === null ? null : Carbon::parse($date)->toDateString();
+    }
+
+    public function releaseReconciliation(int $reconciliationId): void
+    {
+        BankTransaction::query()
+            ->where('bank_reconciliation_id', $reconciliationId)
+            ->update(['bank_reconciliation_id' => null]);
     }
 
     public function unmatchedForBankAccount(int $bankAccountId): Collection

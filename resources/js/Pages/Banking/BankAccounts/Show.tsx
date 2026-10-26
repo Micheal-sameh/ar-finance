@@ -22,13 +22,15 @@ interface Props {
     reconciliations: BankReconciliation[];
     openingBalance: number;
     hasReconciliation: boolean;
+    suggestedOpeningBalance: number | null;
+    foreignCurrency: boolean;
 }
 
 function lineAmount(line: { debit: string; credit: string }): number {
     return parseFloat(line.debit) > 0 ? parseFloat(line.debit) : -parseFloat(line.credit);
 }
 
-export default function BankAccountsShow({ bankAccount, transactions, unmatchedLines, suggestions, reconciliations, openingBalance, hasReconciliation }: Props) {
+export default function BankAccountsShow({ bankAccount, transactions, unmatchedLines, suggestions, reconciliations, openingBalance, hasReconciliation, suggestedOpeningBalance, foreignCurrency }: Props) {
     const confirm = useConfirm();
     const [activeRow, setActiveRow] = useState<number | null>(null);
     const [mode, setMode] = useState<'match' | 'create'>('match');
@@ -37,21 +39,29 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
     const matchForm = useForm({ journal_line_id: '' as number | '' });
     const createForm = useForm({ offset_account_id: null as number | null, description: '' });
 
-    const reconcileForm = useForm({ statement_date: '', statement_ending_balance: '', opening_balance: '' });
+    const reconcileForm = useForm({ statement_date: '', statement_ending_balance: '', opening_balance: '', adjustment_account_id: null as number | null });
 
     const suggestionByTransaction = new Map(suggestions.map((s) => [s.bank_transaction_id, s]));
     const suggestedLineById = new Map(unmatchedLines.map((l) => [l.id, l]));
 
     const statementDate = reconcileForm.data.statement_date;
     const statementBalance = parseFloat(reconcileForm.data.statement_ending_balance);
-    const opening = hasReconciliation ? openingBalance : parseFloat(reconcileForm.data.opening_balance || '0');
+    const opening = hasReconciliation ? openingBalance : parseFloat(reconcileForm.data.opening_balance || String(suggestedOpeningBalance ?? 0));
     const inPeriod = (t: BankTransaction) => statementDate !== '' && t.date.slice(0, 10) <= statementDate;
     const clearedTotal = transactions
         .filter((t) => inPeriod(t) && t.matched_journal_line_id !== null && t.bank_reconciliation_id === null)
         .reduce((sum, t) => sum + parseFloat(t.amount), 0);
     const unmatchedInPeriod = transactions.filter((t) => inPeriod(t) && t.matched_journal_line_id === null).length;
     const difference = statementBalance - (opening + clearedTotal);
-    const canFinish = statementDate !== '' && !Number.isNaN(statementBalance) && unmatchedInPeriod === 0 && Math.abs(difference) < 0.005;
+    const confidentCount = suggestions.filter((s) => s.confident).length;
+    const hasDifference = Math.abs(difference) >= 0.005;
+    const needsAdjustment = !foreignCurrency && statementDate !== '' && !Number.isNaN(statementBalance) && unmatchedInPeriod === 0 && hasDifference;
+    const canFinish =
+        !foreignCurrency &&
+        statementDate !== '' &&
+        !Number.isNaN(statementBalance) &&
+        unmatchedInPeriod === 0 &&
+        (!hasDifference || reconcileForm.data.adjustment_account_id !== null);
 
     const bankBalance = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
     const matchedCount = transactions.filter((t) => t.matched_journal_line_id !== null).length;
@@ -110,13 +120,13 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                 title={bankAccount.name}
                 subtitle={bankAccount.account ? `Reconciling against ${bankAccount.account.code} · ${bankAccount.account.name}` : undefined}
                 action={
-                    suggestions.length > 0 ? (
+                    confidentCount > 0 ? (
                         <Button
                             variant="outline"
                             leadingIcon={<Sparkles size={14} />}
                             onClick={() => router.post(route('bank-accounts.auto-match', bankAccount.id))}
                         >
-                            Auto-match {suggestions.length}
+                            Auto-match {confidentCount}
                         </Button>
                     ) : undefined
                 }
@@ -174,6 +184,11 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
 
             <Card className="mb-4">
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--af-navy)', marginBottom: '8px' }}>Reconcile Statement</div>
+                {foreignCurrency && (
+                    <div className="mb-3" style={{ fontSize: '12.5px', color: 'var(--af-danger)' }}>
+                        This bank account is not in the ledger currency, so it cannot be reconciled yet.
+                    </div>
+                )}
                 <form onSubmit={submitReconciliation}>
                     <div className="row g-3 align-items-end">
                         <div className="col-md-3">
@@ -206,7 +221,8 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                                     label="Opening balance"
                                     type="number"
                                     step="0.01"
-                                    placeholder="0.00"
+                                    placeholder={(suggestedOpeningBalance ?? 0).toFixed(2)}
+                                    help="Ledger balance before the first statement line"
                                     value={reconcileForm.data.opening_balance}
                                     onChange={(e) => reconcileForm.setData('opening_balance', e.target.value)}
                                     error={reconcileForm.errors.opening_balance}
@@ -232,6 +248,19 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                             </Button>
                         </div>
                     </div>
+                    {needsAdjustment && (
+                        <div className="mt-3">
+                            <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                Write off the {difference.toFixed(2)} difference to (optional)
+                            </label>
+                            <AccountPicker
+                                value={reconcileForm.data.adjustment_account_id}
+                                onChange={(id) => reconcileForm.setData('adjustment_account_id', id)}
+                                error={reconcileForm.errors.adjustment_account_id}
+                                placeholder="e.g. Bank charges / Miscellaneous"
+                            />
+                        </div>
+                    )}
                 </form>
                 {statementDate !== '' && !Number.isNaN(statementBalance) && (
                     <div className="d-flex align-items-center gap-3 mt-3" style={{ fontSize: '13px' }}>

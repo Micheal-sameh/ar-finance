@@ -14,6 +14,7 @@ use App\Models\BankTransaction;
 use App\Models\JournalLine;
 use App\Repositories\Contracts\BankTransactionRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -26,6 +27,8 @@ use Illuminate\Support\Facades\DB;
 class BankReconciliationService
 {
     private const SUGGESTION_WINDOW_DAYS = 7;
+
+    private const CONFIDENT_SCORE = 60;
 
     public function __construct(
         private readonly BankTransactionRepositoryInterface $bankTransactions,
@@ -44,15 +47,30 @@ class BankReconciliationService
 
     /**
      * @param  BankTransactionRowData[]  $rows
+     * @return array{imported: int, skipped: int}
+     *
+     * @throws BankReconciliationException
      */
-    public function importTransactions(BankAccount $bankAccount, array $rows): Collection
+    public function importTransactions(BankAccount $bankAccount, array $rows): array
     {
-        return $this->bankTransactions->createMany($bankAccount->id, array_map(fn (BankTransactionRowData $row) => [
+        $closedUpTo = $this->closedUpTo($bankAccount);
+
+        foreach ($rows as $row) {
+            if ($closedUpTo !== null && $row->date <= $closedUpTo) {
+                throw BankReconciliationException::closedPeriod($closedUpTo);
+            }
+        }
+
+        $new = $this->withoutAlreadyImported($bankAccount, $rows);
+
+        $this->bankTransactions->createMany($bankAccount->id, array_map(fn (BankTransactionRowData $row) => [
             'tenant_id' => $bankAccount->tenant_id,
             'date' => $row->date,
             'description' => $row->description,
             'amount' => $row->amount,
-        ], $rows));
+        ], $new));
+
+        return ['imported' => count($new), 'skipped' => count($rows) - count($new)];
     }
 
     /**
@@ -63,6 +81,8 @@ class BankReconciliationService
         if ($bankTransaction->isMatched()) {
             throw BankTransactionMatchException::alreadyMatched();
         }
+
+        $this->assertPeriodOpen($bankTransaction);
 
         if ($journalLine->account_id !== $bankTransaction->bankAccount->account_id) {
             throw BankTransactionMatchException::wrongAccount();
@@ -105,6 +125,8 @@ class BankReconciliationService
             throw BankTransactionMatchException::alreadyMatched();
         }
 
+        $this->assertPeriodOpen($bankTransaction);
+
         return DB::transaction(function () use ($bankTransaction, $offsetAccountId, $description) {
             $amount = abs((float) $bankTransaction->amount);
             $bankAccountId = $bankTransaction->bankAccount->account_id;
@@ -132,6 +154,57 @@ class BankReconciliationService
 
             return $this->bankTransactions->matchLine($bankTransaction, $bankLine->id);
         });
+    }
+
+    /**
+     * The saved reconciliation's statement as of its own date.
+     *
+     * @return array<string, mixed>
+     */
+    public function reportFor(BankReconciliation $reconciliation): array
+    {
+        return $this->report(
+            $reconciliation->bankAccount,
+            $reconciliation->statement_date->toDateString(),
+            (float) $reconciliation->statement_ending_balance,
+            $reconciliation,
+        );
+    }
+
+    /**
+     * Flat spreadsheet rows (item, date, description, amount) for a report.
+     *
+     * @param  array<string, mixed>  $report
+     * @return array<int, array<int, mixed>>
+     */
+    public function exportRows(array $report): array
+    {
+        $item = fn (string $label) => fn (array $line) => [$label, $line['date'], $line['description'], $line['amount']];
+
+        return [
+            ['Statement ending balance', null, null, $report['statement_ending_balance']],
+            ...array_map($item('Outstanding deposit'), $report['outstanding_deposits']),
+            ...array_map($item('Outstanding withdrawal'), $report['outstanding_withdrawals']),
+            ['Adjusted bank balance', null, null, $report['adjusted_bank_balance']],
+            ['Ledger balance', null, null, $report['ledger_balance']],
+            ['Difference', null, null, $report['difference']],
+        ];
+    }
+
+    /**
+     * The opening balance the next reconciliation starts from, and whether
+     * one has been finished yet (otherwise the user supplies it).
+     *
+     * @return array{opening_balance: float, has_reconciliation: bool}
+     */
+    public function openingState(BankAccount $bankAccount): array
+    {
+        $last = $this->lastReconciliation($bankAccount);
+
+        return [
+            'opening_balance' => (float) ($last?->statement_ending_balance ?? 0),
+            'has_reconciliation' => $last !== null,
+        ];
     }
 
     public function lastReconciliation(BankAccount $bankAccount): ?BankReconciliation
@@ -186,15 +259,22 @@ class BankReconciliationService
     /**
      * Locks every matched transaction up to the statement date into a
      * reconciliation — only allowed when nothing up to that date is left
-     * unmatched and the difference is zero.
+     * unmatched and the difference is zero. A leftover difference can
+     * instead be written off to $adjustmentAccountId: it is posted as a
+     * journal entry dated the statement date and matched like any other
+     * line, so it stays visible in the books.
      *
      * @throws BankReconciliationException
      */
-    public function finish(BankAccount $bankAccount, string $statementDate, float $statementEndingBalance, ?float $openingBalance = null): BankReconciliation
+    public function finish(BankAccount $bankAccount, string $statementDate, float $statementEndingBalance, ?float $openingBalance = null, ?int $adjustmentAccountId = null): BankReconciliation
     {
-        return DB::transaction(function () use ($bankAccount, $statementDate, $statementEndingBalance, $openingBalance) {
+        return DB::transaction(function () use ($bankAccount, $statementDate, $statementEndingBalance, $openingBalance, $adjustmentAccountId) {
             // Serialises concurrent "finish" clicks on the same account.
             BankAccount::query()->whereKey($bankAccount->id)->lockForUpdate()->first();
+
+            if ($this->isForeignCurrency($bankAccount)) {
+                throw BankReconciliationException::foreignCurrency($bankAccount->currency, $this->baseCurrency($bankAccount));
+            }
 
             $last = $this->lastReconciliation($bankAccount);
 
@@ -208,8 +288,13 @@ class BankReconciliationService
                 throw BankReconciliationException::unmatchedTransactions($preview['unmatched_count']);
             }
 
-            if (! $preview['is_balanced']) {
+            if (! $preview['is_balanced'] && $adjustmentAccountId === null) {
                 throw BankReconciliationException::outOfBalance(number_format($preview['difference'], 2, '.', ''));
+            }
+
+            if (! $preview['is_balanced']) {
+                $this->postAdjustment($bankAccount, $statementDate, $preview['difference'], $adjustmentAccountId);
+                $preview = $this->preview($bankAccount, $statementDate, $statementEndingBalance, $openingBalance);
             }
 
             $reconciliation = BankReconciliation::create([
@@ -272,14 +357,19 @@ class BankReconciliationService
      * when dated within SUGGESTION_WINDOW_DAYS of each other; closer dates
      * and more similar descriptions rank higher.
      *
-     * @return array<int, array{bank_transaction_id: int, journal_line_id: int, score: int}>
+     * @return array<int, array{bank_transaction_id: int, journal_line_id: int, score: int, confident: bool}>
      */
     public function suggestMatches(BankAccount $bankAccount): array
     {
         $lines = $this->unmatchedJournalLines($bankAccount);
+        $closedUpTo = $this->closedUpTo($bankAccount);
         $pairs = [];
 
         foreach ($this->bankTransactions->unmatchedForBankAccount($bankAccount->id) as $transaction) {
+            if ($closedUpTo !== null && $transaction->date->toDateString() <= $closedUpTo) {
+                continue;
+            }
+
             foreach ($lines as $line) {
                 $signed = (float) $line->debit - (float) $line->credit;
 
@@ -299,10 +389,13 @@ class BankReconciliationService
                     $similarity,
                 );
 
+                $score = (int) round((1 - $days / (self::SUGGESTION_WINDOW_DAYS + 1)) * 50 + $similarity / 2);
+
                 $pairs[] = [
                     'bank_transaction_id' => $transaction->id,
                     'journal_line_id' => $line->id,
-                    'score' => (int) round((1 - $days / (self::SUGGESTION_WINDOW_DAYS + 1)) * 50 + $similarity / 2),
+                    'score' => $score,
+                    'confident' => $score >= self::CONFIDENT_SCORE,
                 ];
             }
         }
@@ -327,14 +420,16 @@ class BankReconciliationService
     }
 
     /**
-     * Applies every current suggestion; returns how many were matched.
+     * Applies the confident suggestions only (close date and a similar
+     * description); weaker ones stay for a person to accept one by one.
+     * Returns how many were matched.
      */
     public function applySuggestions(BankAccount $bankAccount): int
     {
         $matched = 0;
 
         DB::transaction(function () use ($bankAccount, &$matched) {
-            foreach ($this->suggestMatches($bankAccount) as $suggestion) {
+            foreach (array_filter($this->suggestMatches($bankAccount), fn (array $s) => $s['confident']) as $suggestion) {
                 $this->match(
                     BankTransaction::query()->findOrFail($suggestion['bank_transaction_id']),
                     JournalLine::query()->findOrFail($suggestion['journal_line_id']),
@@ -346,10 +441,134 @@ class BankReconciliationService
         return $matched;
     }
 
+    /**
+     * Undoes the most recent reconciliation: its transactions go back to
+     * matched-but-unreconciled so they can be changed again.
+     *
+     * @throws BankReconciliationException
+     */
+    public function reopen(BankReconciliation $reconciliation): void
+    {
+        DB::transaction(function () use ($reconciliation) {
+            BankAccount::query()->whereKey($reconciliation->bank_account_id)->lockForUpdate()->first();
+
+            $latest = BankReconciliation::query()
+                ->where('bank_account_id', $reconciliation->bank_account_id)
+                ->orderByDesc('statement_date')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($latest?->id !== $reconciliation->id) {
+                throw BankReconciliationException::notLatest();
+            }
+
+            $this->bankTransactions->releaseReconciliation($reconciliation->id);
+            $reconciliation->delete();
+        });
+    }
+
+    public function isForeignCurrency(BankAccount $bankAccount): bool
+    {
+        return strtoupper($bankAccount->currency) !== $this->baseCurrency($bankAccount);
+    }
+
+    private function baseCurrency(BankAccount $bankAccount): string
+    {
+        return strtoupper($bankAccount->tenant->base_currency ?? 'EGP');
+    }
+
+    private function closedUpTo(BankAccount $bankAccount): ?string
+    {
+        return $this->lastReconciliation($bankAccount)?->statement_date->toDateString();
+    }
+
+    /**
+     * @throws BankTransactionMatchException
+     */
+    private function assertPeriodOpen(BankTransaction $bankTransaction): void
+    {
+        $closedUpTo = $this->closedUpTo($bankTransaction->bankAccount);
+
+        if ($closedUpTo !== null && $bankTransaction->date->toDateString() <= $closedUpTo) {
+            throw BankTransactionMatchException::closedPeriod($closedUpTo);
+        }
+    }
+
+    /**
+     * Re-importing a file must not double up: a row is skipped once for
+     * each identical (date, description, amount) transaction already
+     * stored, so genuinely repeated lines beyond that still come through.
+     *
+     * @param  BankTransactionRowData[]  $rows
+     * @return BankTransactionRowData[]
+     */
+    private function withoutAlreadyImported(BankAccount $bankAccount, array $rows): array
+    {
+        $existing = [];
+
+        foreach ($this->bankTransactions->forBankAccount($bankAccount->id) as $transaction) {
+            $key = $this->rowKey($transaction->date->toDateString(), $transaction->description, (float) $transaction->amount);
+            $existing[$key] = ($existing[$key] ?? 0) + 1;
+        }
+
+        return array_values(array_filter($rows, function (BankTransactionRowData $row) use (&$existing) {
+            $key = $this->rowKey($row->date, $row->description, $row->amount);
+
+            if (($existing[$key] ?? 0) > 0) {
+                $existing[$key]--;
+
+                return false;
+            }
+
+            return true;
+        }));
+    }
+
+    private function rowKey(string $date, string $description, float $amount): string
+    {
+        return $date.'|'.$description.'|'.number_format($amount, 2, '.', '');
+    }
+
+    /**
+     * What the first reconciliation's opening balance should normally be:
+     * the ledger balance the day before the earliest statement line. Null
+     * once a reconciliation exists (the previous ending balance is used).
+     */
+    public function suggestedOpeningBalance(BankAccount $bankAccount): ?float
+    {
+        if ($this->lastReconciliation($bankAccount) !== null) {
+            return null;
+        }
+
+        $earliest = $this->bankTransactions->earliestTransactionDate($bankAccount->id);
+
+        if ($earliest === null) {
+            return 0.0;
+        }
+
+        return $this->bankTransactions->ledgerBalanceUpTo($bankAccount->account_id, Carbon::parse($earliest)->subDay()->toDateString());
+    }
+
+    private function postAdjustment(BankAccount $bankAccount, string $statementDate, float $difference, int $adjustmentAccountId): void
+    {
+        $adjustment = $this->bankTransactions->createMany($bankAccount->id, [[
+            'tenant_id' => $bankAccount->tenant_id,
+            'date' => $statementDate,
+            'description' => 'Reconciliation adjustment',
+            'amount' => $difference,
+        ]])->first();
+
+        $this->createAndMatch($adjustment->load('bankAccount'), $adjustmentAccountId, 'Reconciliation adjustment');
+    }
+
     private function openingBalanceFor(BankAccount $bankAccount, ?float $enteredOpening): float
     {
         $last = $this->lastReconciliation($bankAccount);
 
-        return $last !== null ? (float) $last->statement_ending_balance : round($enteredOpening ?? 0, 2);
+        if ($last !== null) {
+            return (float) $last->statement_ending_balance;
+        }
+
+        return round($enteredOpening ?? $this->suggestedOpeningBalance($bankAccount) ?? 0, 2);
     }
 }

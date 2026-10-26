@@ -312,4 +312,161 @@ class BankReconciliationTest extends TestCase
         $this->assertSame($near->id, $nearTransaction->refresh()->matched_journal_line_id);
         $this->assertNull($farTransaction->refresh()->matched_journal_line_id);
     }
+
+    private function finishJanuary(): void
+    {
+        $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 500,
+        ]);
+    }
+
+    public function test_transactions_in_a_reconciled_period_cannot_be_matched_or_imported(): void
+    {
+        $this->finishJanuary();
+        $late = BankTransaction::create(['bank_account_id' => $this->bankAccount->id, 'date' => '2026-01-20', 'description' => 'Late line', 'amount' => 40]);
+        $line = $this->postBankDeposit('2026-01-20', 40);
+
+        $this->actingAs($this->user)->post(route('bank-transactions.match', $late->id), ['journal_line_id' => $line->id])
+            ->assertSessionHas('error');
+        $this->assertNull($late->refresh()->matched_journal_line_id);
+
+        $this->actingAs($this->user)->post(route('bank-accounts.import', $this->bankAccount->id), ['csv' => '2026-01-25,Backdated,10'])
+            ->assertSessionHas('error');
+        $this->assertDatabaseMissing('bank_transactions', ['description' => 'Backdated']);
+    }
+
+    public function test_reimporting_the_same_rows_does_not_duplicate_them(): void
+    {
+        $csv = "2026-01-05,Customer payment,500\n2026-01-06,Bank fee,-25";
+
+        $this->actingAs($this->user)->post(route('bank-accounts.import', $this->bankAccount->id), ['csv' => $csv]);
+        $this->actingAs($this->user)->post(route('bank-accounts.import', $this->bankAccount->id), ['csv' => $csv."\n2026-01-06,Bank fee,-25"]);
+
+        $this->assertDatabaseCount('bank_transactions', 3);
+    }
+
+    public function test_the_latest_reconciliation_can_be_reopened_but_an_earlier_one_cannot(): void
+    {
+        $this->finishJanuary();
+        $january = BankReconciliation::firstOrFail();
+        $this->importMatched('2026-02-10', 200, $this->postBankDeposit('2026-02-10', 200));
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-02-28',
+            'statement_ending_balance' => 700,
+        ]);
+        $february = BankReconciliation::orderByDesc('id')->firstOrFail();
+
+        $this->actingAs($this->user)->delete(route('bank-reconciliations.destroy', $january))->assertSessionHas('error');
+        $this->assertDatabaseHas('bank_reconciliations', ['id' => $january->id]);
+
+        $this->actingAs($this->user)->delete(route('bank-reconciliations.destroy', $february))->assertSessionHas('success');
+        $this->assertDatabaseMissing('bank_reconciliations', ['id' => $february->id]);
+        $this->assertDatabaseMissing('bank_transactions', ['bank_reconciliation_id' => $february->id]);
+        $this->assertDatabaseHas('bank_transactions', ['bank_reconciliation_id' => $january->id]);
+    }
+
+    public function test_auto_match_leaves_weak_suggestions_for_manual_acceptance(): void
+    {
+        $this->postBankDeposit('2026-01-05', 500, 'Invoice 1042 ACME');
+        $transaction = BankTransaction::create(['bank_account_id' => $this->bankAccount->id, 'date' => '2026-01-11', 'description' => 'zzzz', 'amount' => 500]);
+
+        $this->actingAs($this->user)->get(route('bank-accounts.show', $this->bankAccount->id))
+            ->assertInertia(fn ($page) => $page->has('suggestions', 1)->where('suggestions.0.confident', false));
+
+        $this->actingAs($this->user)->post(route('bank-accounts.auto-match', $this->bankAccount->id));
+
+        $this->assertNull($transaction->refresh()->matched_journal_line_id);
+    }
+
+    public function test_a_foreign_currency_bank_account_cannot_be_reconciled(): void
+    {
+        $this->bankAccount->update(['currency' => 'USD']);
+        $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 500,
+        ])->assertSessionHas('error');
+
+        $this->assertDatabaseCount('bank_reconciliations', 0);
+    }
+
+    public function test_a_future_statement_date_is_rejected(): void
+    {
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => now()->addDays(5)->toDateString(),
+            'statement_ending_balance' => 0,
+        ])->assertSessionHasErrors('statement_date');
+    }
+
+    public function test_a_viewer_cannot_finish_auto_match_or_reopen(): void
+    {
+        $this->finishJanuary();
+        $viewer = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $viewer->assignRole('Viewer');
+
+        $this->actingAs($viewer)->post(route('bank-reconciliations.store', $this->bankAccount->id), ['statement_date' => '2026-02-28', 'statement_ending_balance' => 500])->assertForbidden();
+        $this->actingAs($viewer)->post(route('bank-accounts.auto-match', $this->bankAccount->id))->assertForbidden();
+        $this->actingAs($viewer)->delete(route('bank-reconciliations.destroy', BankReconciliation::firstOrFail()))->assertForbidden();
+    }
+
+    public function test_another_tenant_cannot_reach_a_reconciliation(): void
+    {
+        $this->finishJanuary();
+        $reconciliation = BankReconciliation::firstOrFail();
+        $otherTenant = Tenant::create(['name' => 'Other Co', 'slug' => 'other-co']);
+        $outsider = User::factory()->create(['tenant_id' => $otherTenant->id]);
+        $outsider->assignRole('Super Admin');
+
+        $this->actingAs($outsider)->get(route('bank-reconciliations.show', $reconciliation))->assertNotFound();
+        $this->actingAs($outsider)->get(route('bank-reconciliations.export', $reconciliation))->assertNotFound();
+        $this->actingAs($outsider)->delete(route('bank-reconciliations.destroy', $reconciliation))->assertNotFound();
+        $this->actingAs($outsider)->post(route('bank-accounts.auto-match', $this->bankAccount->id))->assertNotFound();
+    }
+
+    public function test_a_finished_reconciliation_exports_to_excel(): void
+    {
+        $this->finishJanuary();
+
+        $this->actingAs($this->user)
+            ->get(route('bank-reconciliations.export', BankReconciliation::firstOrFail()))
+            ->assertOk()
+            ->assertDownload();
+    }
+
+    public function test_a_leftover_difference_can_be_written_off_to_an_account(): void
+    {
+        $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 497.5,
+            'adjustment_account_id' => $this->expense->id,
+        ])->assertSessionMissing('error');
+
+        $reconciliation = BankReconciliation::firstOrFail();
+        $adjustment = BankTransaction::where('description', 'Reconciliation adjustment')->firstOrFail();
+        $this->assertEquals(-2.5, $adjustment->amount);
+        $this->assertSame($reconciliation->id, $adjustment->bank_reconciliation_id);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->expense->id, 'debit' => 2.5]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bankGlAccount->id, 'credit' => 2.5]);
+    }
+
+    public function test_the_first_opening_balance_defaults_to_the_ledger_balance_before_the_statement(): void
+    {
+        $this->postBankDeposit('2025-12-20', 1000, 'Opening cash');
+        $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+
+        $this->actingAs($this->user)->get(route('bank-accounts.show', $this->bankAccount->id))
+            ->assertInertia(fn ($page) => $page->where('suggestedOpeningBalance', 1000));
+
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 1500,
+        ])->assertSessionMissing('error');
+
+        $this->assertEquals(1000, BankReconciliation::firstOrFail()->opening_balance);
+    }
 }
