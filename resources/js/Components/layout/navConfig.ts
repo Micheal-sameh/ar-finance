@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
+import { ArrowLeftRight, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -31,6 +31,7 @@ export const navConfig: NavConfigGroup[] = [
         label: 'Transactions',
         items: [
             { label: 'Invoices', routeName: 'invoices.index', icon: FileText, permission: 'invoices.view' },
+            { label: 'Received Payments', routeName: 'received-payments.index', icon: HandCoins, permission: 'invoices.view' },
             { label: 'Expenses', routeName: 'expenses.index', icon: Receipt, permission: 'expenses.view' },
             { label: 'Purchase Orders', routeName: 'purchase-orders.index', icon: ClipboardList, permission: 'purchase_orders.view' },
             { label: 'Bills', routeName: 'bills.index', icon: ReceiptText, permission: 'bills.view' },
@@ -107,6 +108,7 @@ export const navConfig: NavConfigGroup[] = [
             { label: 'P&C Centers', routeName: 'cost-centers.index', icon: PiggyBank },
             { label: 'Fixed Assets', routeName: 'fixed-assets.index', icon: Boxes },
             { label: 'Invoices', routeName: 'invoices.index', icon: FileText },
+            { label: 'Received Payments', routeName: 'received-payments.index', icon: HandCoins },
             { label: 'Expenses', routeName: 'expenses.index', icon: Receipt },
             { label: 'Bills', routeName: 'bills.index', icon: ReceiptText },
             { label: 'Purchase Orders', routeName: 'purchase-orders.index', icon: ClipboardList },

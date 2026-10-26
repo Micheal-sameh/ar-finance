@@ -146,7 +146,7 @@ export default function InvoicesIndex({ invoices, filters, statusCounts, viewing
                                 <tr
                                     key={invoice.id}
                                     style={{ cursor: 'pointer' }}
-                                    onClick={() => router.get(route('invoices.show', invoice.id))}
+                                    onClick={() => router.get(route('invoices.show', { invoice: invoice.id, ...(viewingAllTenants ? { for_tenant: invoice.tenant_id } : {}) }))}
                                 >
                                     <td>
                                         <b className="link">{invoice.invoice_number}</b>

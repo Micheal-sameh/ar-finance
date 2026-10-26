@@ -27,6 +27,7 @@ use App\Http\Controllers\Platform\SwitchTenantController;
 use App\Http\Controllers\Platform\TenantController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\ReceivedPaymentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\TenantSwitchController;
 use App\Http\Controllers\TwoFactorChallengeController;
@@ -110,6 +111,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('clients', [ClientController::class, 'index'])->name('clients.index');
     Route::get('vendors', [VendorController::class, 'index'])->name('vendors.index');
     Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::get('received-payments', [ReceivedPaymentController::class, 'index'])->name('received-payments.index');
     Route::get('expenses', [ExpenseController::class, 'index'])->name('expenses.index');
     Route::get('purchase-orders', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
     Route::get('bills', [BillController::class, 'index'])->name('bills.index');
@@ -156,6 +158,8 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'recordPayment'])->name('invoices.record-payment');
     Route::post('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'pdf'])->name('invoices.pdf');
+
+    Route::resource('received-payments', ReceivedPaymentController::class)->only(['create', 'store']);
 
     Route::get('expenses/export', [ExpenseController::class, 'export'])->name('expenses.export');
     Route::resource('expenses', ExpenseController::class)->only(['create', 'store', 'show']);

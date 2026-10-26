@@ -1,6 +1,6 @@
 export type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
 export type NormalBalance = 'debit' | 'credit';
-export type JournalSourceType = 'invoice' | 'expense' | 'payroll' | 'manual' | 'depreciation' | 'revaluation';
+export type JournalSourceType = 'invoice' | 'expense' | 'payroll' | 'manual' | 'depreciation' | 'revaluation' | 'received_payment';
 
 export interface Tenant {
     id: number;
@@ -159,6 +159,7 @@ export interface Invoice {
     tax_payable_account?: Account | null;
     paid_at: string | null;
     lines: InvoiceLine[];
+    tenant_id?: number;
     tenant_name?: string | null;
 }
 
@@ -545,4 +546,19 @@ export interface BankMatchSuggestion {
     journal_line_id: number;
     score: number;
     confident: boolean;
+}
+
+export interface ReceivedPayment {
+    id: number;
+    client_id: number | null;
+    client?: Pick<Client, 'id' | 'name'> | null;
+    description: string;
+    amount: string;
+    received_on: string;
+    deposit_account_id: number;
+    deposit_account?: Pick<Account, 'id' | 'name'>;
+    credit_account_id: number;
+    credit_account?: Pick<Account, 'id' | 'name'>;
+    reference: string | null;
+    tenant_name?: string | null;
 }
