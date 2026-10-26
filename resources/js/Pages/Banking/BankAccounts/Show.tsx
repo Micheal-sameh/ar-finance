@@ -1,5 +1,5 @@
-import { Head, router, useForm } from '@inertiajs/react';
-import { Check, Link2, Link2Off, Plus } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Check, Link2, Link2Off, Plus, Sparkles } from 'lucide-react';
 import { FormEvent, Fragment, useState } from 'react';
 import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
@@ -8,22 +8,27 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { useConfirm } from '@/Components/ui/ConfirmProvider';
+import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
-import type { BankAccount, BankTransaction, UnmatchedJournalLine } from '@/types/finance';
+import type { BankAccount, BankMatchSuggestion, BankReconciliation, BankTransaction, UnmatchedJournalLine } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
 
 interface Props {
     bankAccount: BankAccount;
     transactions: BankTransaction[];
     unmatchedLines: UnmatchedJournalLine[];
+    suggestions: BankMatchSuggestion[];
+    reconciliations: BankReconciliation[];
+    openingBalance: number;
+    hasReconciliation: boolean;
 }
 
 function lineAmount(line: { debit: string; credit: string }): number {
     return parseFloat(line.debit) > 0 ? parseFloat(line.debit) : -parseFloat(line.credit);
 }
 
-export default function BankAccountsShow({ bankAccount, transactions, unmatchedLines }: Props) {
+export default function BankAccountsShow({ bankAccount, transactions, unmatchedLines, suggestions, reconciliations, openingBalance, hasReconciliation }: Props) {
     const confirm = useConfirm();
     const [activeRow, setActiveRow] = useState<number | null>(null);
     const [mode, setMode] = useState<'match' | 'create'>('match');
@@ -31,6 +36,22 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
     const importForm = useForm({ csv: '' });
     const matchForm = useForm({ journal_line_id: '' as number | '' });
     const createForm = useForm({ offset_account_id: null as number | null, description: '' });
+
+    const reconcileForm = useForm({ statement_date: '', statement_ending_balance: '', opening_balance: '' });
+
+    const suggestionByTransaction = new Map(suggestions.map((s) => [s.bank_transaction_id, s]));
+    const suggestedLineById = new Map(unmatchedLines.map((l) => [l.id, l]));
+
+    const statementDate = reconcileForm.data.statement_date;
+    const statementBalance = parseFloat(reconcileForm.data.statement_ending_balance);
+    const opening = hasReconciliation ? openingBalance : parseFloat(reconcileForm.data.opening_balance || '0');
+    const inPeriod = (t: BankTransaction) => statementDate !== '' && t.date.slice(0, 10) <= statementDate;
+    const clearedTotal = transactions
+        .filter((t) => inPeriod(t) && t.matched_journal_line_id !== null && t.bank_reconciliation_id === null)
+        .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const unmatchedInPeriod = transactions.filter((t) => inPeriod(t) && t.matched_journal_line_id === null).length;
+    const difference = statementBalance - (opening + clearedTotal);
+    const canFinish = statementDate !== '' && !Number.isNaN(statementBalance) && unmatchedInPeriod === 0 && Math.abs(difference) < 0.005;
 
     const bankBalance = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
     const matchedCount = transactions.filter((t) => t.matched_journal_line_id !== null).length;
@@ -40,6 +61,11 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
         importForm.post(route('bank-accounts.import', bankAccount.id), {
             onSuccess: () => importForm.reset(),
         });
+    }
+
+    function submitReconciliation(e: FormEvent) {
+        e.preventDefault();
+        reconcileForm.post(route('bank-reconciliations.store', bankAccount.id));
     }
 
     function openMatch(transactionId: number) {
@@ -83,6 +109,17 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
             <PageHeader
                 title={bankAccount.name}
                 subtitle={bankAccount.account ? `Reconciling against ${bankAccount.account.code} · ${bankAccount.account.name}` : undefined}
+                action={
+                    suggestions.length > 0 ? (
+                        <Button
+                            variant="outline"
+                            leadingIcon={<Sparkles size={14} />}
+                            onClick={() => router.post(route('bank-accounts.auto-match', bankAccount.id))}
+                        >
+                            Auto-match {suggestions.length}
+                        </Button>
+                    ) : undefined
+                }
             />
 
             <div className="row g-3 mb-4">
@@ -135,6 +172,92 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                 </form>
             </Card>
 
+            <Card className="mb-4">
+                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--af-navy)', marginBottom: '8px' }}>Reconcile Statement</div>
+                <form onSubmit={submitReconciliation}>
+                    <div className="row g-3 align-items-end">
+                        <div className="col-md-3">
+                            <Input
+                                label="Statement date"
+                                type="date"
+                                value={reconcileForm.data.statement_date}
+                                onChange={(e) => reconcileForm.setData('statement_date', e.target.value)}
+                                error={reconcileForm.errors.statement_date}
+                            />
+                        </div>
+                        <div className="col-md-3">
+                            <Input
+                                label="Statement ending balance"
+                                type="number"
+                                step="0.01"
+                                value={reconcileForm.data.statement_ending_balance}
+                                onChange={(e) => reconcileForm.setData('statement_ending_balance', e.target.value)}
+                                error={reconcileForm.errors.statement_ending_balance}
+                            />
+                        </div>
+                        <div className="col-md-3">
+                            {hasReconciliation ? (
+                                <div>
+                                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#5e6b80', marginBottom: '6px' }}>Opening balance</div>
+                                    <MoneyDisplay amount={openingBalance} currency={bankAccount.currency} />
+                                </div>
+                            ) : (
+                                <Input
+                                    label="Opening balance"
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={reconcileForm.data.opening_balance}
+                                    onChange={(e) => reconcileForm.setData('opening_balance', e.target.value)}
+                                    error={reconcileForm.errors.opening_balance}
+                                />
+                            )}
+                        </div>
+                        <div className="col-md-3 d-flex gap-2 justify-content-end">
+                            {statementDate !== '' && !Number.isNaN(statementBalance) && (
+                                <Link
+                                    href={route('bank-reconciliations.preview', {
+                                        bank_account: bankAccount.id,
+                                        statement_date: statementDate,
+                                        statement_ending_balance: statementBalance,
+                                    })}
+                                    className="btn d-inline-flex align-items-center text-decoration-none"
+                                    style={{ fontSize: '12.5px', height: '36px' }}
+                                >
+                                    Preview report
+                                </Link>
+                            )}
+                            <Button type="submit" disabled={!canFinish} loading={reconcileForm.processing}>
+                                Finish
+                            </Button>
+                        </div>
+                    </div>
+                </form>
+                {statementDate !== '' && !Number.isNaN(statementBalance) && (
+                    <div className="d-flex align-items-center gap-3 mt-3" style={{ fontSize: '13px' }}>
+                        <span>
+                            Difference: <MoneyDisplay amount={difference} currency={bankAccount.currency} />
+                        </span>
+                        {unmatchedInPeriod > 0 && <Badge variant="warning">{unmatchedInPeriod} unmatched up to this date</Badge>}
+                        {unmatchedInPeriod === 0 && Math.abs(difference) < 0.005 && <Badge variant="success">Ready to finish</Badge>}
+                    </div>
+                )}
+                {reconciliations.length > 0 && (
+                    <div className="mt-3" style={{ fontSize: '13px' }}>
+                        <div style={{ fontWeight: 600, color: 'var(--af-navy)', marginBottom: '4px' }}>History</div>
+                        {reconciliations.map((r) => (
+                            <div key={r.id} className="d-flex justify-content-between py-1">
+                                <Link href={route('bank-reconciliations.show', r.id)}>{formatDate(r.statement_date)}</Link>
+                                <span>
+                                    <MoneyDisplay amount={r.statement_ending_balance} currency={bankAccount.currency} />
+                                    {r.completed_by && <span style={{ color: 'var(--af-label)' }}> · {r.completed_by.name}</span>}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </Card>
+
             <Card padded={false}>
                 <Table>
                     <Table.Head>
@@ -154,14 +277,21 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                                         <MoneyDisplay amount={transaction.amount} currency={bankAccount.currency} />
                                     </Table.Cell>
                                     <Table.Cell>
-                                        {transaction.matched_journal_line_id ? (
+                                        {transaction.bank_reconciliation_id ? (
+                                            <Badge variant="info">Reconciled</Badge>
+                                        ) : transaction.matched_journal_line_id ? (
                                             <Badge variant="success">Matched</Badge>
                                         ) : (
                                             <Badge variant="warning">Unmatched</Badge>
                                         )}
+                                        {!transaction.matched_journal_line_id && suggestionByTransaction.has(transaction.id) && (
+                                            <div style={{ fontSize: '11px', color: 'var(--af-label)', marginTop: '4px' }}>
+                                                Suggested: {suggestedLineById.get(suggestionByTransaction.get(transaction.id)!.journal_line_id)?.journal_entry?.description}
+                                            </div>
+                                        )}
                                     </Table.Cell>
                                     <Table.Cell className="text-end pe-3">
-                                        {transaction.matched_journal_line_id ? (
+                                        {transaction.bank_reconciliation_id ? null : transaction.matched_journal_line_id ? (
                                             <button
                                                 type="button"
                                                 className="btn btn-sm p-1"
@@ -173,6 +303,21 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                                             </button>
                                         ) : (
                                             <div className="d-flex justify-content-end gap-1">
+                                                {suggestionByTransaction.has(transaction.id) && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm p-1"
+                                                        style={{ color: 'var(--af-success)' }}
+                                                        onClick={() =>
+                                                            router.post(route('bank-transactions.match', transaction.id), {
+                                                                journal_line_id: suggestionByTransaction.get(transaction.id)!.journal_line_id,
+                                                            })
+                                                        }
+                                                        aria-label="Accept suggested match"
+                                                    >
+                                                        <Check size={15} />
+                                                    </button>
+                                                )}
                                                 <button
                                                     type="button"
                                                     className="btn btn-sm p-1"

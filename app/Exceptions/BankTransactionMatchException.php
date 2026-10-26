@@ -16,6 +16,11 @@ class BankTransactionMatchException extends RuntimeException
         return new self('That journal line is not posted to this bank account\'s ledger account.');
     }
 
+    public static function reconciled(): self
+    {
+        return new self('This transaction is part of a finished reconciliation and can no longer be changed.');
+    }
+
     public static function alreadyMatched(): self
     {
         return new self('This transaction is already matched — unmatch it first.');

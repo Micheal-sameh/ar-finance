@@ -8,6 +8,10 @@ use App\Enums\AccountType;
 use App\Enums\JournalSourceType;
 use App\Models\Account;
 use App\Models\BankAccount;
+use App\Models\BankReconciliation;
+use App\Models\BankTransaction;
+use App\Models\JournalEntry;
+use App\Models\JournalLine;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Services\JournalService;
@@ -63,7 +67,7 @@ class BankReconciliationTest extends TestCase
         ]);
     }
 
-    private function postManualEntry(string $date, array $lines): \App\Models\JournalEntry
+    private function postManualEntry(string $date, array $lines): JournalEntry
     {
         auth()->login($this->user);
 
@@ -94,7 +98,7 @@ class BankReconciliationTest extends TestCase
     public function test_import_rejects_malformed_rows(): void
     {
         $response = $this->actingAs($this->user)->post(route('bank-accounts.import', $this->bankAccount->id), [
-            'csv' => "not-a-date,Bad row,abc",
+            'csv' => 'not-a-date,Bad row,abc',
         ]);
 
         $response->assertSessionHasErrors('csv');
@@ -112,7 +116,7 @@ class BankReconciliationTest extends TestCase
         $this->actingAs($this->user)->post(route('bank-accounts.import', $this->bankAccount->id), [
             'csv' => '2026-01-10,Customer payment,500',
         ]);
-        $transactionId = \App\Models\BankTransaction::where('description', 'Customer payment')->firstOrFail()->id;
+        $transactionId = BankTransaction::where('description', 'Customer payment')->firstOrFail()->id;
 
         $response = $this->actingAs($this->user)->post(route('bank-transactions.match', $transactionId), [
             'journal_line_id' => $bankLine->id,
@@ -133,7 +137,7 @@ class BankReconciliationTest extends TestCase
         $this->actingAs($this->user)->post(route('bank-accounts.import', $this->bankAccount->id), [
             'csv' => '2026-01-10,Customer payment,499',
         ]);
-        $transactionId = \App\Models\BankTransaction::where('description', 'Customer payment')->firstOrFail()->id;
+        $transactionId = BankTransaction::where('description', 'Customer payment')->firstOrFail()->id;
 
         $response = $this->actingAs($this->user)->post(route('bank-transactions.match', $transactionId), [
             'journal_line_id' => $bankLine->id,
@@ -148,7 +152,7 @@ class BankReconciliationTest extends TestCase
         $this->actingAs($this->user)->post(route('bank-accounts.import', $this->bankAccount->id), [
             'csv' => '2026-01-12,Bank fee,-25',
         ]);
-        $transactionId = \App\Models\BankTransaction::where('description', 'Bank fee')->firstOrFail()->id;
+        $transactionId = BankTransaction::where('description', 'Bank fee')->firstOrFail()->id;
 
         $response = $this->actingAs($this->user)->post(route('bank-transactions.create-and-match', $transactionId), [
             'offset_account_id' => $this->expense->id,
@@ -159,7 +163,7 @@ class BankReconciliationTest extends TestCase
         $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bankGlAccount->id, 'credit' => 25]);
         $this->assertDatabaseHas('journal_lines', ['account_id' => $this->expense->id, 'debit' => 25]);
 
-        $transaction = \App\Models\BankTransaction::find($transactionId);
+        $transaction = BankTransaction::find($transactionId);
         $this->assertNotNull($transaction->matched_journal_line_id);
     }
 
@@ -174,12 +178,138 @@ class BankReconciliationTest extends TestCase
         $this->actingAs($this->user)->post(route('bank-accounts.import', $this->bankAccount->id), [
             'csv' => '2026-01-10,Customer payment,500',
         ]);
-        $transactionId = \App\Models\BankTransaction::where('description', 'Customer payment')->firstOrFail()->id;
+        $transactionId = BankTransaction::where('description', 'Customer payment')->firstOrFail()->id;
         $this->actingAs($this->user)->post(route('bank-transactions.match', $transactionId), ['journal_line_id' => $bankLine->id]);
 
         $response = $this->actingAs($this->user)->post(route('bank-transactions.unmatch', $transactionId));
         $response->assertRedirect();
 
         $this->assertDatabaseHas('bank_transactions', ['id' => $transactionId, 'matched_journal_line_id' => null]);
+    }
+
+    private function postBankDeposit(string $date, float $amount, string $description = 'Customer payment'): JournalLine
+    {
+        $entry = $this->postManualEntry($date, [
+            ['accountId' => $this->bankGlAccount->id, 'debit' => $amount, 'credit' => 0],
+            ['accountId' => $this->revenue->id, 'debit' => 0, 'credit' => $amount],
+        ]);
+        $entry->update(['description' => $description]);
+
+        return $entry->lines->firstWhere('account_id', $this->bankGlAccount->id);
+    }
+
+    private function importMatched(string $date, float $amount, JournalLine $line): BankTransaction
+    {
+        $transaction = BankTransaction::create([
+            'bank_account_id' => $this->bankAccount->id,
+            'date' => $date,
+            'description' => 'Statement line',
+            'amount' => $amount,
+        ]);
+
+        $this->actingAs($this->user)->post(route('bank-transactions.match', $transaction->id), ['journal_line_id' => $line->id]);
+
+        return $transaction->refresh();
+    }
+
+    public function test_finishing_a_balanced_reconciliation_locks_the_matched_transactions(): void
+    {
+        $transaction = $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+
+        $response = $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 500,
+        ]);
+
+        $reconciliation = BankReconciliation::firstOrFail();
+        $response->assertRedirect(route('bank-reconciliations.show', $reconciliation));
+        $this->assertEquals(0, $reconciliation->opening_balance);
+        $this->assertSame($reconciliation->id, $transaction->refresh()->bank_reconciliation_id);
+
+        $this->actingAs($this->user)->post(route('bank-transactions.unmatch', $transaction->id))->assertSessionHas('error');
+        $this->assertNotNull($transaction->refresh()->matched_journal_line_id);
+    }
+
+    public function test_finishing_is_rejected_when_the_statement_balance_differs(): void
+    {
+        $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+
+        $response = $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 450,
+        ]);
+
+        $response->assertSessionHas('error');
+        $this->assertDatabaseCount('bank_reconciliations', 0);
+    }
+
+    public function test_finishing_is_rejected_while_transactions_up_to_the_date_are_unmatched(): void
+    {
+        $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+        BankTransaction::create(['bank_account_id' => $this->bankAccount->id, 'date' => '2026-01-20', 'description' => 'Bank fee', 'amount' => -25]);
+
+        $response = $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 475,
+        ]);
+
+        $response->assertSessionHas('error');
+        $this->assertDatabaseCount('bank_reconciliations', 0);
+    }
+
+    public function test_next_reconciliation_opens_at_the_previous_ending_balance(): void
+    {
+        $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 500,
+        ]);
+        $this->importMatched('2026-02-10', 200, $this->postBankDeposit('2026-02-10', 200));
+
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-02-28',
+            'statement_ending_balance' => 700,
+        ])->assertSessionMissing('error');
+
+        $this->assertEquals(500, BankReconciliation::orderByDesc('id')->firstOrFail()->opening_balance);
+
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-02-15',
+            'statement_ending_balance' => 700,
+        ])->assertSessionHas('error');
+    }
+
+    public function test_report_lists_ledger_items_the_bank_has_not_cleared(): void
+    {
+        $this->importMatched('2026-01-10', 500, $this->postBankDeposit('2026-01-10', 500));
+        $this->postBankDeposit('2026-01-30', 300, 'Deposit in transit');
+        $this->actingAs($this->user)->post(route('bank-reconciliations.store', $this->bankAccount->id), [
+            'statement_date' => '2026-01-31',
+            'statement_ending_balance' => 500,
+        ]);
+
+        $this->actingAs($this->user)
+            ->get(route('bank-reconciliations.show', BankReconciliation::firstOrFail()))
+            ->assertInertia(fn ($page) => $page
+                ->component('Banking/BankAccounts/Reconciliation')
+                ->where('report.outstanding_net', 300)
+                ->where('report.adjusted_bank_balance', 800)
+                ->where('report.ledger_balance', 800)
+                ->where('report.difference', 0)
+                ->has('report.outstanding_deposits', 1));
+    }
+
+    public function test_auto_match_pairs_same_amount_lines_close_in_date_and_skips_the_rest(): void
+    {
+        $near = $this->postBankDeposit('2026-01-10', 500, 'Customer payment');
+        $this->postBankDeposit('2026-03-10', 250, 'Too far away');
+
+        $nearTransaction = BankTransaction::create(['bank_account_id' => $this->bankAccount->id, 'date' => '2026-01-12', 'description' => 'Customer payment', 'amount' => 500]);
+        $farTransaction = BankTransaction::create(['bank_account_id' => $this->bankAccount->id, 'date' => '2026-01-12', 'description' => 'Too far away', 'amount' => 250]);
+
+        $this->actingAs($this->user)->post(route('bank-accounts.auto-match', $this->bankAccount->id))->assertSessionHas('success');
+
+        $this->assertSame($near->id, $nearTransaction->refresh()->matched_journal_line_id);
+        $this->assertNull($farTransaction->refresh()->matched_journal_line_id);
     }
 }

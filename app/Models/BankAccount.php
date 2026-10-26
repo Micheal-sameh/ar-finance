@@ -29,6 +29,11 @@ class BankAccount extends Model
         return $this->belongsTo(Account::class);
     }
 
+    public function bankReconciliations(): HasMany
+    {
+        return $this->hasMany(BankReconciliation::class);
+    }
+
     public function bankTransactions(): HasMany
     {
         return $this->hasMany(BankTransaction::class);

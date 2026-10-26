@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\BankReconciliationController;
 use App\Http\Controllers\BankTransactionController;
 use App\Http\Controllers\BillController;
 use App\Http\Controllers\ClientController;
@@ -190,6 +191,12 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::get('bank-accounts/export', [BankAccountController::class, 'export'])->name('bank-accounts.export');
     Route::resource('bank-accounts', BankAccountController::class)->only(['show', 'store', 'update', 'destroy']);
     Route::post('bank-accounts/{bank_account}/import', [BankAccountController::class, 'import'])->name('bank-accounts.import');
+
+    Route::post('bank-accounts/{bank_account}/auto-match', [BankAccountController::class, 'autoMatch'])->name('bank-accounts.auto-match');
+    Route::post('bank-accounts/{bank_account}/reconciliations', [BankReconciliationController::class, 'store'])->name('bank-reconciliations.store');
+    Route::get('bank-accounts/{bank_account}/reconciliation-preview', [BankReconciliationController::class, 'preview'])->name('bank-reconciliations.preview');
+    Route::get('bank-reconciliations/{bank_reconciliation}', [BankReconciliationController::class, 'show'])->name('bank-reconciliations.show');
+    Route::get('bank-reconciliations/{bank_reconciliation}/export', [BankReconciliationController::class, 'export'])->name('bank-reconciliations.export');
 
     Route::post('bank-transactions/{bank_transaction}/match', [BankTransactionController::class, 'match'])->name('bank-transactions.match');
     Route::post('bank-transactions/{bank_transaction}/unmatch', [BankTransactionController::class, 'unmatch'])->name('bank-transactions.unmatch');

@@ -35,7 +35,11 @@ class BankTransactionController extends Controller
     {
         $this->authorize('update', $bankTransaction->bankAccount);
 
-        $this->reconciliation->unmatch($bankTransaction);
+        try {
+            $this->reconciliation->unmatch($bankTransaction);
+        } catch (BankTransactionMatchException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'Transaction unmatched.');
     }

@@ -67,11 +67,26 @@ class BankAccountController extends Controller
     {
         $this->authorize('view', $bankAccount);
 
+        $lastReconciliation = $this->reconciliation->lastReconciliation($bankAccount);
+
         return Inertia::render('Banking/BankAccounts/Show', [
             'bankAccount' => $this->bankAccounts->find($bankAccount->id),
             'transactions' => $this->reconciliation->transactionsFor($bankAccount),
             'unmatchedLines' => $this->reconciliation->unmatchedJournalLines($bankAccount),
+            'suggestions' => $this->reconciliation->suggestMatches($bankAccount),
+            'reconciliations' => $this->reconciliation->history($bankAccount),
+            'openingBalance' => (float) ($lastReconciliation?->statement_ending_balance ?? 0),
+            'hasReconciliation' => $lastReconciliation !== null,
         ]);
+    }
+
+    public function autoMatch(BankAccount $bankAccount): RedirectResponse
+    {
+        $this->authorize('update', $bankAccount);
+
+        $matched = $this->reconciliation->applySuggestions($bankAccount);
+
+        return back()->with('success', "Matched {$matched} transaction(s).");
     }
 
     public function store(SaveBankAccountRequest $request): RedirectResponse

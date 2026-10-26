@@ -487,6 +487,7 @@ export interface BankTransaction {
     description: string;
     amount: string;
     matched_journal_line_id: number | null;
+    bank_reconciliation_id: number | null;
     matched_journal_line?: BankTransactionMatchedLine | null;
 }
 
@@ -496,4 +497,39 @@ export interface UnmatchedJournalLine {
     credit: string;
     description: string | null;
     journal_entry?: { id: number; date: string; description: string };
+}
+
+export interface BankReconciliation {
+    id: number;
+    bank_account_id: number;
+    statement_date: string;
+    opening_balance: string;
+    statement_ending_balance: string;
+    completed_by: { id: number; name: string } | null;
+    created_at: string;
+}
+
+export interface BankReconciliationReportItem {
+    id: number;
+    date: string;
+    description: string;
+    reference: string | null;
+    amount: number;
+}
+
+export interface BankReconciliationReport {
+    statement_date: string;
+    statement_ending_balance: number;
+    outstanding_deposits: BankReconciliationReportItem[];
+    outstanding_withdrawals: BankReconciliationReportItem[];
+    outstanding_net: number;
+    adjusted_bank_balance: number;
+    ledger_balance: number;
+    difference: number;
+}
+
+export interface BankMatchSuggestion {
+    bank_transaction_id: number;
+    journal_line_id: number;
+    score: number;
 }

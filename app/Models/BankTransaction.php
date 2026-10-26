@@ -19,6 +19,7 @@ class BankTransaction extends Model
         'description',
         'amount',
         'matched_journal_line_id',
+        'bank_reconciliation_id',
     ];
 
     protected $casts = [
@@ -34,6 +35,16 @@ class BankTransaction extends Model
     public function matchedJournalLine(): BelongsTo
     {
         return $this->belongsTo(JournalLine::class, 'matched_journal_line_id');
+    }
+
+    public function bankReconciliation(): BelongsTo
+    {
+        return $this->belongsTo(BankReconciliation::class);
+    }
+
+    public function isReconciled(): bool
+    {
+        return $this->bank_reconciliation_id !== null;
     }
 
     public function isMatched(): bool
