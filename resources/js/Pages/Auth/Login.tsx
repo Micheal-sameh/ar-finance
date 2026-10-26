@@ -1,16 +1,27 @@
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, usePage } from '@inertiajs/react';
 import { Eye, EyeOff, Lock, User } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { AuthShell } from '@/Components/auth/AuthShell';
 import { Button } from '@/Components/ui/Button';
+import Turnstile, { TurnstileHandle } from '@/Components/ui/Turnstile';
 
 export default function Login() {
-    const form = useForm({ identifier: '', password: '', remember: false });
+    const { turnstile_site_key: turnstileSiteKey } = usePage<{ turnstile_site_key?: string }>().props;
+    const turnstileRef = useRef<TurnstileHandle>(null);
+    const form = useForm({ identifier: '', password: '', remember: false, 'cf-turnstile-response': '' });
     const [showPassword, setShowPassword] = useState(false);
+    const captchaError = (form.errors as Record<string, string | undefined>)['cf-turnstile-response'];
 
     function submit(e: FormEvent) {
         e.preventDefault();
-        form.post(route('login.store'), { onFinish: () => form.reset('password') });
+        form.post(route('login.store'), {
+            onFinish: () => {
+                form.reset('password');
+                // A Turnstile token is single-use; request a fresh one after every attempt.
+                turnstileRef.current?.reset();
+                form.setData('cf-turnstile-response', '');
+            },
+        });
     }
 
     return (
@@ -111,7 +122,26 @@ export default function Login() {
                     </Link>
                 </div>
 
-                <Button type="submit" loading={form.processing} className="w-100 justify-content-center">
+                {turnstileSiteKey && (
+                    <div className="mb-3">
+                        <Turnstile
+                            ref={turnstileRef}
+                            siteKey={turnstileSiteKey}
+                            onVerify={(token) => form.setData('cf-turnstile-response', token)}
+                            onExpire={() => form.setData('cf-turnstile-response', '')}
+                        />
+                        {captchaError && (
+                            <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>{captchaError}</div>
+                        )}
+                    </div>
+                )}
+
+                <Button
+                    type="submit"
+                    loading={form.processing}
+                    disabled={!!turnstileSiteKey && !form.data['cf-turnstile-response']}
+                    className="w-100 justify-content-center"
+                >
                     Continue
                 </Button>
             </form>

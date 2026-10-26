@@ -29,6 +29,7 @@ class HandleInertiaRequests extends Middleware
 
         return array_merge(parent::share($request), [
             'name' => config('app.name'),
+            'turnstile_site_key' => config('services.turnstile.site_key'),
             'auth' => [
                 'user' => $user,
                 'permissions' => $user?->getAllPermissions()->pluck('name') ?? [],

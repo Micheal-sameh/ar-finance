@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Rules\Turnstile;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class LoginRequest extends FormRequest
 {
@@ -12,7 +14,7 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * @return array<string, array<int, mixed>>
      */
     public function rules(): array
     {
@@ -20,6 +22,7 @@ class LoginRequest extends FormRequest
             'identifier' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
             'remember' => ['sometimes', 'boolean'],
+            'cf-turnstile-response' => [Rule::requiredIf(fn () => filled(config('services.turnstile.site_key'))), 'nullable', 'string', new Turnstile($this->ip())],
         ];
     }
 }
