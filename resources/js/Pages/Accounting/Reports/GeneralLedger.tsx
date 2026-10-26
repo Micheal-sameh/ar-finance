@@ -100,10 +100,10 @@ export default function GeneralLedger({ account, ledger, costCenterLabel, filter
                         <AccountPicker value={accountId} onChange={setAccountId} />
                     </div>
                     <div className="col-md-2">
-                        <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+                        <Input type="date" label="From" help="The first day to include. Only entries dated on or after this day are counted." value={from} onChange={(e) => setFrom(e.target.value)} />
                     </div>
                     <div className="col-md-2">
-                        <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+                        <Input type="date" label="To" help="The last day to include. Only entries dated on or before this day are counted." value={to} onChange={(e) => setTo(e.target.value)} />
                     </div>
                     <div className="col-md-2">
                         <Button type="submit" variant="outline">

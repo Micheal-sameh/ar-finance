@@ -18,6 +18,7 @@ import { Select } from '@/Components/ui/Select';
 import { useBookableItems } from '@/hooks/useBookableItems';
 import api from '@/lib/api';
 import type { BookingEvent, BookingRecurrence } from '@/types/booking';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 const STATUS_VARIANT: Record<BookingEvent['status'], 'info' | 'success' | 'neutral'> = {
     confirmed: 'info',
@@ -391,6 +392,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
 
                     <Select
                         label="What are you booking?"
+                        help="The hall, room or resource the customer wants."
                         value={bookableItemId ?? ''}
                         onChange={(e) => {
                             setBookableItemId(e.target.value ? Number(e.target.value) : null);
@@ -408,6 +410,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                     {needsType && selectedItem && (
                         <Select
                             label="Booking type"
+                            help="The kind of event. It decides the rate that is charged."
                             value={bookingTypeId ?? ''}
                             onChange={(e) => setBookingTypeId(e.target.value ? Number(e.target.value) : null)}
                         >
@@ -425,12 +428,14 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                             <Input
                                 type="datetime-local"
                                 label="Starts"
+                                help="When the booking begins."
                                 value={selection.start}
                                 onChange={(e) => setSelection({ ...selection, start: e.target.value })}
                             />
                             <Input
                                 type="datetime-local"
                                 label="Ends"
+                                help="When the booking finishes. It must be after the start."
                                 value={selection.end}
                                 onChange={(e) => setSelection({ ...selection, end: e.target.value })}
                                 error={selection.end <= selection.start ? 'Must be after the start time.' : undefined}
@@ -439,7 +444,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                     )}
 
                     <div className="d-flex gap-3">
-                        <Select label="Repeat" value={recurrence} onChange={(e) => setRecurrence(e.target.value as BookingRecurrence)}>
+                        <Select label="Repeat" help="Make the same booking happen again on a regular schedule instead of entering each one by hand." value={recurrence} onChange={(e) => setRecurrence(e.target.value as BookingRecurrence)}>
                             <option value="none">Does not repeat</option>
                             <option value="daily">Daily</option>
                             <option value="weekly">Weekly</option>
@@ -450,6 +455,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                             <Input
                                 type="date"
                                 label="Repeat until"
+                                help="The last day the repeating booking can happen. No occurrences are created after it."
                                 value={recurrenceUntil}
                                 min={selection?.start.slice(0, 10)}
                                 onChange={(e) => setRecurrenceUntil(e.target.value)}
@@ -481,6 +487,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                 step="0.01"
                                 min={estimatedDeposit() ?? 0.01}
                                 label="Deposit to collect"
+                                help="The part of the price paid upfront to hold the booking. The rest is collected later."
                                 placeholder={estimatedDeposit() !== null ? String(estimatedDeposit()) : undefined}
                                 value={bookingDepositAmount}
                                 onChange={(e) => setBookingDepositAmount(e.target.value)}
@@ -490,13 +497,14 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                             <Input
                                 type="datetime-local"
                                 label="Balance due by"
+                                help="The date the remaining balance must be paid."
                                 value={bookingDepositDueAt}
                                 onChange={(e) => setBookingDepositDueAt(e.target.value)}
                             />
                         </div>
                     )}
 
-                    <Input label="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                    <Input label="Notes (optional)" help="Anything staff should know about this booking, such as set-up requests." value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
             </Modal>
 
@@ -595,7 +603,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                 />
                                 <div>
                                     <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                        Received into
+                                        Received into <InfoTip>The bank or cash account that receives this payment.</InfoTip>
                                     </label>
                                     <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" tenantId={selectedEvent.tenant_id ?? null} />
                                 </div>
@@ -619,6 +627,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                 <Input
                                     type="datetime-local"
                                     label="Complete payment by"
+                                    help="The date the remaining balance must be paid."
                                     value={depositDueAt}
                                     onChange={(e) => setDepositDueAt(e.target.value)}
                                 />

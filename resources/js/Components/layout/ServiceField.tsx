@@ -19,6 +19,7 @@ export function ServiceField({ value, onChange, error }: ServiceFieldProps) {
     return (
         <Select
             label="Service"
+            help="The business this record belongs to. Pick the one you are working for."
             value={value ?? ''}
             onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
             error={error}

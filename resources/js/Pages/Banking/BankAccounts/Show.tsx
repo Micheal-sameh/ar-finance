@@ -13,6 +13,7 @@ import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import type { BankAccount, BankMatchSuggestion, BankReconciliation, BankTransaction, UnmatchedJournalLine } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     bankAccount: BankAccount;
@@ -194,6 +195,7 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                         <div className="col-md-3">
                             <Input
                                 label="Statement date"
+                                help="The closing date printed on your bank statement. Everything on or before this date is reconciled."
                                 type="date"
                                 value={reconcileForm.data.statement_date}
                                 onChange={(e) => reconcileForm.setData('statement_date', e.target.value)}
@@ -203,6 +205,7 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                         <div className="col-md-3">
                             <Input
                                 label="Statement ending balance"
+                                help="The closing balance printed on your bank statement for that date. Reconciling checks that your books agree with it."
                                 type="number"
                                 step="0.01"
                                 value={reconcileForm.data.statement_ending_balance}
@@ -219,10 +222,10 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                             ) : (
                                 <Input
                                     label="Opening balance"
+                                    help="What the bank account held before the first statement line. It defaults to the ledger balance up to that day — type a value only if your bank's figure differs. After your first reconciliation this is filled in automatically from the previous one."
                                     type="number"
                                     step="0.01"
                                     placeholder={(suggestedOpeningBalance ?? 0).toFixed(2)}
-                                    help="Ledger balance before the first statement line"
                                     value={reconcileForm.data.opening_balance}
                                     onChange={(e) => reconcileForm.setData('opening_balance', e.target.value)}
                                     error={reconcileForm.errors.opening_balance}
@@ -406,7 +409,7 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                                             <form onSubmit={(e) => submitCreate(e, transaction.id)} className="d-flex align-items-end gap-2">
                                                 <div style={{ flex: 1 }}>
                                                     <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                                        Offset account
+                                                        Offset account <InfoTip>The other side of the entry, for example Bank Charges for a fee. The bank account is the first side.</InfoTip>
                                                     </label>
                                                     <AccountPicker
                                                         value={createForm.data.offset_account_id}
@@ -417,7 +420,7 @@ export default function BankAccountsShow({ bankAccount, transactions, unmatchedL
                                                 </div>
                                                 <div style={{ flex: 1 }}>
                                                     <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                                        Description
+                                                        Description <InfoTip>A short note for the new journal entry.</InfoTip>
                                                     </label>
                                                     <input
                                                         type="text"

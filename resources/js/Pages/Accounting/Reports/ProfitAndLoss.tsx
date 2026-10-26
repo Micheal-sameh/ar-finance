@@ -76,14 +76,15 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                 <FilterPanel active>
                     <form onSubmit={applyFilter} className="af-filter-bar mb-4">
                         <div style={{ maxWidth: '160px' }}>
-                            <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+                            <Input type="date" label="From" help="The first day to include. Only entries dated on or after this day are counted." value={from} onChange={(e) => setFrom(e.target.value)} />
                         </div>
                         <div style={{ maxWidth: '160px' }}>
-                            <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+                            <Input type="date" label="To" help="The last day to include. Only entries dated on or before this day are counted." value={to} onChange={(e) => setTo(e.target.value)} />
                         </div>
                         <div style={{ maxWidth: '160px' }}>
                             <Select
                                 label="Group by"
+                                help="Split the report into monthly or quarterly columns, or by cost center. None gives one total for the whole period."
                                 value={groupBy}
                                 onChange={(e) => setGroupBy(e.target.value as ProfitAndLossGroupBy | 'none')}
                             >
@@ -113,12 +114,13 @@ export default function ProfitAndLoss({ report, filters }: Props) {
                                             <Input
                                                 type="date"
                                                 label="Compare from"
+                                                help="The first day of the earlier period you want to compare against."
                                                 value={compareFrom}
                                                 onChange={(e) => setCompareFrom(e.target.value)}
                                             />
                                         </div>
                                         <div style={{ maxWidth: '160px' }}>
-                                            <Input type="date" label="Compare to" value={compareTo} onChange={(e) => setCompareTo(e.target.value)} />
+                                            <Input type="date" label="Compare to" help="The last day of the earlier period you want to compare against." value={compareTo} onChange={(e) => setCompareTo(e.target.value)} />
                                         </div>
                                     </>
                                 )}

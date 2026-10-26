@@ -240,12 +240,12 @@ export default function ClientsIndex({ clients, filters, currencyOptions, viewin
                     {viewingAllTenants && !editing && (
                         <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
                     )}
-                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
-                    <Input label="Email" type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
-                    <Input label="Phone" value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} />
-                    <Input label="Tax number" value={form.data.tax_number} onChange={(e) => form.setData('tax_number', e.target.value)} error={form.errors.tax_number} />
-                    <Input label="Address" value={form.data.address} onChange={(e) => form.setData('address', e.target.value)} error={form.errors.address} />
-                    <Select label="Currency" value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value)} error={form.errors.currency}>
+                    <Input label="Name" help="The customer or company you sell to. It appears on their invoices." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                    <Input label="Email" help="Where invoices and reminders are sent." type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
+                    <Input label="Phone" help="A contact number for this customer." value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} />
+                    <Input label="Tax number" help="The customer tax or VAT registration number, if they have one. It is printed on invoices." value={form.data.tax_number} onChange={(e) => form.setData('tax_number', e.target.value)} error={form.errors.tax_number} />
+                    <Input label="Address" help="The billing address printed on invoices." value={form.data.address} onChange={(e) => form.setData('address', e.target.value)} error={form.errors.address} />
+                    <Select label="Currency" help="The currency this contact is normally billed in. It is the default for new documents and can be changed on each one." value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value)} error={form.errors.currency}>
                         {currencyOptions.map((currency) => (
                             <option key={currency.code} value={currency.code}>
                                 {currency.code} — {currency.name}

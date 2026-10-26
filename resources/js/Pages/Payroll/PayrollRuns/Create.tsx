@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import type { Employee } from '@/types/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     employees: Employee[];
@@ -49,6 +50,7 @@ export default function PayrollRunsCreate({ employees }: Props) {
                             <Input
                                 type="date"
                                 label="Period start"
+                                help="The first day of the pay period this run covers."
                                 value={form.data.period_start}
                                 onChange={(e) => form.setData('period_start', e.target.value)}
                                 error={form.errors.period_start}
@@ -58,6 +60,7 @@ export default function PayrollRunsCreate({ employees }: Props) {
                             <Input
                                 type="date"
                                 label="Period end"
+                                help="The last day of the pay period this run covers."
                                 value={form.data.period_end}
                                 onChange={(e) => form.setData('period_end', e.target.value)}
                                 error={form.errors.period_end}
@@ -67,6 +70,7 @@ export default function PayrollRunsCreate({ employees }: Props) {
                             <Input
                                 type="date"
                                 label="Pay date"
+                                help="The day employees are paid. The entry is dated this day."
                                 value={form.data.pay_date}
                                 onChange={(e) => form.setData('pay_date', e.target.value)}
                                 error={form.errors.pay_date}
@@ -77,7 +81,7 @@ export default function PayrollRunsCreate({ employees }: Props) {
                     <div className="row g-3 mb-4">
                         <div className="col-md-4">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Payroll expense account
+                                Payroll expense account <InfoTip>The expense account that records the total salary cost.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.expense_account_id}
@@ -88,7 +92,7 @@ export default function PayrollRunsCreate({ employees }: Props) {
                         </div>
                         <div className="col-md-4">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Salaries payable account
+                                Salaries payable account <InfoTip>The liability account that holds net pay until employees are paid.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.payable_account_id}
@@ -99,7 +103,7 @@ export default function PayrollRunsCreate({ employees }: Props) {
                         </div>
                         <div className="col-md-4">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Deductions payable (required if any deductions)
+                                Deductions payable (required if any deductions) <InfoTip>The liability account for amounts withheld from pay, such as tax or insurance, that you must pay to others.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.deductions_payable_account_id}

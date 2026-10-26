@@ -1,4 +1,5 @@
 import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
     label?: string;
@@ -15,6 +16,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 {label && (
                     <label htmlFor={selectId} className="d-block" style={{ fontSize: '12px', fontWeight: 600, color: '#5e6b80', marginBottom: '6px' }}>
                         {label}
+                        {help && (
+                            <span className="ms-1">
+                                <InfoTip label={`About ${label}`}>{help}</InfoTip>
+                            </span>
+                        )}
                     </label>
                 )}
                 <select
@@ -33,7 +39,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 </select>
                 {error ? (
                     <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>{error}</div>
-                ) : help ? (
+                ) : help && !label ? (
                     <div style={{ color: 'var(--af-label)', fontSize: '12px', marginTop: '4px' }}>{help}</div>
                 ) : null}
             </div>

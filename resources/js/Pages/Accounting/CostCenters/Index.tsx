@@ -14,6 +14,7 @@ import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import type { CostCenter, CostCenterSummaryRow, CostCenterType, Paginated } from '@/types/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     costCenters: Paginated<CostCenter>;
@@ -298,9 +299,10 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                     {viewingAllTenants && !editing && (
                         <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
                     )}
-                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                    <Input label="Name" help="The department, project or location you want to track income and spending for, for example Main Hall or Marketing." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                     <Select
                         label="Type"
+                        help="Whether this is a cost center (spending only) or a profit center (earns income too). It decides how it is grouped in reports."
                         value={form.data.type}
                         onChange={(e) => form.setData('type', e.target.value as CostCenterType)}
                         error={form.errors.type}
@@ -313,6 +315,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                         step="0.01"
                         min="0"
                         label="Budget (optional)"
+                        help="The amount you plan to spend here. It is used in the budget-versus-actual report."
                         value={form.data.budget}
                         onChange={(e) => form.setData('budget', e.target.value)}
                         error={form.errors.budget}
@@ -320,7 +323,7 @@ export default function CostCentersIndex({ costCenters, summary, filters, viewin
                     />
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Parent (optional)
+                            Parent (optional) <InfoTip>Nest this under a bigger center so reports can roll the figures up.</InfoTip>
                         </label>
                         <CostCenterPicker tenantId={editing ? ((editing as { tenant_id?: number }).tenant_id ?? null) : serviceId} value={form.data.parent_id} onChange={(id) => form.setData('parent_id', id)} error={form.errors.parent_id} />
                     </div>

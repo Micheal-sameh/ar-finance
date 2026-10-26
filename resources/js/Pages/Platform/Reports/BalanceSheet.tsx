@@ -46,7 +46,7 @@ export default function PlatformBalanceSheet({ rows, filters }: Props) {
                     <FilterPanel active={false}>
                         <form onSubmit={applyFilter} className="af-filter-bar">
                             <div style={{ maxWidth: '180px' }}>
-                                <Input type="date" label="As of" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
+                                <Input type="date" label="As of" help="Shows balances as they stood at the end of this day, counting everything posted up to and including it." value={asOf} onChange={(e) => setAsOf(e.target.value)} />
                             </div>
                             <Button type="submit" variant="outline">
                                 Apply

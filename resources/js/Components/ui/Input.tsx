@@ -1,4 +1,5 @@
 import { forwardRef, type InputHTMLAttributes } from 'react';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
@@ -15,6 +16,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 {label && (
                     <label htmlFor={inputId} className="d-block" style={{ fontSize: '12px', fontWeight: 600, color: '#5e6b80', marginBottom: '6px' }}>
                         {label}
+                        {help && (
+                            <span className="ms-1">
+                                <InfoTip label={`About ${label}`}>{help}</InfoTip>
+                            </span>
+                        )}
                     </label>
                 )}
                 <input
@@ -31,7 +37,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 />
                 {error ? (
                     <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>{error}</div>
-                ) : help ? (
+                ) : help && !label ? (
                     <div style={{ color: 'var(--af-label)', fontSize: '12px', marginTop: '4px' }}>{help}</div>
                 ) : null}
             </div>

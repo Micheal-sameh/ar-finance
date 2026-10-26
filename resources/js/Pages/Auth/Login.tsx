@@ -4,6 +4,7 @@ import { FormEvent, useRef, useState } from 'react';
 import { AuthShell } from '@/Components/auth/AuthShell';
 import { Button } from '@/Components/ui/Button';
 import Turnstile, { TurnstileHandle } from '@/Components/ui/Turnstile';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 export default function Login() {
     const { turnstile_site_key: turnstileSiteKey } = usePage<{ turnstile_site_key?: string }>().props;
@@ -33,7 +34,7 @@ export default function Login() {
             <form onSubmit={submit}>
                 <div className="mb-3">
                     <label htmlFor="identifier" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                        Email or phone number
+                        Email or phone number <InfoTip>Use the email or phone number your administrator set up for you.</InfoTip>
                     </label>
                     <div className="position-relative">
                         <User
@@ -65,7 +66,7 @@ export default function Login() {
 
                 <div className="mb-3">
                     <label htmlFor="password" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                        Password
+                        Password <InfoTip>Use Forgot password if you do not remember it.</InfoTip>
                     </label>
                     <div className="position-relative">
                         <Lock

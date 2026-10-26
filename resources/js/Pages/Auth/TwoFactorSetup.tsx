@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { FormEvent } from 'react';
 import { AuthShell } from '@/Components/auth/AuthShell';
 import { Button } from '@/Components/ui/Button';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     secret: string;
@@ -55,7 +56,7 @@ export default function TwoFactorSetup({ secret, otpauthUri }: Props) {
             <form onSubmit={submit}>
                 <div className="mb-4">
                     <label htmlFor="code" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                        2. Enter the 6-digit code
+                        2. Enter the 6-digit code <InfoTip>Open your authenticator app and type the current 6-digit code to prove it is set up correctly.</InfoTip>
                     </label>
                     <input
                         id="code"

@@ -80,6 +80,7 @@ export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: 
                             <div className="d-grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
                                 <Select
                                     label="Status"
+                                    help="Pending expenses are waiting for approval. Approved ones are waiting to be paid. Paid ones are finished."
                                     value={filters.status ?? ''}
                                     onChange={(e) => runFilters({ status: e.target.value || undefined })}
                                 >
@@ -93,12 +94,14 @@ export default function ExpensesIndex({ expenses, filters, viewingAllTenants }: 
                                 <Input
                                     type="date"
                                     label="From"
+                                    help="The first day to include. Only entries dated on or after this day are counted."
                                     value={filters.from ?? ''}
                                     onChange={(e) => runFilters({ from: e.target.value || undefined })}
                                 />
                                 <Input
                                     type="date"
                                     label="To"
+                                    help="The last day to include. Only entries dated on or before this day are counted."
                                     value={filters.to ?? ''}
                                     onChange={(e) => runFilters({ to: e.target.value || undefined })}
                                 />

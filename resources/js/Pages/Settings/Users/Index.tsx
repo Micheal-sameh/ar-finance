@@ -342,11 +342,11 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                 }
             >
                 <form onSubmit={submitCreate} className="d-flex flex-column gap-3">
-                    <Input label="Name" value={createForm.data.name} onChange={(e) => createForm.setData('name', e.target.value)} error={createForm.errors.name} />
-                    <Input label="Email" type="email" value={createForm.data.email} onChange={(e) => createForm.setData('email', e.target.value)} error={createForm.errors.email} />
-                    <Input label="Phone" value={createForm.data.phone} onChange={(e) => createForm.setData('phone', e.target.value)} error={createForm.errors.phone} />
-                    <Input label="Temporary password" type="password" autoComplete="new-password" value={createForm.data.password} onChange={(e) => createForm.setData('password', e.target.value)} error={createForm.errors.password} />
-                    <Select label="Role" value={createForm.data.role} onChange={(e) => createForm.setData('role', e.target.value)} error={createForm.errors.role}>
+                    <Input label="Name" help="The person full name." value={createForm.data.name} onChange={(e) => createForm.setData('name', e.target.value)} error={createForm.errors.name} />
+                    <Input label="Email" help="Used to sign in and to reset the password. Optional if the person signs in with a phone number." type="email" value={createForm.data.email} onChange={(e) => createForm.setData('email', e.target.value)} error={createForm.errors.email} />
+                    <Input label="Phone" help="Can be used instead of email to sign in." value={createForm.data.phone} onChange={(e) => createForm.setData('phone', e.target.value)} error={createForm.errors.phone} />
+                    <Input label="Temporary password" help="A first password to give the person. They should change it after signing in." type="password" autoComplete="new-password" value={createForm.data.password} onChange={(e) => createForm.setData('password', e.target.value)} error={createForm.errors.password} />
+                    <Select label="Role" help="What the person is allowed to do, for example an Accountant can post entries and a Viewer can only look." value={createForm.data.role} onChange={(e) => createForm.setData('role', e.target.value)} error={createForm.errors.role}>
                         <option value="">Select a role…</option>
                         <RoleOptions roles={availableRoles} />
                     </Select>
@@ -358,7 +358,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                             error={createForm.errors.tenant_ids}
                         />
                     )}
-                    <Select label="Status" value={createForm.data.status} onChange={(e) => createForm.setData('status', e.target.value as UserStatus)} error={createForm.errors.status}>
+                    <Select label="Status" help="Suspended people cannot sign in, but their history is kept." value={createForm.data.status} onChange={(e) => createForm.setData('status', e.target.value as UserStatus)} error={createForm.errors.status}>
                         <option value="active">Active</option>
                         <option value="suspended">Suspended</option>
                     </Select>
@@ -411,6 +411,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
                     <Select
                         label="Role"
+                        help="What the person is allowed to do, for example an Accountant can post entries and a Viewer can only look."
                         value={form.data.role}
                         onChange={(e) => form.setData('role', e.target.value)}
                         error={form.errors.role}
@@ -420,6 +421,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                     </Select>
                     <Select
                         label="Status"
+                        help="Suspended people cannot sign in, but their history is kept."
                         value={form.data.status}
                         onChange={(e) => form.setData('status', e.target.value as UserStatus)}
                         error={form.errors.status}

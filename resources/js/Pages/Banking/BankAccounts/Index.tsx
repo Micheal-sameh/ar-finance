@@ -15,6 +15,7 @@ import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import type { BankAccount, Paginated } from '@/types/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface CurrencyOption {
     code: string;
@@ -229,16 +230,16 @@ export default function BankAccountsIndex({ bankAccounts, filters, currencyOptio
                     {viewingAllTenants && !editing && (
                         <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
                     )}
-                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} placeholder="e.g. Main Checking" />
+                    <Input label="Name" help="A nickname for this bank account, for example Main Checking." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} placeholder="e.g. Main Checking" />
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            GL account
+                            GL account <InfoTip>The ledger account that holds this bank balance, for example Cash and Bank. Reconciliation compares the statement with this account.</InfoTip>
                         </label>
                         <AccountPicker value={form.data.account_id} tenantId={editing ? (editing as { tenant_id?: number }).tenant_id ?? null : serviceId} onChange={(id) => form.setData('account_id', id)} error={form.errors.account_id} placeholder="e.g. Bank" />
                     </div>
-                    <Input label="Bank name" value={form.data.bank_name} onChange={(e) => form.setData('bank_name', e.target.value)} error={form.errors.bank_name} />
-                    <Input label="Account number" value={form.data.account_number} onChange={(e) => form.setData('account_number', e.target.value)} error={form.errors.account_number} />
-                    <Select label="Currency" value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value)} error={form.errors.currency}>
+                    <Input label="Bank name" help="The bank that holds the account. For your reference only." value={form.data.bank_name} onChange={(e) => form.setData('bank_name', e.target.value)} error={form.errors.bank_name} />
+                    <Input label="Account number" help="The number or IBAN printed on your bank statement. For your reference only." value={form.data.account_number} onChange={(e) => form.setData('account_number', e.target.value)} error={form.errors.account_number} />
+                    <Select label="Currency" help="The currency the bank account is held in. Statement lines are read in this currency." value={form.data.currency} onChange={(e) => form.setData('currency', e.target.value)} error={form.errors.currency}>
                         {currencyOptions.map((currency) => (
                             <option key={currency.code} value={currency.code}>
                                 {currency.code} — {currency.name}

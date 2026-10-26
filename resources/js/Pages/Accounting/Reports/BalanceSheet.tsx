@@ -64,7 +64,7 @@ export default function BalanceSheet({ report, filters }: Props) {
             <Card style={{ padding: '28px 42px', maxWidth: '930px', margin: '0 auto' }}>
                 <form onSubmit={applyFilter} className="af-filter-bar mb-4">
                     <div style={{ maxWidth: '160px' }}>
-                        <Select label="Group by" value={groupBy} onChange={(e) => setGroupBy(e.target.value as BalanceSheetGroupBy | 'none')}>
+                        <Select label="Group by" help="Show the balance sheet at the end of each month or quarter side by side. None shows one date only." value={groupBy} onChange={(e) => setGroupBy(e.target.value as BalanceSheetGroupBy | 'none')}>
                             <option value="none">None</option>
                             <option value="month">Monthly</option>
                             <option value="quarter">Quarterly</option>
@@ -72,15 +72,15 @@ export default function BalanceSheet({ report, filters }: Props) {
                     </div>
                     {groupBy === 'none' ? (
                         <div style={{ maxWidth: '180px' }}>
-                            <Input type="date" label="As of" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
+                            <Input type="date" label="As of" help="Shows balances as they stood at the end of this day, counting everything posted up to and including it." value={asOf} onChange={(e) => setAsOf(e.target.value)} />
                         </div>
                     ) : (
                         <>
                             <div style={{ maxWidth: '160px' }}>
-                                <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+                                <Input type="date" label="From" help="The first day to include. Only entries dated on or after this day are counted." value={from} onChange={(e) => setFrom(e.target.value)} />
                             </div>
                             <div style={{ maxWidth: '160px' }}>
-                                <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+                                <Input type="date" label="To" help="The last day to include. Only entries dated on or before this day are counted." value={to} onChange={(e) => setTo(e.target.value)} />
                             </div>
                         </>
                     )}

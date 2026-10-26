@@ -18,6 +18,7 @@ import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import type { Account, AccountType, NormalBalance } from '@/types/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface CurrencyOption {
     code: string;
@@ -747,6 +748,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                     )}
                     <Input
                         label="Code"
+                        help="A short number that identifies the account in your chart, for example 1210. Each code must be unique."
                         value={form.data.code}
                         onChange={(e) => handleCodeChange(e.target.value)}
                         error={form.errors.code}
@@ -754,6 +756,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                     />
                     <Input
                         label="Name"
+                        help="What the account is called in reports, for example Cash and Bank or Office Rent."
                         value={form.data.name}
                         onChange={(e) => form.setData('name', e.target.value)}
                         error={form.errors.name}
@@ -761,6 +764,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                     />
                     <Select
                         label="Type"
+                        help="Asset (what you own), Liability (what you owe), Equity (owner funds), Revenue (income) or Expense (costs). It decides which report the account appears on."
                         value={form.data.type}
                         onChange={(e) => form.setData((data) => ({ ...data, type: e.target.value as AccountType, parent_id: null }))}
                         error={form.errors.type}
@@ -773,6 +777,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                     </Select>
                     <Select
                         label="Currency"
+                        help="The currency this account is held in. Leave it as your base currency unless the account really holds foreign money."
                         value={form.data.currency}
                         onChange={(e) => form.setData('currency', e.target.value)}
                         error={form.errors.currency}
@@ -785,7 +790,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                     </Select>
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Parent account (optional)
+                            Parent account (optional) <InfoTip>Put this account under another one to group them, for example Petty Cash under Cash and Bank. Parent accounts only group; you post to the child accounts.</InfoTip>
                         </label>
                         <AccountPicker
                             tenantId={editing ? ((editing as { tenant_id?: number }).tenant_id ?? null) : serviceId}
@@ -800,6 +805,7 @@ export default function AccountsIndex({ accounts, filters, baseCurrency, currenc
                     {!editing && (
                         <Input
                             label="Opening balance (optional)"
+                            help="The amount already in this account when you start using the system. It is posted as an opening entry against the Opening Balance Equity account. Leave empty to start from zero."
                             type="number"
                             step="0.01"
                             value={form.data.opening_balance}

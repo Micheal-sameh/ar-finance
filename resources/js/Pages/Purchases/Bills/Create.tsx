@@ -9,6 +9,7 @@ import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import type { Vendor } from '@/types/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     vendors: Vendor[];
@@ -54,6 +55,7 @@ export default function BillsCreate({ vendors }: Props) {
                         <div className="col-md-3">
                             <Select
                                 label="Vendor"
+                                help="The supplier who sent you this bill."
                                 value={form.data.vendor_id}
                                 onChange={(e) => form.setData('vendor_id', e.target.value ? Number(e.target.value) : '')}
                                 error={form.errors.vendor_id}
@@ -69,6 +71,7 @@ export default function BillsCreate({ vendors }: Props) {
                         <div className="col-md-2">
                             <Input
                                 label="Bill #"
+                                help="The invoice number printed on the supplier bill. Use it to match the paper copy."
                                 value={form.data.bill_number}
                                 onChange={(e) => form.setData('bill_number', e.target.value)}
                                 error={form.errors.bill_number}
@@ -79,6 +82,7 @@ export default function BillsCreate({ vendors }: Props) {
                             <Input
                                 type="date"
                                 label="Bill date"
+                                help="The date written on the supplier bill. The expense is recorded on this date."
                                 value={form.data.bill_date}
                                 onChange={(e) => form.setData('bill_date', e.target.value)}
                                 error={form.errors.bill_date}
@@ -88,6 +92,7 @@ export default function BillsCreate({ vendors }: Props) {
                             <Input
                                 type="date"
                                 label="Due date"
+                                help="The date payment is expected by. Anything unpaid after this date is shown as overdue."
                                 value={form.data.due_date}
                                 onChange={(e) => form.setData('due_date', e.target.value)}
                                 error={form.errors.due_date}
@@ -96,6 +101,7 @@ export default function BillsCreate({ vendors }: Props) {
                         <div className="col-md-3">
                             <CostCenterPicker
                                 label="Cost center (optional)"
+                                help="Assign the spending to a department or project so you can see its costs separately."
                                 value={form.data.cost_center_id}
                                 onChange={(id) => form.setData('cost_center_id', id)}
                                 error={form.errors.cost_center_id}
@@ -106,7 +112,7 @@ export default function BillsCreate({ vendors }: Props) {
                     <div className="row g-3 mb-4">
                         <div className="col-md-6">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Payable account
+                                Payable account <InfoTip>The liability account that records what you owe this supplier until you pay.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.payable_account_id}
@@ -118,7 +124,7 @@ export default function BillsCreate({ vendors }: Props) {
                         {hasTax && (
                             <div className="col-md-6">
                                 <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                    Tax receivable account
+                                    Tax receivable account <InfoTip>Where input VAT you can claim back is recorded.</InfoTip>
                                 </label>
                                 <AccountPicker
                                     value={form.data.tax_receivable_account_id}

@@ -11,6 +11,7 @@ import { ExportButton } from '@/Components/ui/ExportButton';
 import { Table } from '@/Components/ui/Table';
 import type { Bill, BillStatus } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     bill: Bill;
@@ -65,7 +66,7 @@ export default function BillsShow({ bill }: Props) {
                     <div className="d-flex align-items-end gap-2">
                         <div style={{ maxWidth: '320px', flex: 1 }}>
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Pay from
+                                Pay from <InfoTip>The bank or cash account the payment is taken from.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={paymentForm.data.payment_account_id}

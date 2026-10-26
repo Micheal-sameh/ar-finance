@@ -44,6 +44,7 @@ export default function PurchaseOrdersCreate({ vendors }: Props) {
                         <div className="col-md-4">
                             <Select
                                 label="Vendor"
+                                help="The supplier you are ordering from."
                                 value={form.data.vendor_id}
                                 onChange={(e) => form.setData('vendor_id', e.target.value ? Number(e.target.value) : '')}
                                 error={form.errors.vendor_id}
@@ -59,6 +60,7 @@ export default function PurchaseOrdersCreate({ vendors }: Props) {
                         <div className="col-md-3">
                             <Input
                                 label="PO #"
+                                help="The number of this purchase order. Quote it to the supplier."
                                 value={form.data.po_number}
                                 onChange={(e) => form.setData('po_number', e.target.value)}
                                 error={form.errors.po_number}
@@ -69,6 +71,7 @@ export default function PurchaseOrdersCreate({ vendors }: Props) {
                             <Input
                                 type="date"
                                 label="Order date"
+                                help="The day you place the order."
                                 value={form.data.order_date}
                                 onChange={(e) => form.setData('order_date', e.target.value)}
                                 error={form.errors.order_date}
@@ -78,6 +81,7 @@ export default function PurchaseOrdersCreate({ vendors }: Props) {
                             <Input
                                 type="date"
                                 label="Expected date (optional)"
+                                help="When you expect the goods or service to arrive."
                                 value={form.data.expected_date}
                                 onChange={(e) => form.setData('expected_date', e.target.value)}
                                 error={form.errors.expected_date}

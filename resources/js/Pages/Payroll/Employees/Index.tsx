@@ -189,14 +189,15 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                     {viewingAllTenants && !editing && (
                         <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
                     )}
-                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
-                    <Input label="Email" type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
-                    <Input label="Job title" value={form.data.job_title} onChange={(e) => form.setData('job_title', e.target.value)} error={form.errors.job_title} />
+                    <Input label="Name" help="The employee full name as it should appear on payslips." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                    <Input label="Email" help="Where the employee payslip can be sent." type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
+                    <Input label="Job title" help="The employee role, for your records and payslips." value={form.data.job_title} onChange={(e) => form.setData('job_title', e.target.value)} error={form.errors.job_title} />
                     <Input
                         type="number"
                         step="0.01"
                         min="0.01"
                         label="Monthly salary"
+                        help="The gross amount paid each month before any deductions. It is the default on each payroll run."
                         value={form.data.salary}
                         onChange={(e) => form.setData('salary', e.target.value)}
                         error={form.errors.salary}
@@ -204,6 +205,7 @@ export default function EmployeesIndex({ employees, filters, viewingAllTenants }
                     <Input
                         type="date"
                         label="Hire date"
+                        help="The day the employee started. Used for your records."
                         value={form.data.hire_date}
                         onChange={(e) => form.setData('hire_date', e.target.value)}
                         error={form.errors.hire_date}

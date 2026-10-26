@@ -150,10 +150,11 @@ export default function TenantsIndex({ tenants }: Props) {
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
-                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
-                    <Input label="Slug" value={form.data.slug} onChange={(e) => form.setData('slug', e.target.value)} error={form.errors.slug} />
+                    <Input label="Name" help="The business or organisation name this service represents." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                    <Input label="Slug" help="A short unique identifier using only letters, numbers, dashes or underscores, for example my-company." value={form.data.slug} onChange={(e) => form.setData('slug', e.target.value)} error={form.errors.slug} />
                     <Input
                         label="Base Currency"
+                        help="The main currency this service reports in. Foreign-currency amounts are converted to it."
                         value={form.data.base_currency}
                         onChange={(e) => form.setData('base_currency', e.target.value.toUpperCase())}
                         error={form.errors.base_currency}

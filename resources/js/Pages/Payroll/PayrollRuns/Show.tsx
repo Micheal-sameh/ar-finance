@@ -10,6 +10,7 @@ import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { Table } from '@/Components/ui/Table';
 import type { PayrollRun, PayrollRunStatus } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     payrollRun: PayrollRun;
@@ -66,7 +67,7 @@ export default function PayrollRunsShow({ payrollRun }: Props) {
                     <div className="d-flex align-items-end gap-2">
                         <div style={{ maxWidth: '320px', flex: 1 }}>
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Pay from
+                                Pay from <InfoTip>The bank or cash account the salaries are paid out of.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={paymentForm.data.payment_account_id}

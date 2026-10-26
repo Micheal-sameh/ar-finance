@@ -16,6 +16,7 @@ import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import type { BookableItem, BookableItemsPage, BookingRateType } from '@/types/booking';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface BookingTypeRow {
     booking_type_id: number | null;
@@ -254,9 +255,10 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                     {viewingAllTenants && !editing && (
                         <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
                     )}
-                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                    <Input label="Name" help="What customers can book, for example Main Hall or Tennis Court 1." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                     <Input
                         label="Description (optional)"
+                        help="Extra details staff may want to see when taking a booking."
                         value={form.data.description}
                         onChange={(e) => form.setData('description', e.target.value)}
                         error={form.errors.description}
@@ -352,7 +354,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
 
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Revenue account
+                            Revenue account <InfoTip>The income account credited once the booking has taken place.</InfoTip>
                         </label>
                         <AccountPicker
                             tenantId={formTenantId}
@@ -367,7 +369,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                         <>
                             <div>
                                 <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                    Deferred revenue account
+                                    Deferred revenue account <InfoTip>Where money received in advance is held until the booking date, because it is not yet earned.</InfoTip>
                                 </label>
                                 <AccountPicker
                                     tenantId={formTenantId}
@@ -380,7 +382,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
 
                             <div>
                                 <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                    Deposit received into
+                                    Deposit received into <InfoTip>The bank or cash account that receives the deposit.</InfoTip>
                                 </label>
                                 <AccountPicker
                                     tenantId={formTenantId}
@@ -395,7 +397,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
 
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Cost/profit center
+                            Cost/profit center <InfoTip>The department or project this item belongs to, for reports.</InfoTip>
                         </label>
                         <CostCenterPicker tenantId={formTenantId} value={form.data.cost_center_id} onChange={(id) => form.setData('cost_center_id', id)} error={form.errors.cost_center_id} />
                     </div>

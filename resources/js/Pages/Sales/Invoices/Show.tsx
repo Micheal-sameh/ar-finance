@@ -12,6 +12,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import type { Invoice } from '@/types/finance';
 import { formatDate, formatDateTime, invoiceStatusVariant } from '@/utils/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     invoice: Invoice;
@@ -88,7 +89,7 @@ export default function InvoicesShow({ invoice }: Props) {
                     <div className="d-flex align-items-end gap-2 flex-wrap">
                         <div style={{ maxWidth: '320px', flex: 1 }}>
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Deposit into
+                                Deposit into <InfoTip>The bank or cash account that receives the customer payment.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={paymentForm.data.payment_account_id}
@@ -114,7 +115,7 @@ export default function InvoicesShow({ invoice }: Props) {
                                 </div>
                                 <div style={{ maxWidth: '260px', flex: 1 }}>
                                     <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                        FX gain/loss account (if rate differs)
+                                        FX gain/loss account (if rate differs) <InfoTip>If the exchange rate today differs from the rate on the invoice, the difference is recorded here as a gain or loss.</InfoTip>
                                     </label>
                                     <AccountPicker
                                         value={paymentForm.data.fx_gain_loss_account_id}

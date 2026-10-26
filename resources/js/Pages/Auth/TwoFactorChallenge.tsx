@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { FormEvent, useState } from 'react';
 import { AuthShell } from '@/Components/auth/AuthShell';
 import { Button } from '@/Components/ui/Button';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 export default function TwoFactorChallenge() {
     const form = useForm({ code: '' });
@@ -25,7 +26,7 @@ export default function TwoFactorChallenge() {
             <form onSubmit={submit}>
                 <div className="mb-4">
                     <label htmlFor="code" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                        {useRecovery ? 'Recovery code' : 'Authentication code'}
+                        {useRecovery ? 'Recovery code' : 'Authentication code'} <InfoTip>The 6-digit code from your authenticator app. If you lost the app, use one of the recovery codes you saved when you set this up.</InfoTip>
                     </label>
                     <input
                         id="code"

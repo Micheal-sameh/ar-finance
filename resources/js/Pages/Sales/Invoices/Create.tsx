@@ -96,6 +96,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                                 <div className="wide">
                                     <Select
                                         label="Customer"
+                                        help="Who you are billing. Their details appear on the invoice."
                                         value={form.data.client_id}
                                         onChange={(e) => form.setData('client_id', e.target.value ? Number(e.target.value) : '')}
                                         error={form.errors.client_id}
@@ -110,6 +111,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                                 </div>
                                 <Input
                                     label="Invoice number"
+                                    help="A unique number for this invoice. Customers use it when they pay."
                                     value={form.data.invoice_number}
                                     onChange={(e) => form.setData('invoice_number', e.target.value)}
                                     error={form.errors.invoice_number}
@@ -117,6 +119,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                                 />
                                 <Select
                                     label="Currency"
+                                    help="The currency the customer will pay in. If it differs from your base currency you will be asked for an exchange rate."
                                     value={form.data.currency}
                                     onChange={(e) => form.setData('currency', e.target.value)}
                                     error={form.errors.currency}
@@ -130,6 +133,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                                 <Input
                                     type="date"
                                     label="Issue date"
+                                    help="The date shown on the invoice. The sale is recorded on this date."
                                     value={form.data.issue_date}
                                     onChange={(e) => form.setData('issue_date', e.target.value)}
                                     error={form.errors.issue_date}
@@ -137,6 +141,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                                 <Input
                                     type="date"
                                     label="Due date"
+                                    help="The date payment is expected by. Anything unpaid after this date is shown as overdue."
                                     value={form.data.due_date}
                                     onChange={(e) => form.setData('due_date', e.target.value)}
                                     error={form.errors.due_date}

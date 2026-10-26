@@ -145,7 +145,7 @@ export default function BookingTypesIndex({ types, viewingAllTenants, canManage 
                     {viewingAllTenants && !editing && (
                         <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
                     )}
-                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                    <Input label="Name" help="The kind of booking, for example Wedding or Training. Each bookable item sets its own price for the types it offers." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                 </form>
             </Modal>
         </>

@@ -197,10 +197,10 @@ export default function VendorsIndex({ vendors, filters, viewingAllTenants }: Pr
                     {viewingAllTenants && !editing && (
                         <ServiceField value={serviceId} onChange={setServiceId} error={(form.errors as Record<string, string>).for_tenant} />
                     )}
-                    <Input label="Name" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
-                    <Input label="Email" type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
-                    <Input label="Tax number" value={form.data.tax_number} onChange={(e) => form.setData('tax_number', e.target.value)} error={form.errors.tax_number} />
-                    <Input label="Payment terms" value={form.data.payment_terms} onChange={(e) => form.setData('payment_terms', e.target.value)} error={form.errors.payment_terms} placeholder="e.g. Net 30" />
+                    <Input label="Name" help="The supplier or company you buy from. It appears on their bills." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
+                    <Input label="Email" help="Where purchase orders and payment notices are sent." type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />
+                    <Input label="Tax number" help="The supplier tax or VAT registration number, if they have one." value={form.data.tax_number} onChange={(e) => form.setData('tax_number', e.target.value)} error={form.errors.tax_number} />
+                    <Input label="Payment terms" help="A note on how long you normally have to pay this supplier, for example Net 30 means 30 days. It is for your reference and does not set due dates automatically." value={form.data.payment_terms} onChange={(e) => form.setData('payment_terms', e.target.value)} error={form.errors.payment_terms} placeholder="e.g. Net 30" />
                 </form>
             </Modal>
         </>

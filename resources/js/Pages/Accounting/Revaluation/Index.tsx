@@ -12,6 +12,7 @@ import { EmptyState } from '@/Components/ui/EmptyState';
 import { ExportButton } from '@/Components/ui/ExportButton';
 import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface RevaluationRow {
     invoice_id: number;
@@ -90,7 +91,7 @@ export default function RevaluationIndex({ preview, filters, canManage }: Props)
                 <div className="d-flex align-items-end flex-wrap gap-2 mb-4">
                     <form onSubmit={applyFilter} className="d-flex align-items-end gap-2">
                         <div style={{ maxWidth: '200px' }}>
-                            <Input type="date" label="As of" value={date} onChange={(e) => setDate(e.target.value)} />
+                            <Input type="date" label="As of" help="The date whose exchange rates are used to re-measure foreign-currency balances. Usually the last day of the month or year." value={date} onChange={(e) => setDate(e.target.value)} />
                         </div>
                         <Button type="submit" variant="outline">
                             Apply
@@ -101,7 +102,7 @@ export default function RevaluationIndex({ preview, filters, canManage }: Props)
                         <>
                             <div style={{ maxWidth: '280px', flex: 1, minWidth: '220px' }}>
                                 <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                    FX gain/loss account
+                                    FX gain/loss account <InfoTip>The account that records gains or losses caused by exchange-rate movements.</InfoTip>
                                 </label>
                                 <AccountPicker
                                     value={fxGainLossAccountId}

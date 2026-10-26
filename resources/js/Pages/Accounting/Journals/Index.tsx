@@ -122,12 +122,14 @@ export default function JournalsIndex({ entries, filters, authorOptions, viewing
                         <Input
                             type="date"
                             label="From"
+                            help="The first day to include. Only entries dated on or after this day are counted."
                             value={filters.from ?? ''}
                             onChange={(e) => runFilters({ from: e.target.value || undefined })}
                         />
                         <Input
                             type="date"
                             label="To"
+                            help="The last day to include. Only entries dated on or before this day are counted."
                             value={filters.to ?? ''}
                             onChange={(e) => runFilters({ to: e.target.value || undefined })}
                         />

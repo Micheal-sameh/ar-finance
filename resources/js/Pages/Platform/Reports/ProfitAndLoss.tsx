@@ -45,10 +45,10 @@ export default function PlatformProfitAndLoss({ rows, filters }: Props) {
                     <FilterPanel active={false}>
                         <form onSubmit={applyFilter} className="af-filter-bar">
                             <div style={{ maxWidth: '180px' }}>
-                                <Input type="date" label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+                                <Input type="date" label="From" help="The first day to include. Only entries dated on or after this day are counted." value={from} onChange={(e) => setFrom(e.target.value)} />
                             </div>
                             <div style={{ maxWidth: '180px' }}>
-                                <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+                                <Input type="date" label="To" help="The last day to include. Only entries dated on or before this day are counted." value={to} onChange={(e) => setTo(e.target.value)} />
                             </div>
                             <Button type="submit" variant="outline">
                                 Apply

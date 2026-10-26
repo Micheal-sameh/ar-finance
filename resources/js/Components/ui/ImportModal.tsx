@@ -5,6 +5,7 @@ import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { FileDropzone } from '@/Components/ui/FileDropzone';
 import { Modal } from '@/Components/ui/Modal';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface ImportModalProps {
     open: boolean;
@@ -86,7 +87,7 @@ export function ImportModal({
 
                 <div>
                     <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                        Spreadsheet
+                        Spreadsheet <InfoTip>Upload an Excel or CSV file. Use the template link to get the right columns.</InfoTip>
                     </label>
                     <FileDropzone
                         file={form.data.file}

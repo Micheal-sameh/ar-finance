@@ -55,12 +55,14 @@ export default function JournalsCreate() {
                                 <Input
                                     type="date"
                                     label="Posting date"
+                                    help="The date the entry belongs to in your books. Reports use this date, not the day you typed it in."
                                     value={form.data.date}
                                     onChange={(e) => form.setData('date', e.target.value)}
                                     error={form.errors.date}
                                 />
                                 <Input
                                     label="Reference"
+                                    help="An optional number or note to find the entry later, such as a receipt or cheque number."
                                     value={form.data.reference}
                                     onChange={(e) => form.setData('reference', e.target.value)}
                                     error={form.errors.reference}
@@ -69,6 +71,7 @@ export default function JournalsCreate() {
                                 <div className="wide">
                                     <Input
                                         label="Description"
+                                        help="A short explanation of what the entry is for. It shows in the ledger and reports."
                                         value={form.data.description}
                                         onChange={(e) => form.setData('description', e.target.value)}
                                         error={form.errors.description}

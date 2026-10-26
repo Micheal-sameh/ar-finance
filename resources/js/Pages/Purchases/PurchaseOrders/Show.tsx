@@ -11,6 +11,7 @@ import { Input } from '@/Components/ui/Input';
 import { Table } from '@/Components/ui/Table';
 import type { PurchaseOrder, PurchaseOrderStatus } from '@/types/finance';
 import { formatDate } from '@/utils/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     purchaseOrder: PurchaseOrder;
@@ -89,6 +90,7 @@ export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
                         <div className="col-md-3">
                             <Input
                                 label="Bill #"
+                                help="The number on the supplier bill that this order is converted into."
                                 value={convertForm.data.bill_number}
                                 onChange={(e) => convertForm.setData('bill_number', e.target.value)}
                                 error={convertForm.errors.bill_number}
@@ -99,6 +101,7 @@ export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
                             <Input
                                 type="date"
                                 label="Bill date"
+                                help="The date written on the supplier bill."
                                 value={convertForm.data.bill_date}
                                 onChange={(e) => convertForm.setData('bill_date', e.target.value)}
                                 error={convertForm.errors.bill_date}
@@ -108,6 +111,7 @@ export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
                             <Input
                                 type="date"
                                 label="Due date"
+                                help="The date payment is expected by. Anything unpaid after this date is shown as overdue."
                                 value={convertForm.data.due_date}
                                 onChange={(e) => convertForm.setData('due_date', e.target.value)}
                                 error={convertForm.errors.due_date}
@@ -115,7 +119,7 @@ export default function PurchaseOrdersShow({ purchaseOrder }: Props) {
                         </div>
                         <div className="col-md-3">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Payable account
+                                Payable account <InfoTip>The liability account that records what you owe this supplier until you pay.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={convertForm.data.payable_account_id}

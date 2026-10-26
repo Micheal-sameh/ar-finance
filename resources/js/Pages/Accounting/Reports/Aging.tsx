@@ -75,7 +75,7 @@ export default function Aging({ arReport, apReport, filters }: Props) {
             <div className="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
                 <form onSubmit={applyFilter} className="d-flex align-items-end gap-2">
                     <div style={{ maxWidth: '200px' }}>
-                        <Input type="date" label="As of" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
+                        <Input type="date" label="As of" help="Shows balances as they stood at the end of this day, counting everything posted up to and including it." value={asOf} onChange={(e) => setAsOf(e.target.value)} />
                     </div>
                     <Button type="submit" variant="outline">
                         Apply

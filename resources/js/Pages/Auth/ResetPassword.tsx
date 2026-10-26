@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 import { AuthShell } from '@/Components/auth/AuthShell';
 import { Button } from '@/Components/ui/Button';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     token: string;
@@ -45,7 +46,7 @@ export default function ResetPassword({ token, email }: Props) {
 
                 <div className="mb-3">
                     <label htmlFor="password" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                        New password
+                        New password <InfoTip>Choose a password you do not use anywhere else.</InfoTip>
                     </label>
                     <input
                         id="password"
@@ -64,7 +65,7 @@ export default function ResetPassword({ token, email }: Props) {
 
                 <div className="mb-4">
                     <label htmlFor="password_confirmation" className="d-block mb-1" style={{ fontSize: '12px', color: 'var(--af-label)' }}>
-                        Confirm password
+                        Confirm password <InfoTip>Type the same password again to make sure there is no typing mistake.</InfoTip>
                     </label>
                     <input
                         id="password_confirmation"

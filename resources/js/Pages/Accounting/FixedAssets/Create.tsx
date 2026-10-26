@@ -5,6 +5,7 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 type FixedAssetsCreateProps = {
     defaultDepreciationAccountId: number | null;
@@ -41,6 +42,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                         <div className="col-md-6">
                             <Input
                                 label="Name"
+                                help="What the asset is, for example Delivery van or Office laptops."
                                 value={form.data.name}
                                 onChange={(e) => form.setData('name', e.target.value)}
                                 error={form.errors.name}
@@ -51,6 +53,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                             <Input
                                 type="date"
                                 label="Purchase date"
+                                help="The day you bought it. Depreciation is counted from this date."
                                 value={form.data.purchase_date}
                                 onChange={(e) => form.setData('purchase_date', e.target.value)}
                                 error={form.errors.purchase_date}
@@ -62,6 +65,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                                 step="0.01"
                                 min="0.01"
                                 label="Cost"
+                                help="What you paid for the asset, including delivery and set-up. This is the amount that is written off over its life."
                                 value={form.data.cost}
                                 onChange={(e) => form.setData('cost', e.target.value)}
                                 error={form.errors.cost}
@@ -77,6 +81,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                                 step="0.01"
                                 min="0"
                                 label="Salvage value"
+                                help="What you expect it to be worth at the end of its useful life. Only the cost minus this value is depreciated."
                                 value={form.data.salvage_value}
                                 onChange={(e) => form.setData('salvage_value', e.target.value)}
                                 error={form.errors.salvage_value}
@@ -88,6 +93,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                                 min="1"
                                 max="100"
                                 label="Useful life (years)"
+                                help="How many years you expect to use the asset. Depreciation is spread evenly over this period."
                                 value={form.data.useful_life_years}
                                 onChange={(e) => form.setData('useful_life_years', e.target.value)}
                                 error={form.errors.useful_life_years}
@@ -95,7 +101,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                         </div>
                         <div className="col-md-6">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Depreciation method
+                                Depreciation method <InfoTip>How the cost is written off. Straight-line writes off the same amount every period over the useful life.</InfoTip>
                             </label>
                             <div
                                 className="d-flex align-items-center"
@@ -117,7 +123,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                     <div className="row g-3 mb-4">
                         <div className="col-md-4">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Asset account
+                                Asset account <InfoTip>The balance-sheet account that holds the asset, for example Vehicles.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.asset_account_id}
@@ -131,7 +137,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                         </div>
                         <div className="col-md-4">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Depreciation expense account
+                                Depreciation expense account <InfoTip>The expense account that receives each depreciation charge, so it shows in the profit and loss.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.depreciation_account_id}
@@ -146,7 +152,7 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
                         </div>
                         <div className="col-md-4">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Accumulated depreciation account
+                                Accumulated depreciation account <InfoTip>The account that builds up the total depreciation so far. It reduces the asset value on the balance sheet.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.accumulated_depreciation_account_id}

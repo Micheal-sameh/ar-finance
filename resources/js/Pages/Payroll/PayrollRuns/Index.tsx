@@ -79,12 +79,14 @@ export default function PayrollRunsIndex({ payrollRuns, filters, viewingAllTenan
                             <Input
                                 type="date"
                                 label="Period from"
+                                help="Show payroll runs that cover days on or after this date."
                                 value={filters.from ?? ''}
                                 onChange={(e) => runFilters({ from: e.target.value || undefined })}
                             />
                             <Input
                                 type="date"
                                 label="Period to"
+                                help="Show payroll runs that cover days on or before this date."
                                 value={filters.to ?? ''}
                                 onChange={(e) => runFilters({ to: e.target.value || undefined })}
                             />

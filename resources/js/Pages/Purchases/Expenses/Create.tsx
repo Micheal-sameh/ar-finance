@@ -8,6 +8,7 @@ import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
 import type { Vendor } from '@/types/finance';
+import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     vendors: Vendor[];
@@ -49,6 +50,7 @@ export default function ExpensesCreate({ vendors }: Props) {
                         <div className="col-md-6">
                             <Input
                                 label="Description"
+                                help="What the money was spent on, for example Taxi to client meeting."
                                 value={form.data.description}
                                 onChange={(e) => form.setData('description', e.target.value)}
                                 error={form.errors.description}
@@ -61,6 +63,7 @@ export default function ExpensesCreate({ vendors }: Props) {
                                 step="0.01"
                                 min="0.01"
                                 label="Amount"
+                                help="The total amount spent on this expense."
                                 value={form.data.amount}
                                 onChange={(e) => form.setData('amount', e.target.value)}
                                 error={form.errors.amount}
@@ -71,6 +74,7 @@ export default function ExpensesCreate({ vendors }: Props) {
                             <Input
                                 type="date"
                                 label="Date"
+                                help="The day the money was spent."
                                 value={form.data.date}
                                 onChange={(e) => form.setData('date', e.target.value)}
                                 error={form.errors.date}
@@ -81,7 +85,7 @@ export default function ExpensesCreate({ vendors }: Props) {
                     <div className="row g-3 mb-4">
                         <div className="col-md-4">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Category (expense account)
+                                Category (expense account) <InfoTip>The kind of cost, for example Travel or Office Supplies. It decides where it shows in the profit and loss.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.account_id}
@@ -92,7 +96,7 @@ export default function ExpensesCreate({ vendors }: Props) {
                         </div>
                         <div className="col-md-4">
                             <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Payable account
+                                Payable account <InfoTip>The liability account that records what you owe until the expense is paid.</InfoTip>
                             </label>
                             <AccountPicker
                                 value={form.data.payable_account_id}
@@ -104,6 +108,7 @@ export default function ExpensesCreate({ vendors }: Props) {
                         <div className="col-md-4">
                             <Select
                                 label="Vendor (optional)"
+                                help="Who you paid, if you want to track spending per supplier."
                                 value={form.data.vendor_id}
                                 onChange={(e) => form.setData('vendor_id', e.target.value ? Number(e.target.value) : '')}
                                 error={form.errors.vendor_id}
@@ -122,6 +127,7 @@ export default function ExpensesCreate({ vendors }: Props) {
                         <div className="col-md-4">
                             <CostCenterPicker
                                 label="Cost center (optional)"
+                                help="Assign the spending to a department or project so you can see its costs separately."
                                 value={form.data.cost_center_id}
                                 onChange={(id) => form.setData('cost_center_id', id)}
                                 error={form.errors.cost_center_id}
