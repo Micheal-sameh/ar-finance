@@ -19,6 +19,8 @@ interface UserRepositoryInterface
 
     public function update(User $user, string $status, string $role): User;
 
+    public function updateDetails(User $user, string $name, ?string $email, ?string $phone): User;
+
     /**
      * @param  array<int, int>  $tenantIds
      */

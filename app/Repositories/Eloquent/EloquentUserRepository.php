@@ -60,6 +60,17 @@ class EloquentUserRepository implements UserRepositoryInterface
         return $user->fresh('roles');
     }
 
+    public function updateDetails(User $user, string $name, ?string $email, ?string $phone): User
+    {
+        $before = ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone];
+
+        $user->update(['name' => $name, 'email' => $email, 'phone' => $phone]);
+
+        $this->audit($user, $before, ['name' => $user->name, 'email' => $user->email, 'phone' => $user->phone]);
+
+        return $user->fresh();
+    }
+
     public function assignTenants(User $user, array $tenantIds): User
     {
         $before = ['tenant_ids' => $user->tenants()->pluck('tenants.id')->all()];

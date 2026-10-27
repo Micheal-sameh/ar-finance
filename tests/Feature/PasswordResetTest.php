@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\ResetPassword;
+use App\Notifications\QueuedResetPassword;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class PasswordResetTest extends TestCase
@@ -27,7 +30,19 @@ class PasswordResetTest extends TestCase
 
         $this->post(route('password.email'), ['email' => 'person@example.com'])->assertSessionHas('success');
 
-        Notification::assertSentTo($user, ResetPassword::class);
+        Notification::assertSentTo($user, QueuedResetPassword::class);
+    }
+
+    public function test_the_reset_link_email_is_queued_instead_of_sent_during_the_request(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create(['email' => 'person@example.com']);
+
+        $this->post(route('password.email'), ['email' => 'person@example.com'])->assertSessionHas('success');
+
+        $this->assertInstanceOf(ShouldQueue::class, new QueuedResetPassword('token'));
+        Queue::assertPushed(SendQueuedNotifications::class, fn ($job) => $job->notification instanceof QueuedResetPassword
+            && $job->notifiables->contains($user));
     }
 
     public function test_an_unknown_email_gets_the_same_response_and_no_mail(): void

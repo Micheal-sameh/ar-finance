@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\Users\AssignUserRoleRequest;
 use App\Http\Requests\Users\AssignUserTenantRequest;
 use App\Http\Requests\Users\StoreUserRequest;
+use App\Http\Requests\Users\UpdateUserDetailsRequest;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Models\Tenant;
 use App\Models\User;
@@ -58,6 +59,7 @@ class UserController extends Controller
             'canAssignTenant' => $canAssignTenant,
             'canAssignRole' => $canAssignRole,
             'canCreate' => $canAssignTenant,
+            'canEditDetails' => $request->user()->can('users.manage'),
             'availableRoles' => Role::query()->where('guard_name', 'web')
                 ->when(! $canGrantPlatformAdmin, fn ($query) => $query->where('name', '!=', 'Platform Admin'))
                 ->orderBy('name')
@@ -107,6 +109,15 @@ class UserController extends Controller
         $this->users->update($user, UserStatus::from($request->validated('status')), $request->validated('role'));
 
         return redirect()->route('users.index')->with('success', 'User updated.');
+    }
+
+    public function updateDetails(UpdateUserDetailsRequest $request, User $user): RedirectResponse
+    {
+        $this->ensureCanManage($request->user(), $user);
+
+        $this->users->updateDetails($user, $request->name(), $request->email(), $request->phone());
+
+        return back()->with('success', 'User details updated.');
     }
 
     public function assignTenant(AssignUserTenantRequest $request, User $user): RedirectResponse

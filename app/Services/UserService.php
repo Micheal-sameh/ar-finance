@@ -32,6 +32,11 @@ class UserService
         return $this->users->update($user, $status->value, $role);
     }
 
+    public function updateDetails(User $user, string $name, ?string $email, ?string $phone): User
+    {
+        return $this->users->updateDetails($user, $name, $email, $phone);
+    }
+
     /**
      * @param  array<int, int>  $tenantIds
      */

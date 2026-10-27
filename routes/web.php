@@ -85,6 +85,7 @@ Route::middleware(['auth', 'active', 'permission:platform.access', 'throttle:240
     Route::post('users', [UserController::class, 'store'])->name('users.store');
     Route::put('users/{user}/tenant', [UserController::class, 'assignTenant'])->name('users.assign-tenant');
     Route::put('users/{user}/role', [UserController::class, 'assignRole'])->name('users.assign-role');
+    Route::put('users/{user}/details', [UserController::class, 'updateDetails'])->name('users.update-details');
 
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('trial-balance', [PlatformReportController::class, 'trialBalance'])->name('trial-balance');
@@ -133,6 +134,7 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
 
     Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::resource('users', UserController::class)->only(['update']);
+    Route::put('users/{user}/details', [UserController::class, 'updateDetails'])->name('users.update-details');
 
     Route::post('accounts/import', [AccountController::class, 'import'])->name('accounts.import');
     Route::get('accounts/import-template', [AccountController::class, 'importTemplate'])->name('accounts.import-template');

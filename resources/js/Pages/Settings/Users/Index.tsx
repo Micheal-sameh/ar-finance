@@ -1,5 +1,5 @@
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Pencil, Plus, ShieldCheck } from 'lucide-react';
+import { Pencil, Plus, ShieldCheck, UserCog } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
@@ -86,12 +86,13 @@ interface Props {
     canAssignTenant: boolean;
     canAssignRole: boolean;
     canCreate: boolean;
+    canEditDetails: boolean;
     availableRoles: string[];
     tenants: Pick<Tenant, 'id' | 'name'>[];
     viewingAllTenants: boolean;
 }
 
-export default function UsersIndex({ users, filters, canManage, canAssignTenant, canAssignRole, canCreate, availableRoles, tenants, viewingAllTenants }: Props) {
+export default function UsersIndex({ users, filters, canManage, canAssignTenant, canAssignRole, canCreate, canEditDetails, availableRoles, tenants, viewingAllTenants }: Props) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [editing, setEditing] = useState<AppUser | null>(null);
     const [creating, setCreating] = useState(false);
@@ -113,6 +114,8 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
         status: 'active' as UserStatus,
     });
     const tenantForm = useForm<{ tenant_ids: number[] }>({ tenant_ids: [] });
+    const [editingDetails, setEditingDetails] = useState<AppUser | null>(null);
+    const detailsForm = useForm({ name: '', email: '', phone: '' });
     const createIsPlatformRole = PLATFORM_ROLES.includes(createForm.data.role);
 
     function submitCreate(e: FormEvent) {
@@ -156,6 +159,25 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
         form.put(route('users.update', editing.id), {
             preserveScroll: true,
             onSuccess: () => setEditing(null),
+        });
+    }
+
+    function openDetails(user: AppUser) {
+        setEditingDetails(user);
+        detailsForm.setData({ name: user.name, email: user.email ?? '', phone: user.phone ?? '' });
+        detailsForm.clearErrors();
+    }
+
+    function submitDetails(e: FormEvent) {
+        e.preventDefault();
+
+        if (!editingDetails) {
+            return;
+        }
+
+        detailsForm.put(route(viewingAllTenants ? 'platform.users.update-details' : 'users.update-details', editingDetails.id), {
+            preserveScroll: true,
+            onSuccess: () => setEditingDetails(null),
         });
     }
 
@@ -250,7 +272,7 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                             <Table.HeadCell>Roles</Table.HeadCell>
                             <Table.HeadCell>Status</Table.HeadCell>
                             {viewingAllTenants && <Table.HeadCell>Service</Table.HeadCell>}
-                            {canManage && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
+                            {(canManage || canEditDetails) && <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>}
                         </Table.Head>
                         <tbody>
                             {users.data.map((user) => (
@@ -304,19 +326,34 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                                             </div>
                                         </Table.Cell>
                                     )}
-                                    {canManage && (
+                                    {(canManage || canEditDetails) && (
                                         <Table.Cell className="text-end pe-3" label="Actions">
-                                            {user.id !== auth.user?.id && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm p-1"
-                                                    style={{ color: 'var(--af-label)' }}
-                                                    onClick={() => openEdit(user)}
-                                                    aria-label="Edit"
-                                                >
-                                                    <Pencil size={15} />
-                                                </button>
-                                            )}
+                                            <div className="d-flex justify-content-end gap-1">
+                                                {canEditDetails && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm p-1"
+                                                        style={{ color: 'var(--af-label)' }}
+                                                        onClick={() => openDetails(user)}
+                                                        aria-label={`Edit details of ${user.name}`}
+                                                        title="Edit name, email and phone"
+                                                    >
+                                                        <UserCog size={15} />
+                                                    </button>
+                                                )}
+                                                {canManage && user.id !== auth.user?.id && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm p-1"
+                                                        style={{ color: 'var(--af-label)' }}
+                                                        onClick={() => openEdit(user)}
+                                                        aria-label="Edit"
+                                                        title="Change role and status"
+                                                    >
+                                                        <Pencil size={15} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </Table.Cell>
                                     )}
                                 </Table.Row>
@@ -390,6 +427,47 @@ export default function UsersIndex({ users, filters, canManage, canAssignTenant,
                     <div style={{ fontSize: '12px', color: 'var(--af-label)', marginTop: '8px' }}>
                         The first tenant they were given stays their default; they can switch between the others from the top bar.
                     </div>
+                </form>
+            </Modal>
+
+            <Modal
+                open={editingDetails !== null}
+                onClose={() => setEditingDetails(null)}
+                title={editingDetails ? `Edit details of ${editingDetails.name}` : ''}
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setEditingDetails(null)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={submitDetails} loading={detailsForm.processing}>
+                            Save details
+                        </Button>
+                    </>
+                }
+            >
+                <form onSubmit={submitDetails} className="d-flex flex-column gap-3">
+                    <Input
+                        label="Name"
+                        help="How the person's name is shown across the system, for example in lists and on entries they post."
+                        value={detailsForm.data.name}
+                        onChange={(e) => detailsForm.setData('name', e.target.value)}
+                        error={detailsForm.errors.name}
+                    />
+                    <Input
+                        label="Email"
+                        help="Used to sign in and to send password reset links. Optional if the person signs in with a phone number. It must not belong to anyone else."
+                        type="email"
+                        value={detailsForm.data.email}
+                        onChange={(e) => detailsForm.setData('email', e.target.value)}
+                        error={detailsForm.errors.email}
+                    />
+                    <Input
+                        label="Phone"
+                        help="Can be used instead of email to sign in. Spaces and dashes are ignored, so +20 100 123 4567 and +201001234567 are the same number."
+                        value={detailsForm.data.phone}
+                        onChange={(e) => detailsForm.setData('phone', e.target.value)}
+                        error={detailsForm.errors.phone}
+                    />
                 </form>
             </Modal>
 

@@ -107,4 +107,78 @@ class UserManagementTest extends TestCase
         $response->assertRedirect(route('login'));
         $this->assertGuest();
     }
+
+    public function test_super_admin_can_edit_a_users_name_email_and_phone(): void
+    {
+        $this->actingAsRole('Super Admin');
+
+        $target = User::factory()->create(['tenant_id' => $this->tenant->id, 'email' => 'old@example.com']);
+        $target->assignRole('Viewer');
+
+        $this->put(route('users.update-details', $target), [
+            'name' => 'New Name',
+            'email' => ' New@Example.com ',
+            'phone' => '+20 100 123 4567',
+        ])->assertSessionHasNoErrors();
+
+        $target->refresh();
+        $this->assertSame('New Name', $target->name);
+        $this->assertSame('new@example.com', $target->email);
+        $this->assertSame('+201001234567', $target->phone);
+        $this->assertSame(['Viewer'], $target->getRoleNames()->all());
+    }
+
+    public function test_email_and_phone_must_stay_unique_and_one_of_them_is_required(): void
+    {
+        $this->actingAsRole('Super Admin');
+
+        User::factory()->create(['tenant_id' => $this->tenant->id, 'email' => 'taken@example.com', 'phone' => '+201111111111']);
+        $target = User::factory()->create(['tenant_id' => $this->tenant->id, 'email' => 'mine@example.com']);
+        $target->assignRole('Viewer');
+
+        $this->put(route('users.update-details', $target), ['name' => 'X', 'email' => 'taken@example.com'])
+            ->assertSessionHasErrors('email');
+        $this->put(route('users.update-details', $target), ['name' => 'X', 'phone' => '+20 111 111 1111'])
+            ->assertSessionHasErrors('phone');
+        $this->put(route('users.update-details', $target), ['name' => 'X'])
+            ->assertSessionHasErrors(['email', 'phone']);
+
+        // Keeping their own email is not a clash.
+        $this->put(route('users.update-details', $target), ['name' => 'Renamed', 'email' => 'mine@example.com'])
+            ->assertSessionHasNoErrors();
+        $this->assertSame('Renamed', $target->refresh()->name);
+    }
+
+    public function test_only_users_with_manage_permission_can_edit_details_and_not_across_services(): void
+    {
+        $target = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $target->assignRole('Viewer');
+
+        $this->actingAsRole('Accountant');
+        $this->put(route('users.update-details', $target), ['name' => 'Nope', 'email' => 'nope@example.com'])->assertForbidden();
+
+        $other = Tenant::create(['name' => 'Other Co', 'slug' => 'other-co', 'base_currency' => 'EGP']);
+        $outsider = User::factory()->create(['tenant_id' => $other->id]);
+        $outsider->assignRole('Viewer');
+
+        $this->actingAsRole('Super Admin');
+        $this->put(route('users.update-details', $outsider), ['name' => 'Nope', 'email' => 'nope@example.com'])->assertForbidden();
+
+        $this->assertNotSame('Nope', $target->refresh()->name);
+        $this->assertNotSame('Nope', $outsider->refresh()->name);
+    }
+
+    public function test_platform_admin_can_edit_details_from_the_all_services_view(): void
+    {
+        $admin = User::factory()->create(['tenant_id' => null]);
+        $admin->assignRole('Platform Admin');
+        $target = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $target->assignRole('Viewer');
+
+        $this->actingAs($admin)
+            ->put(route('platform.users.update-details', $target), ['name' => 'By Platform', 'email' => 'platform@example.com'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('By Platform', $target->refresh()->name);
+    }
 }
