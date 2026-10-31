@@ -45,7 +45,7 @@ class HandleInertiaRequests extends Middleware
                 'isImpersonating' => $tenantContext->isImpersonating(),
             ] : null,
             'memberTenants' => $this->memberTenants($user, $tenantContext),
-            'devUsers' => app()->environment('local') && $user ? $this->devUsers($tenantContext) : null,
+            'devUsers' => app()->environment('local') && $user ? $this->devUsers($user, $tenantContext) : null,
         ]);
     }
 
@@ -65,7 +65,7 @@ class HandleInertiaRequests extends Middleware
             return null;
         }
 
-        $tenants = $user->tenants()->where('is_active', true)->get();
+        $tenants = $user->tenants->where('is_active', true);
 
         if ($tenants->count() < 2) {
             return null;
@@ -88,7 +88,7 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<int, array<string, mixed>>
      */
-    private function devUsers(TenantContext $tenantContext): array
+    private function devUsers(User $currentUser, TenantContext $tenantContext): array
     {
         $tenantId = $tenantContext->id();
 
@@ -101,8 +101,14 @@ class HandleInertiaRequests extends Middleware
 
                 $query->orWhereHas('roles', fn ($roleQuery) => $roleQuery->whereIn('name', ['Platform Admin', 'Portal Manager']));
             })
-            ->with('roles')
             ->get();
+
+        $users->each(function (User $user) use ($currentUser) {
+            if ($user->is($currentUser)) {
+                $user->setRelation('roles', $currentUser->roles);
+            }
+        });
+        $users->reject(fn (User $user) => $user->is($currentUser))->load('roles');
 
         return $users
             ->sortBy('name')

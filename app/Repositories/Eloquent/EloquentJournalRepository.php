@@ -62,6 +62,8 @@ class EloquentJournalRepository implements JournalRepositoryInterface
         $entry = JournalEntry::create($attributes);
         $entry->lines()->createMany($lines);
 
+        $this->postedLinesWithAccountsCache = [];
+
         return $entry->load(['lines.account']);
     }
 

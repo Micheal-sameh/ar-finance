@@ -45,7 +45,7 @@ class RepositoryServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AccountRepositoryInterface::class, EloquentAccountRepository::class);
-        $this->app->bind(JournalRepositoryInterface::class, EloquentJournalRepository::class);
+        $this->app->scoped(JournalRepositoryInterface::class, EloquentJournalRepository::class);
         $this->app->bind(ClientRepositoryInterface::class, EloquentClientRepository::class);
         $this->app->bind(VendorRepositoryInterface::class, EloquentVendorRepository::class);
         $this->app->bind(InvoiceRepositoryInterface::class, EloquentInvoiceRepository::class);
