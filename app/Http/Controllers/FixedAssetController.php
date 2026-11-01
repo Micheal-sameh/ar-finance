@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Http\Requests\FixedAssets\RunDepreciationRequest;
 use App\Http\Requests\FixedAssets\StoreFixedAssetRequest;
-use App\Models\Account;
 use App\Models\FixedAsset;
 use App\Services\FixedAssetService;
+use App\Services\GlMappingService;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +22,7 @@ class FixedAssetController extends Controller
 
     public function __construct(
         private readonly FixedAssetService $fixedAssets,
+        private readonly GlMappingService $glMapping,
         private readonly TenantContext $tenantContext,
     ) {}
 
@@ -66,8 +67,7 @@ class FixedAssetController extends Controller
         $this->authorize('create', FixedAsset::class);
 
         return Inertia::render('Accounting/FixedAssets/Create', [
-            'defaultDepreciationAccountId' => Account::where('code', '5310')->value('id'),
-            'defaultAccumulatedDepreciationAccountId' => Account::where('code', '1120')->value('id'),
+            'glDefaults' => $this->glMapping->defaults(),
         ]);
     }
 

@@ -9,6 +9,8 @@ export interface BookingType {
     name: string;
     rate_type: BookingRateType;
     price: string;
+    /** This type's own revenue account on the item; null falls back to the item's. */
+    account_id: number | null;
 }
 
 export interface BookableItem {

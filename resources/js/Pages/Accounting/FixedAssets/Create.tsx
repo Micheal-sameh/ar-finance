@@ -6,13 +6,13 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import { InfoTip } from '@/Components/ui/InfoTip';
+import type { GlDefaults } from '@/types/finance';
 
 type FixedAssetsCreateProps = {
-    defaultDepreciationAccountId: number | null;
-    defaultAccumulatedDepreciationAccountId: number | null;
+    glDefaults: GlDefaults;
 };
 
-export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaultAccumulatedDepreciationAccountId }: FixedAssetsCreateProps) {
+export default function FixedAssetsCreate({ glDefaults }: FixedAssetsCreateProps) {
     const form = useForm({
         name: '',
         purchase_date: new Date().toISOString().slice(0, 10),
@@ -20,9 +20,9 @@ export default function FixedAssetsCreate({ defaultDepreciationAccountId, defaul
         salvage_value: '0',
         useful_life_years: '5',
         depreciation_method: 'straight_line',
-        asset_account_id: null as number | null,
-        depreciation_account_id: defaultDepreciationAccountId,
-        accumulated_depreciation_account_id: defaultAccumulatedDepreciationAccountId,
+        asset_account_id: glDefaults.fixed_asset,
+        depreciation_account_id: glDefaults.depreciation,
+        accumulated_depreciation_account_id: glDefaults.accumulated_depreciation,
     });
 
     function submit(e: FormEvent) {

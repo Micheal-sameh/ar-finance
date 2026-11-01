@@ -11,6 +11,7 @@ use App\Http\Requests\Bills\PayBillsRequest;
 use App\Http\Requests\Bills\StoreBillRequest;
 use App\Models\Bill;
 use App\Services\BillService;
+use App\Services\GlMappingService;
 use App\Services\VendorService;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class BillController extends Controller
     public function __construct(
         private readonly BillService $bills,
         private readonly VendorService $vendors,
+        private readonly GlMappingService $glMapping,
         private readonly TenantContext $tenantContext,
     ) {}
 
@@ -56,6 +58,7 @@ class BillController extends Controller
 
         return Inertia::render('Purchases/Bills/Create', [
             'vendors' => $this->vendors->all(),
+            'glDefaults' => $this->glMapping->defaults(),
         ]);
     }
 

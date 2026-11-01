@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Gauge, Target, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves } from 'lucide-react';
+import { ArrowLeftRight, Gauge, Target, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves, Workflow } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -58,6 +58,7 @@ export const navConfig: NavConfigGroup[] = [
         label: 'Accounting',
         items: [
             { label: 'Chart of Accounts', routeName: 'accounts.index', icon: ListTree, permission: 'accounts.view' },
+            { label: 'GL Mapping', routeName: 'gl-mapping.index', icon: Workflow, permission: 'accounts.view' },
             { label: 'Journal Entries', routeName: 'journals.index', icon: BookOpen, permission: 'journals.view' },
             { label: 'P&C Centers', routeName: 'cost-centers.index', icon: PiggyBank, permission: 'cost_centers.view' },
             { label: 'Budgets', routeName: 'budgets.index', icon: Target, permission: 'accounts.view' },

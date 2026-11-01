@@ -11,7 +11,7 @@ import {
 import { Icon } from '@/Components/layout/Icon';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
-import type { Client } from '@/types/finance';
+import type { Client, GlDefaults } from '@/types/finance';
 
 interface CurrencyOption {
     code: string;
@@ -22,13 +22,14 @@ interface Props {
     clients: Client[];
     baseCurrency: string;
     currencyOptions: CurrencyOption[];
+    glDefaults: GlDefaults;
 }
 
 function formatMoney(value: number, currency: string): string {
     return `${currency} ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function InvoicesCreate({ clients, baseCurrency, currencyOptions }: Props) {
+export default function InvoicesCreate({ clients, baseCurrency, currencyOptions, glDefaults }: Props) {
     const form = useForm<{
         client_id: number | '';
         invoice_number: string;
@@ -46,9 +47,9 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
         due_date: new Date().toISOString().slice(0, 10),
         currency: baseCurrency,
         exchange_rate: '1',
-        receivable_account_id: null,
-        tax_payable_account_id: null,
-        lines: [emptyInvoiceLine()],
+        receivable_account_id: glDefaults.receivable,
+        tax_payable_account_id: glDefaults.tax_payable,
+        lines: [emptyInvoiceLine(glDefaults.revenue)],
     });
 
     const hasTax = form.data.lines.some((line) => parseFloat(line.tax_rate) > 0);
@@ -197,6 +198,7 @@ export default function InvoicesCreate({ clients, baseCurrency, currencyOptions 
                                 onChange={(lines) => form.setData('lines', lines)}
                                 currency={form.data.currency}
                                 errors={form.errors as Record<string, string>}
+                                defaultAccountId={glDefaults.revenue}
                             />
                         </article>
                     </div>

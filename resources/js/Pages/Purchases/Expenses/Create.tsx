@@ -7,14 +7,15 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
-import type { Vendor } from '@/types/finance';
+import type { GlDefaults, Vendor } from '@/types/finance';
 import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     vendors: Vendor[];
+    glDefaults: GlDefaults;
 }
 
-export default function ExpensesCreate({ vendors }: Props) {
+export default function ExpensesCreate({ vendors, glDefaults }: Props) {
     const form = useForm<{
         description: string;
         account_id: number | null;
@@ -25,11 +26,11 @@ export default function ExpensesCreate({ vendors }: Props) {
         cost_center_id: number | null;
     }>({
         description: '',
-        account_id: null,
+        account_id: glDefaults.purchase_expense,
         amount: '',
         date: new Date().toISOString().slice(0, 10),
         vendor_id: '',
-        payable_account_id: null,
+        payable_account_id: glDefaults.payable,
         cost_center_id: null,
     });
 

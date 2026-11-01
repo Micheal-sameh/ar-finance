@@ -9,6 +9,7 @@ use App\Http\Requests\PayrollRuns\StorePayrollRunRequest;
 use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Services\EmployeeService;
+use App\Services\GlMappingService;
 use App\Services\PayrollRunService;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ class PayrollRunController extends Controller
     public function __construct(
         private readonly PayrollRunService $payrollRuns,
         private readonly EmployeeService $employees,
+        private readonly GlMappingService $glMapping,
         private readonly TenantContext $tenantContext,
     ) {}
 
@@ -71,6 +73,7 @@ class PayrollRunController extends Controller
 
         return Inertia::render('Payroll/PayrollRuns/Create', [
             'employees' => $this->employees->all(),
+            'glDefaults' => $this->glMapping->defaults(),
         ]);
     }
 

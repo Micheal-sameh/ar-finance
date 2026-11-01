@@ -6,14 +6,15 @@ import { PageHeader } from '@/Components/layout/PageHeader';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
-import type { Employee } from '@/types/finance';
+import type { Employee, GlDefaults } from '@/types/finance';
 import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     employees: Employee[];
+    glDefaults: GlDefaults;
 }
 
-export default function PayrollRunsCreate({ employees }: Props) {
+export default function PayrollRunsCreate({ employees, glDefaults }: Props) {
     const form = useForm<{
         period_start: string;
         period_end: string;
@@ -26,9 +27,9 @@ export default function PayrollRunsCreate({ employees }: Props) {
         period_start: new Date().toISOString().slice(0, 8) + '01',
         period_end: new Date().toISOString().slice(0, 10),
         pay_date: new Date().toISOString().slice(0, 10),
-        expense_account_id: null,
-        payable_account_id: null,
-        deductions_payable_account_id: null,
+        expense_account_id: glDefaults.payroll_expense,
+        payable_account_id: glDefaults.payroll_payable,
+        deductions_payable_account_id: glDefaults.payroll_deductions,
         payslips: [],
     });
 

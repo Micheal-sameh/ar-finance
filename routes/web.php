@@ -16,6 +16,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ExchangeRateController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\FixedAssetController;
+use App\Http\Controllers\GlMappingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JournalEntryController;
 use App\Http\Controllers\LoginController;
@@ -217,6 +218,9 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
     Route::get('revaluation', [CurrencyRevaluationController::class, 'index'])->name('revaluation.index');
     Route::get('revaluation/export', [CurrencyRevaluationController::class, 'export'])->name('revaluation.export');
     Route::post('revaluation', [CurrencyRevaluationController::class, 'revalue'])->name('revaluation.revalue');
+
+    Route::get('gl-mapping', [GlMappingController::class, 'index'])->name('gl-mapping.index');
+    Route::put('gl-mapping', [GlMappingController::class, 'update'])->name('gl-mapping.update');
 
     Route::get('budgets', [BudgetController::class, 'index'])->name('budgets.index');
     Route::get('budgets/import-template', [BudgetController::class, 'importTemplate'])->name('budgets.import-template');

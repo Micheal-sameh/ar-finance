@@ -59,12 +59,12 @@ class BookableItemService
      * submitted list; types left out are detached. Bookings keep their
      * snapshotted price.
      *
-     * @param  array<int, array{booking_type_id: int, rate_type: string, price: float}>  $types
+     * @param  array<int, array{booking_type_id: int, rate_type: string, price: float, account_id: int|null}>  $types
      */
     private function syncBookingTypes(BookableItem $item, array $types): void
     {
         $item->bookingTypes()->sync(
-            collect($types)->mapWithKeys(fn (array $type) => [$type['booking_type_id'] => ['rate_type' => $type['rate_type'], 'price' => $type['price']]])->all(),
+            collect($types)->mapWithKeys(fn (array $type) => [$type['booking_type_id'] => ['rate_type' => $type['rate_type'], 'price' => $type['price'], 'account_id' => $type['account_id']]])->all(),
         );
     }
 

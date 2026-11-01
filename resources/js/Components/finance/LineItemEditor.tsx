@@ -11,8 +11,8 @@ export interface LineItemInput {
     account_id: number | null;
 }
 
-export function emptyLineItem(): LineItemInput {
-    return { description: '', quantity: '1', unit_price: '', tax_rate: '0', account_id: null };
+export function emptyLineItem(accountId: number | null = null): LineItemInput {
+    return { description: '', quantity: '1', unit_price: '', tax_rate: '0', account_id: accountId };
 }
 
 export function lineItemTotal(line: LineItemInput, withTax = false): number {
@@ -29,6 +29,8 @@ export interface LineItemEditorProps {
     /** Show a tax-rate column and include tax in the computed total — Bills need this, Purchase Orders don't. */
     showTax?: boolean;
     errors?: Record<string, string>;
+    /** Account new lines start with (from the GL mapping). */
+    defaultAccountId?: number | null;
 }
 
 /**
@@ -36,13 +38,13 @@ export interface LineItemEditorProps {
  * computed total. The untaxed mode is Purchase Order lines (no tax
  * concept there); showTax=true is Bill lines (Input VAT).
  */
-export function LineItemEditor({ lines, onChange, accountLabel = 'Account', currency = 'EGP', showTax = false, errors = {} }: LineItemEditorProps) {
+export function LineItemEditor({ lines, onChange, accountLabel = 'Account', currency = 'EGP', showTax = false, errors = {}, defaultAccountId = null }: LineItemEditorProps) {
     function updateLine(index: number, patch: Partial<LineItemInput>) {
         onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
     }
 
     function addLine() {
-        onChange([...lines, emptyLineItem()]);
+        onChange([...lines, emptyLineItem(defaultAccountId)]);
     }
 
     function removeLine(index: number) {

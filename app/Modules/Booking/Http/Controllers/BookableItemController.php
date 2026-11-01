@@ -10,6 +10,7 @@ use App\Modules\Booking\Http\Resources\BookableItemResource;
 use App\Modules\Booking\Models\BookableItem;
 use App\Modules\Booking\Services\BookableItemService;
 use App\Modules\Booking\Services\BookingTypeService;
+use App\Services\GlMappingService;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class BookableItemController extends Controller
     public function __construct(
         private readonly BookableItemService $items,
         private readonly BookingTypeService $bookingTypes,
+        private readonly GlMappingService $glMapping,
         private readonly TenantContext $tenantContext,
     ) {}
 
@@ -37,6 +39,7 @@ class BookableItemController extends Controller
             'bookingTypeOptions' => $this->bookingTypes->options(),
             'filters' => $request->only(['search']),
             'viewingAllTenants' => $this->tenantContext->isViewingAllTenants(),
+            'glDefaults' => $this->tenantContext->isViewingAllTenants() ? null : $this->glMapping->defaults(),
             'canManage' => $request->user()->can('bookable_items.manage'),
         ]);
     }

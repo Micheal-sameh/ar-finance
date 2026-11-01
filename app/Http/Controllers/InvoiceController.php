@@ -9,6 +9,7 @@ use App\Http\Requests\Invoices\StoreInvoiceRequest;
 use App\Models\Invoice;
 use App\Services\ClientService;
 use App\Services\ExchangeRateService;
+use App\Services\GlMappingService;
 use App\Services\InvoiceService;
 use App\Support\TenantContext;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class InvoiceController extends Controller
         private readonly InvoiceService $invoices,
         private readonly ClientService $clients,
         private readonly ExchangeRateService $exchangeRates,
+        private readonly GlMappingService $glMapping,
         private readonly TenantContext $tenantContext,
     ) {}
 
@@ -77,6 +79,7 @@ class InvoiceController extends Controller
             'clients' => $this->clients->all(),
             'baseCurrency' => $this->exchangeRates->baseCurrency(),
             'currencyOptions' => $this->exchangeRates->currencyOptions(),
+            'glDefaults' => $this->glMapping->defaults(),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\ExportsExcel;
 use App\Models\Invoice;
 use App\Services\CurrencyRevaluationService;
+use App\Services\GlMappingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,6 +18,7 @@ class CurrencyRevaluationController extends Controller
 
     public function __construct(
         private readonly CurrencyRevaluationService $revaluations,
+        private readonly GlMappingService $glMapping,
     ) {}
 
     public function index(Request $request): Response
@@ -29,6 +31,7 @@ class CurrencyRevaluationController extends Controller
             'preview' => $this->revaluations->preview($asOf),
             'filters' => ['date' => $asOf],
             'canManage' => $request->user()->can('invoices.manage'),
+            'defaultFxGainLossAccountId' => $this->glMapping->defaults()['fx_gain_loss'],
         ]);
     }
 

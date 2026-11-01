@@ -64,13 +64,27 @@ class BookableItem extends Model
     }
 
     /**
+     * The revenue account a booking of the given type credits: the type's
+     * own account on this item, else the item's default revenue account.
+     */
+    public function revenueAccountIdFor(?int $bookingTypeId): int
+    {
+        $typeAccountId = $bookingTypeId === null
+            ? null
+            : $this->bookingTypes->firstWhere('id', $bookingTypeId)?->pivot->account_id;
+
+        return $typeAccountId ?? $this->account_id;
+    }
+
+    /**
      * The booking types offered on this item; $type->pivot->price is what
-     * that type costs here.
+     * that type costs here and $type->pivot->account_id its own revenue
+     * account, if any.
      */
     public function bookingTypes(): BelongsToMany
     {
         return $this->belongsToMany(BookingType::class, 'bookable_item_booking_type')
-            ->withPivot('price', 'rate_type')
+            ->withPivot('price', 'rate_type', 'account_id')
             ->withTimestamps()
             ->orderBy('booking_types.name');
     }

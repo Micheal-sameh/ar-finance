@@ -8,14 +8,15 @@ import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { Input } from '@/Components/ui/Input';
 import { Select } from '@/Components/ui/Select';
-import type { Vendor } from '@/types/finance';
+import type { GlDefaults, Vendor } from '@/types/finance';
 import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface Props {
     vendors: Vendor[];
+    glDefaults: GlDefaults;
 }
 
-export default function BillsCreate({ vendors }: Props) {
+export default function BillsCreate({ vendors, glDefaults }: Props) {
     const form = useForm<{
         vendor_id: number | '';
         bill_number: string;
@@ -30,10 +31,10 @@ export default function BillsCreate({ vendors }: Props) {
         bill_number: '',
         bill_date: new Date().toISOString().slice(0, 10),
         due_date: new Date().toISOString().slice(0, 10),
-        payable_account_id: null,
-        tax_receivable_account_id: null,
+        payable_account_id: glDefaults.payable,
+        tax_receivable_account_id: glDefaults.tax_receivable,
         cost_center_id: null,
-        lines: [emptyLineItem()],
+        lines: [emptyLineItem(glDefaults.purchase_expense)],
     });
 
     const hasTax = form.data.lines.some((line) => parseFloat(line.tax_rate) > 0);
@@ -141,6 +142,7 @@ export default function BillsCreate({ vendors }: Props) {
                         onChange={(lines) => form.setData('lines', lines)}
                         accountLabel="Expense account"
                         showTax
+                        defaultAccountId={glDefaults.purchase_expense}
                         errors={form.errors as Record<string, string>}
                     />
 

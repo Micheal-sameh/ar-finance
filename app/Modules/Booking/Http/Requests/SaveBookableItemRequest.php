@@ -34,7 +34,8 @@ class SaveBookableItemRequest extends FormRequest
             'booking_types' => ['required', 'array', 'min:1'],
             'booking_types.*.booking_type_id' => ['required', 'distinct', new ExistsInTenant('booking_types')],
             'booking_types.*.rate_type' => ['required', new Enum(BookingRateType::class)],
-            'booking_types.*.price' => ['required', 'numeric', 'min:0.01'],
+            'booking_types.*.price' => ['required', 'numeric', 'min:0'],
+            'booking_types.*.account_id' => ['nullable', new ExistsInTenant('accounts')],
         ];
     }
 

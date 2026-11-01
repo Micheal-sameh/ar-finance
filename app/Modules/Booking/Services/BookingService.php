@@ -159,7 +159,7 @@ class BookingService
         // admin; the request layer only requires a due date once the item
         // accepts deposits, so collect it immediately. For a repeat, the
         // balance deadline moves out with the occurrence.
-        if ($item->acceptsDeposits() && $data->paymentDueAt !== null) {
+        if ($item->acceptsDeposits() && $data->paymentDueAt !== null && (float) $booking->price > 0) {
             if ($item->deposit_payment_account_id === null) {
                 throw new RuntimeException("\"{$item->name}\" has no deposit payment account configured — set one on the item before booking it.");
             }
@@ -299,6 +299,15 @@ class BookingService
         $alreadyCollected = (float) ($booking->deposit_amount ?? 0) + (float) ($booking->balance_paid ?? 0);
         $remaining = round($price - $alreadyCollected, 2);
 
+        // A free booking owes nothing: settle it without touching the ledger.
+        if ($price <= 0) {
+            return $this->bookings->update($booking, [
+                'status' => BookingStatus::Paid,
+                'paid_at' => now(),
+                'revenue_recognized_at' => now(),
+            ]);
+        }
+
         if ($remaining <= 0) {
             throw new RuntimeException('This booking has already been paid in full.');
         }
@@ -330,7 +339,7 @@ class BookingService
                     createdBy: auth()->id(),
                     lines: [
                         new JournalLineData(accountId: $paymentAccountId, debit: $collecting, credit: 0, costCenterId: $item->cost_center_id),
-                        new JournalLineData(accountId: $item->account_id, debit: 0, credit: $price, costCenterId: $item->cost_center_id),
+                        new JournalLineData(accountId: $item->revenueAccountIdFor($booking->booking_type_id), debit: 0, credit: $price, costCenterId: $item->cost_center_id),
                     ],
                 ));
 
@@ -399,7 +408,7 @@ class BookingService
                     createdBy: auth()->id(),
                     lines: [
                         new JournalLineData(accountId: $item->deferred_revenue_account_id, debit: $collected, credit: 0, costCenterId: $item->cost_center_id),
-                        new JournalLineData(accountId: $item->account_id, debit: 0, credit: $collected, costCenterId: $item->cost_center_id),
+                        new JournalLineData(accountId: $item->revenueAccountIdFor($booking->booking_type_id), debit: 0, credit: $collected, costCenterId: $item->cost_center_id),
                     ],
                 ));
             }

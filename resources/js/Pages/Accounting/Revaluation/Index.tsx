@@ -38,16 +38,17 @@ interface Props {
     preview: Preview;
     filters: { date: string };
     canManage: boolean;
+    defaultFxGainLossAccountId: number | null;
 }
 
 function formatRate(value: number): string {
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 });
 }
 
-export default function RevaluationIndex({ preview, filters, canManage }: Props) {
+export default function RevaluationIndex({ preview, filters, canManage, defaultFxGainLossAccountId }: Props) {
     const confirm = useConfirm();
     const [date, setDate] = useState(filters.date);
-    const [fxGainLossAccountId, setFxGainLossAccountId] = useState<number | null>(null);
+    const [fxGainLossAccountId, setFxGainLossAccountId] = useState<number | null>(defaultFxGainLossAccountId);
     const [running, setRunning] = useState(false);
 
     function applyFilter(e: FormEvent) {

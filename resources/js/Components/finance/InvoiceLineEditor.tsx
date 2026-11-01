@@ -9,8 +9,8 @@ export interface InvoiceLineInput {
     account_id: number | null;
 }
 
-export function emptyInvoiceLine(): InvoiceLineInput {
-    return { description: '', quantity: '1', unit_price: '', tax_rate: '0', account_id: null };
+export function emptyInvoiceLine(accountId: number | null = null): InvoiceLineInput {
+    return { description: '', quantity: '1', unit_price: '', tax_rate: '0', account_id: accountId };
 }
 
 export function lineSubtotal(line: InvoiceLineInput): number {
@@ -28,6 +28,8 @@ export interface InvoiceLineEditorProps {
     onChange: (lines: InvoiceLineInput[]) => void;
     currency?: string;
     errors?: Record<string, string>;
+    /** Revenue account new lines start with (from the GL mapping). */
+    defaultAccountId?: number | null;
 }
 
 /**
@@ -36,13 +38,13 @@ export interface InvoiceLineEditorProps {
  * into the revenue-account credit at posting time (see InvoiceService) —
  * shown here so the user sees the tax-inclusive total they're invoicing.
  */
-export function InvoiceLineEditor({ lines, onChange, currency = 'EGP', errors = {} }: InvoiceLineEditorProps) {
+export function InvoiceLineEditor({ lines, onChange, currency = 'EGP', errors = {}, defaultAccountId = null }: InvoiceLineEditorProps) {
     function updateLine(index: number, patch: Partial<InvoiceLineInput>) {
         onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
     }
 
     function addLine() {
-        onChange([...lines, emptyInvoiceLine()]);
+        onChange([...lines, emptyInvoiceLine(defaultAccountId)]);
     }
 
     function removeLine(index: number) {

@@ -16,12 +16,14 @@ import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { Table } from '@/Components/ui/Table';
 import type { BookableItem, BookableItemsPage, BookingRateType } from '@/types/booking';
+import type { GlDefaults } from '@/types/finance';
 import { InfoTip } from '@/Components/ui/InfoTip';
 
 interface BookingTypeRow {
     booking_type_id: number | null;
     rate_type: BookingRateType;
     price: string;
+    account_id: number | null;
 }
 
 interface Props {
@@ -30,9 +32,11 @@ interface Props {
     filters: { search?: string };
     viewingAllTenants: boolean;
     canManage: boolean;
+    /** Null when a Platform Admin views all services, since the mapping is per service. */
+    glDefaults: GlDefaults | null;
 }
 
-export default function BookableItemsIndex({ items, bookingTypeOptions, filters, viewingAllTenants, canManage }: Props) {
+export default function BookableItemsIndex({ items, bookingTypeOptions, filters, viewingAllTenants, canManage, glDefaults }: Props) {
     const canWrite = canManage;
     const confirm = useConfirm();
     const [search, setSearch] = useState(filters.search ?? '');
@@ -57,9 +61,9 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
         description: '',
         is_exclusive: true,
         deposit_percent: '',
-        account_id: null,
-        deferred_revenue_account_id: null,
-        deposit_payment_account_id: null,
+        account_id: glDefaults?.booking_revenue ?? null,
+        deferred_revenue_account_id: glDefaults?.booking_deferred_revenue ?? null,
+        deposit_payment_account_id: glDefaults?.booking_deposit_payment ?? null,
         cost_center_id: null,
         booking_types: [],
     });
@@ -83,7 +87,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
             deferred_revenue_account_id: item.deferred_revenue_account_id,
             deposit_payment_account_id: item.deposit_payment_account_id,
             cost_center_id: item.cost_center_id,
-            booking_types: (item.booking_types ?? []).map((type) => ({ booking_type_id: type.id, rate_type: type.rate_type, price: type.price })),
+            booking_types: (item.booking_types ?? []).map((type) => ({ booking_type_id: type.id, rate_type: type.rate_type, price: type.price, account_id: type.account_id ?? null })),
         });
         form.clearErrors();
         setModalOpen(true);
@@ -286,7 +290,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                                 type="button"
                                 variant="outline"
                                 leadingIcon={<Plus size={14} />}
-                                onClick={() => form.setData('booking_types', [...form.data.booking_types, { booking_type_id: null, rate_type: 'hourly', price: '' }])}
+                                onClick={() => form.setData('booking_types', [...form.data.booking_types, { booking_type_id: null, rate_type: 'hourly', price: '', account_id: form.data.account_id }])}
                             >
                                 Add type
                             </Button>
@@ -298,43 +302,57 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
                         )}
                         <div className="d-flex flex-column gap-2">
                             {form.data.booking_types.map((row, index) => (
-                                <div key={index} className="d-flex gap-2 align-items-start">
-                                    <Select
-                                        value={row.booking_type_id ?? ''}
-                                        onChange={(e) => updateType(index, { booking_type_id: e.target.value ? Number(e.target.value) : null })}
-                                        error={(form.errors as Record<string, string>)[`booking_types.${index}.booking_type_id`]}
-                                    >
-                                        <option value="">Select a type</option>
-                                        {typeOptions.map((option) => (
-                                            <option
-                                                key={option.id}
-                                                value={option.id}
-                                                disabled={form.data.booking_types.some((other, i) => i !== index && other.booking_type_id === option.id)}
-                                            >
-                                                {option.name}
-                                            </option>
-                                        ))}
-                                    </Select>
-                                    <Select
-                                        value={row.rate_type}
-                                        onChange={(e) => updateType(index, { rate_type: e.target.value as BookingRateType })}
-                                        error={(form.errors as Record<string, string>)[`booking_types.${index}.rate_type`]}
-                                    >
-                                        <option value="hourly">Per hour</option>
-                                        <option value="flat">Flat rate</option>
-                                    </Select>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        placeholder="Price"
-                                        value={row.price}
-                                        onChange={(e) => updateType(index, { price: e.target.value })}
-                                        error={(form.errors as Record<string, string>)[`booking_types.${index}.price`]}
-                                    />
-                                    <button type="button" className="btn btn-sm p-1 mt-2" style={{ color: 'var(--af-danger)' }} onClick={() => removeType(index)} aria-label="Remove type">
-                                        <Trash2 size={15} />
-                                    </button>
+                                <div key={index} className="d-flex flex-column gap-2 pb-2" style={{ borderBottom: '1px solid var(--af-border)' }}>
+                                    <div className="d-flex gap-2 align-items-start">
+                                        <Select
+                                            value={row.booking_type_id ?? ''}
+                                            onChange={(e) => updateType(index, { booking_type_id: e.target.value ? Number(e.target.value) : null })}
+                                            error={(form.errors as Record<string, string>)[`booking_types.${index}.booking_type_id`]}
+                                        >
+                                            <option value="">Select a type</option>
+                                            {typeOptions.map((option) => (
+                                                <option
+                                                    key={option.id}
+                                                    value={option.id}
+                                                    disabled={form.data.booking_types.some((other, i) => i !== index && other.booking_type_id === option.id)}
+                                                >
+                                                    {option.name}
+                                                </option>
+                                            ))}
+                                        </Select>
+                                        <Select
+                                            value={row.rate_type}
+                                            onChange={(e) => updateType(index, { rate_type: e.target.value as BookingRateType })}
+                                            error={(form.errors as Record<string, string>)[`booking_types.${index}.rate_type`]}
+                                        >
+                                            <option value="hourly">Per hour</option>
+                                            <option value="flat">Flat rate</option>
+                                        </Select>
+                                        <Input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="Price (0 for free)"
+                                            value={row.price}
+                                            onChange={(e) => updateType(index, { price: e.target.value })}
+                                            error={(form.errors as Record<string, string>)[`booking_types.${index}.price`]}
+                                        />
+                                        <button type="button" className="btn btn-sm p-1 mt-2" style={{ color: 'var(--af-danger)' }} onClick={() => removeType(index)} aria-label="Remove type">
+                                            <Trash2 size={15} />
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
+                                            Revenue account for this type <InfoTip>The income account credited when a booking of this type has taken place. It starts as the item's revenue account below; change it if this type should report to a different account.</InfoTip>
+                                        </label>
+                                        <AccountPicker
+                                            tenantId={formTenantId}
+                                            value={row.account_id}
+                                            onChange={(id) => updateType(index, { account_id: id })}
+                                            filterType="revenue"
+                                            error={(form.errors as Record<string, string>)[`booking_types.${index}.account_id`]}
+                                        />
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -354,7 +372,7 @@ export default function BookableItemsIndex({ items, bookingTypeOptions, filters,
 
                     <div>
                         <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                            Revenue account <InfoTip>The income account credited once the booking has taken place.</InfoTip>
+                            Default revenue account <InfoTip>The income account used for any booking type that has no revenue account of its own, and the one new types start with.</InfoTip>
                         </label>
                         <AccountPicker
                             tenantId={formTenantId}

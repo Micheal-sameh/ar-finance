@@ -27,6 +27,36 @@ export interface Account {
     tenant_name?: string | null;
 }
 
+export type GlMappingRole =
+    | 'receivable'
+    | 'revenue'
+    | 'tax_payable'
+    | 'payable'
+    | 'purchase_expense'
+    | 'tax_receivable'
+    | 'payroll_expense'
+    | 'payroll_payable'
+    | 'payroll_deductions'
+    | 'fixed_asset'
+    | 'depreciation'
+    | 'accumulated_depreciation'
+    | 'fx_gain_loss'
+    | 'booking_revenue'
+    | 'booking_deferred_revenue'
+    | 'booking_deposit_payment';
+
+/** Account ids from the tenant's GL mapping, by role; null where none is set. */
+export type GlDefaults = Record<GlMappingRole, number | null>;
+
+export interface GlMappingRow {
+    role: GlMappingRole;
+    label: string;
+    description: string;
+    group: string;
+    account_id: number | null;
+    allowed_types: AccountType[];
+}
+
 /** Lightweight shape returned by /accounts/options for pickers. */
 export interface AccountOption {
     id: number;
