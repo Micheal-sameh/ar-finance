@@ -1,5 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import logo from '../../assets/logo.png';
+import logoMark from '../../assets/logo-mark.png';
 import { Icon } from './Icon';
 import { visibleNavGroups } from './navConfig';
 import type { PlatformShare } from './TenantSwitcher';
@@ -75,12 +77,24 @@ export function Sidebar({
                 <Icon name="chevron" size={14} />
             </button>
 
-            <div className="brand">
+            <Link
+                href={route(isPlatformAdminViewingAllTenants ? 'platform.dashboard' : 'dashboard')}
+                className="brand"
+                aria-label="Go to dashboard"
+            >
                 <div>
-                    <b>Avarewase</b>
-                    <small>FINANCE</small>
+                    <img
+                        className="brand-logo"
+                        src={logo}
+                        width={491}
+                        height={188}
+                        decoding="sync"
+                        fetchPriority="high"
+                        alt="Avarewase Finance"
+                    />
                 </div>
-            </div>
+                <img className="brand-mark-img" src={logoMark} width={168} height={162} alt="Avarewase Finance" />
+            </Link>
 
             {platform && (
                 <div className="branch-wrap" onClick={(event) => event.stopPropagation()}>
