@@ -173,5 +173,12 @@ class RolePermissionSeeder extends Seeder
         // oversee other users' bookings.
         $bookingAgent = Role::firstOrCreate(['name' => 'Booking Agent', 'guard_name' => 'web']);
         $bookingAgent->syncPermissions(['bookings.view', 'bookings.create', 'bookable_items.view']);
+
+        // Booking Admin = a Booking Agent who also defines what can be booked:
+        // creates, edits and deletes bookable items and booking types. Still no
+        // oversight of other users' bookings (deposits, marking paid) — that is
+        // bookings.manage — and no access to accounting.
+        $bookingAdmin = Role::firstOrCreate(['name' => 'Booking Admin', 'guard_name' => 'web']);
+        $bookingAdmin->syncPermissions(['bookings.view', 'bookings.create', 'bookable_items.view', 'bookable_items.manage']);
     }
 }

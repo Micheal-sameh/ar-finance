@@ -835,6 +835,57 @@ class BookingTest extends TestCase
         $response->assertOk();
     }
 
+    private function bookingAdmin(): User
+    {
+        $bookingAdmin = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $bookingAdmin->assignRole('Booking Admin');
+
+        return $bookingAdmin;
+    }
+
+    public function test_a_booking_admin_can_create_booking_types_and_bookable_items(): void
+    {
+        $bookingAdmin = $this->bookingAdmin();
+
+        $this->actingAs($bookingAdmin)->post(route('booking-types.store'), ['name' => 'Baptism'])->assertSessionHasNoErrors();
+        $type = BookingType::where('tenant_id', $this->tenant->id)->where('name', 'Baptism')->firstOrFail();
+
+        $this->actingAs($bookingAdmin)->post(route('bookable-items.store'), [
+            'name' => 'Baptistery',
+            'account_id' => $this->revenue->id,
+            'cost_center_id' => $this->costCenter->id,
+            'booking_types' => [['booking_type_id' => $type->id, 'rate_type' => 'flat', 'price' => 300]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('bookable_items', ['tenant_id' => $this->tenant->id, 'name' => 'Baptistery']);
+        $this->actingAs($bookingAdmin)->put(route('booking-types.update', $type), ['name' => 'Baptism service'])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('booking_types', ['id' => $type->id, 'name' => 'Baptism service']);
+    }
+
+    public function test_a_booking_admin_can_still_make_bookings(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $this->offer($item, 'Holy Mass', 200);
+
+        $this->actingAs($this->bookingAdmin())->get(route('bookings.index'))->assertOk();
+    }
+
+    public function test_a_booking_admin_cannot_take_payments_or_see_accounting(): void
+    {
+        $bookingAdmin = $this->bookingAdmin();
+
+        $this->assertTrue($bookingAdmin->can('bookable_items.manage'));
+        $this->assertFalse($bookingAdmin->can('bookings.manage'));
+        $this->assertFalse($bookingAdmin->can('accounts.view'));
+
+        $this->actingAs($bookingAdmin)->get(route('accounts.index'))->assertForbidden();
+    }
+
+    public function test_a_booking_admin_lands_on_the_booking_calendar_not_the_dashboard(): void
+    {
+        $this->actingAs($this->bookingAdmin())->get(route('dashboard'))->assertRedirect(route('bookings.index'));
+    }
+
     public function test_a_booking_agent_can_view_bookable_items_but_not_manage_them(): void
     {
         $this->item(isExclusive: true);
