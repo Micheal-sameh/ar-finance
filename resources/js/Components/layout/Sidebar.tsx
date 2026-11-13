@@ -4,6 +4,7 @@ import logo from '../../assets/logo.png';
 import logoMark from '../../assets/logo-mark.png';
 import { Icon } from './Icon';
 import { visibleNavGroups } from './navConfig';
+import type { MemberTenants } from './MemberTenantSwitcher';
 import type { PlatformShare } from './TenantSwitcher';
 
 function initials(name: string): string {
@@ -28,8 +29,9 @@ export function Sidebar({
 }) {
     const [branchOpen, setBranchOpen] = useState(false);
     const navRef = useRef<HTMLElement>(null);
-    const { platform, auth } = usePage<{
+    const { platform, memberTenants, auth } = usePage<{
         platform: PlatformShare | null;
+        memberTenants: MemberTenants | null;
         auth: { permissions: string[]; user: { name: string; email: string } | null };
     }>().props;
     // Two entirely separate sidebars, switched by whether a Platform Admin
@@ -61,6 +63,7 @@ export function Sidebar({
     }, [currentUrl]);
 
     const activeTenant = platform?.tenants.find((tenant) => tenant.id === platform.activeTenantId);
+    const activeMemberTenant = memberTenants?.tenants.find((tenant) => tenant.id === memberTenants.activeTenantId);
     const user = auth.user;
 
     return (
@@ -133,6 +136,39 @@ export function Sidebar({
                                 >
                                     {tenant.name}
                                     <span>{activeTenant?.id === tenant.id && <Icon name="check" size={14} />}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {!platform && memberTenants && (
+                <div className="branch-wrap" onClick={(event) => event.stopPropagation()}>
+                    <button type="button" className="branch-switcher" onClick={() => setBranchOpen(!branchOpen)}>
+                        <span className="branch-icon">
+                            <Icon name="bank" size={17} />
+                        </span>
+                        <span>
+                            <small>SERVICE</small>
+                            <b>{activeMemberTenant?.name ?? 'Select service'}</b>
+                        </span>
+                        <Icon name="chevron" size={15} />
+                    </button>
+                    {branchOpen && (
+                        <div className="branch-menu">
+                            {memberTenants.tenants.map((tenant) => (
+                                <button
+                                    type="button"
+                                    key={tenant.id}
+                                    className={tenant.id === memberTenants.activeTenantId ? 'selected' : ''}
+                                    onClick={() => {
+                                        setBranchOpen(false);
+                                        router.post(route('tenant.switch', tenant.id));
+                                    }}
+                                >
+                                    {tenant.name}
+                                    <span>{tenant.id === memberTenants.activeTenantId && <Icon name="check" size={14} />}</span>
                                 </button>
                             ))}
                         </div>

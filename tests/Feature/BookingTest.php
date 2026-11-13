@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AccountType;
 use App\Models\Account;
 use App\Models\CostCenter;
+use App\Models\JournalEntry;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Booking\Models\BookableItem;
@@ -744,7 +745,7 @@ class BookingTest extends TestCase
         $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'confirmed', 'balance_paid' => 0]);
     }
 
-    public function test_a_booking_with_a_paid_deposit_cannot_be_cancelled(): void
+    public function test_cancelling_a_booking_with_a_paid_deposit_credits_the_account_it_was_debited_to(): void
     {
         $item = $this->item(isExclusive: true, depositPercent: 30);
 
@@ -757,10 +758,20 @@ class BookingTest extends TestCase
 
         $booking = $item->bookings()->firstOrFail();
 
+        $deposit = (float) $booking->deposit_amount;
+        $depositEntry = JournalEntry::where('source_id', $booking->id)->firstOrFail();
+        $debitedAccountId = $depositEntry->lines->firstWhere('debit', '>', 0)->account_id;
+
         $response = $this->actingAs($this->user)->post(route('bookings.cancel', $booking));
 
-        $response->assertSessionHas('error');
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'confirmed']);
+        $response->assertSessionMissing('error');
+        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'cancelled', 'deposit_paid_at' => null]);
+        $this->assertSame(2, JournalEntry::where('source_id', $booking->id)->count());
+        $this->assertDatabaseHas('journal_lines', [
+            'account_id' => $debitedAccountId,
+            'debit' => 0,
+            'credit' => $deposit,
+        ]);
     }
 
     public function test_a_booking_past_its_payment_deadline_is_flagged_overdue(): void

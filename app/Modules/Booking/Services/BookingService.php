@@ -201,11 +201,39 @@ class BookingService
             throw new RuntimeException('This booking is already cancelled.');
         }
 
-        if ($booking->deposit_paid_at !== null || (float) ($booking->balance_paid ?? 0) > 0) {
-            throw new RuntimeException('Payment has been collected on this booking — refund it before cancelling.');
+        return DB::transaction(function () use ($booking) {
+            $this->refundCollectedPayments($booking);
+
+            return $this->bookings->update($booking, ['status' => BookingStatus::Cancelled]);
+        });
+    }
+
+    /**
+     * Reverses each entry posted for the booking as its own entry, with
+     * debits and credits swapped — so the money is credited back to the
+     * same payment account it was originally debited to, and taken out of
+     * the same deferred revenue account it was held in.
+     */
+    private function refundCollectedPayments(Booking $booking): void
+    {
+        foreach ($this->bookings->journalEntries($booking) as $entry) {
+            $this->journals->postJournalEntry(new CreateJournalEntryData(
+                date: now()->toDateString(),
+                description: "Cancelled Booking #{$booking->id} — reversal of: {$entry->description}",
+                reference: null,
+                sourceType: JournalSourceType::Booking,
+                sourceId: $booking->id,
+                createdBy: auth()->id(),
+                lines: $entry->lines->map(fn ($line) => new JournalLineData(
+                    accountId: $line->account_id,
+                    debit: (float) $line->credit,
+                    credit: (float) $line->debit,
+                    costCenterId: $line->cost_center_id,
+                ))->all(),
+            ));
         }
 
-        return $this->bookings->update($booking, ['status' => BookingStatus::Cancelled]);
+        $this->bookings->update($booking, ['balance_paid' => 0, 'deposit_amount' => null, 'deposit_paid_at' => null]);
     }
 
     /**

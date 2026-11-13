@@ -2,6 +2,8 @@
 
 namespace App\Modules\Booking\Repositories\Eloquent;
 
+use App\Enums\JournalSourceType;
+use App\Models\JournalEntry;
 use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Repositories\Contracts\BookingRepositoryInterface;
@@ -51,5 +53,15 @@ class EloquentBookingRepository implements BookingRepositoryInterface
     public function countInSeries(string $recurrenceGroupId): int
     {
         return Booking::query()->where('recurrence_group_id', $recurrenceGroupId)->count();
+    }
+
+    public function journalEntries(Booking $booking): Collection
+    {
+        return JournalEntry::query()
+            ->with('lines')
+            ->where('source_type', JournalSourceType::Booking->value)
+            ->where('source_id', $booking->id)
+            ->orderBy('id')
+            ->get();
     }
 }

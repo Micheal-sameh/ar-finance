@@ -2,6 +2,7 @@
 
 namespace App\Modules\Booking\Repositories\Contracts;
 
+use App\Models\JournalEntry;
 use App\Modules\Booking\Models\Booking;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -31,4 +32,11 @@ interface BookingRepositoryInterface
     public function awaitingRevenueRecognition(): Collection;
 
     public function countInSeries(string $recurrenceGroupId): int;
+
+    /**
+     * Every journal entry posted for the booking, with its lines.
+     *
+     * @return Collection<int, JournalEntry>
+     */
+    public function journalEntries(Booking $booking): Collection;
 }
