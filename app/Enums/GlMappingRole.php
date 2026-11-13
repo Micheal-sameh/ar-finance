@@ -23,8 +23,9 @@ enum GlMappingRole: string
     case AccumulatedDepreciation = 'accumulated_depreciation';
     case FxGainLoss = 'fx_gain_loss';
     case BookingRevenue = 'booking_revenue';
-    case BookingDeferredRevenue = 'booking_deferred_revenue';
-    case BookingDepositPayment = 'booking_deposit_payment';
+    case BookingCashPayment = 'booking_cash_payment';
+    case BookingBankPayment = 'booking_bank_payment';
+    case BookingPosPayment = 'booking_pos_payment';
 
     public function label(): string
     {
@@ -43,8 +44,9 @@ enum GlMappingRole: string
             self::AccumulatedDepreciation => 'Accumulated depreciation',
             self::FxGainLoss => 'Exchange gain / loss',
             self::BookingRevenue => 'Booking revenue',
-            self::BookingDeferredRevenue => 'Deferred booking revenue',
-            self::BookingDepositPayment => 'Booking deposits received into',
+            self::BookingCashPayment => 'Booking cash payments received into',
+            self::BookingBankPayment => 'Booking bank transfers received into',
+            self::BookingPosPayment => 'Booking POS (card) payments received into',
         };
     }
 
@@ -65,8 +67,9 @@ enum GlMappingRole: string
             self::AccumulatedDepreciation => 'The account that builds up total depreciation and reduces asset value.',
             self::FxGainLoss => 'Where unrealized exchange gains and losses are posted at revaluation.',
             self::BookingRevenue => 'The income account new bookable items credit once a booking has taken place.',
-            self::BookingDeferredRevenue => 'Where money received in advance for bookings is held until the booking date.',
-            self::BookingDepositPayment => 'The bank or cash account that new bookable items receive deposits into.',
+            self::BookingCashPayment => 'The cash account a booking is paid into when the customer pays in cash.',
+            self::BookingBankPayment => 'The bank account a booking is paid into when the customer pays by bank transfer.',
+            self::BookingPosPayment => 'The account card payments taken on the POS machine are recorded in, usually a bank or card-clearing account.',
         };
     }
 
@@ -78,8 +81,8 @@ enum GlMappingRole: string
     public function allowedTypes(): array
     {
         return match ($this) {
-            self::Receivable, self::TaxReceivable, self::FixedAsset, self::AccumulatedDepreciation, self::BookingDepositPayment => [AccountType::Asset],
-            self::Payable, self::TaxPayable, self::PayrollPayable, self::PayrollDeductions, self::BookingDeferredRevenue => [AccountType::Liability],
+            self::Receivable, self::TaxReceivable, self::FixedAsset, self::AccumulatedDepreciation, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment => [AccountType::Asset],
+            self::Payable, self::TaxPayable, self::PayrollPayable, self::PayrollDeductions => [AccountType::Liability],
             self::Revenue, self::BookingRevenue => [AccountType::Revenue],
             self::PurchaseExpense, self::PayrollExpense, self::Depreciation => [AccountType::Expense],
             self::FxGainLoss => [AccountType::Revenue, AccountType::Expense],
@@ -97,7 +100,7 @@ enum GlMappingRole: string
             self::PayrollExpense, self::PayrollPayable, self::PayrollDeductions => 'Payroll',
             self::FixedAsset, self::Depreciation, self::AccumulatedDepreciation => 'Fixed assets',
             self::FxGainLoss => 'Currency',
-            self::BookingRevenue, self::BookingDeferredRevenue, self::BookingDepositPayment => 'Booking',
+            self::BookingRevenue, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment => 'Booking',
         };
     }
 }

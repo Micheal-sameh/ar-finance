@@ -8,9 +8,11 @@ export interface ModalProps {
     title?: string;
     children: ReactNode;
     footer?: ReactNode;
+    /** Panel width: md (default, 520px) or lg (760px) for dense forms. */
+    size?: 'md' | 'lg';
 }
 
-export function Modal({ open, onClose, title, children, footer }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, size = 'md' }: ModalProps) {
     return (
         <Transition show={open} as={Fragment}>
             <Dialog onClose={onClose} className="position-relative" style={{ zIndex: 1050 }}>
@@ -34,7 +36,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
                     <Dialog.Panel
                         className="w-100 d-flex flex-column"
                         style={{
-                            maxWidth: '520px',
+                            maxWidth: size === 'lg' ? '760px' : '520px',
                             maxHeight: 'calc(100vh - 2rem)',
                             backgroundColor: 'var(--af-surface)',
                             borderRadius: 'var(--af-radius)',

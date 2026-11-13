@@ -42,8 +42,9 @@ export type GlMappingRole =
     | 'accumulated_depreciation'
     | 'fx_gain_loss'
     | 'booking_revenue'
-    | 'booking_deferred_revenue'
-    | 'booking_deposit_payment';
+    | 'booking_cash_payment'
+    | 'booking_bank_payment'
+    | 'booking_pos_payment';
 
 /** Account ids from the tenant's GL mapping, by role; null where none is set. */
 export type GlDefaults = Record<GlMappingRole, number | null>;

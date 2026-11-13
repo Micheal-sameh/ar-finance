@@ -11,6 +11,8 @@ export interface BookingType {
     price: string;
     /** This type's own revenue account on the item; null falls back to the item's. */
     account_id: number | null;
+    /** This type's own cost/profit center on the item; null falls back to the item's. */
+    cost_center_id: number | null;
 }
 
 export interface BookableItem {
@@ -20,11 +22,8 @@ export interface BookableItem {
     is_exclusive: boolean;
     rate_type: BookingRateType | null;
     price: string | null;
-    deposit_percent: string | null;
-    account_id: number;
-    deferred_revenue_account_id: number | null;
-    deposit_payment_account_id: number | null;
-    cost_center_id: number;
+    account_id: number | null;
+    cost_center_id: number | null;
     is_active: boolean;
     booking_types?: BookingType[];
     account?: AccountOption | null;
@@ -39,7 +38,6 @@ export interface BookableItemOption {
     tenant_name?: string | null;
     name: string;
     is_exclusive: boolean;
-    deposit_percent: string | null;
     booking_types: BookingType[];
 }
 
@@ -50,10 +48,6 @@ export interface Booking {
     starts_at: string;
     ends_at: string;
     price: string;
-    deposit_amount: string | null;
-    balance_paid: string;
-    deposit_paid_at: string | null;
-    payment_due_at: string | null;
     status: BookingStatus;
     notes: string | null;
     paid_at: string | null;
@@ -73,19 +67,14 @@ export interface BookingEvent {
     recurrence_until: string | null;
     is_exclusive: boolean;
     price: string;
-    accepts_deposits: boolean;
-    deposit_percent: string | null;
-    deposit_amount: string | null;
-    balance_paid: string | null;
-    deposit_paid_at: string | null;
-    payment_due_at: string | null;
-    balance_due: number;
-    is_overdue: boolean;
+    discount_type: 'percent' | 'fixed' | null;
+    discount_value: string | null;
+    discount_amount: string;
+    payment_method: 'cash' | 'bank_transfer' | 'pos' | null;
+    payment_method_label: string | null;
     /** Owning tenant's name — only present when a Platform Admin is viewing the combined "All tenants" list. */
     tenant_name: string | null;
     can_cancel: boolean;
-    can_mark_paid: boolean;
-    can_pay_deposit: boolean;
     is_mine: boolean;
 }
 

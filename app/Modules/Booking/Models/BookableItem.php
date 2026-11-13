@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use RuntimeException;
 
 class BookableItem extends Model
 {
@@ -27,10 +28,7 @@ class BookableItem extends Model
         'is_exclusive',
         'rate_type',
         'price',
-        'deposit_percent',
         'account_id',
-        'deferred_revenue_account_id',
-        'deposit_payment_account_id',
         'cost_center_id',
         'is_active',
     ];
@@ -39,28 +37,12 @@ class BookableItem extends Model
         'is_exclusive' => 'boolean',
         'rate_type' => BookingRateType::class,
         'price' => 'decimal:2',
-        'deposit_percent' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
-    }
-
-    public function deferredRevenueAccount(): BelongsTo
-    {
-        return $this->belongsTo(Account::class, 'deferred_revenue_account_id');
-    }
-
-    public function depositPaymentAccount(): BelongsTo
-    {
-        return $this->belongsTo(Account::class, 'deposit_payment_account_id');
-    }
-
-    public function acceptsDeposits(): bool
-    {
-        return (float) ($this->deposit_percent ?? 0) > 0;
     }
 
     /**
@@ -73,7 +55,26 @@ class BookableItem extends Model
             ? null
             : $this->bookingTypes->firstWhere('id', $bookingTypeId)?->pivot->account_id;
 
-        return $typeAccountId ?? $this->account_id;
+        $accountId = $typeAccountId ?? $this->account_id;
+
+        if ($accountId === null) {
+            throw new RuntimeException("\"{$this->name}\" has no revenue account yet — ask finance or an admin to set up its accounting.");
+        }
+
+        return $accountId;
+    }
+
+    /**
+     * The cost/profit center a booking of the given type posts to: the
+     * type's own center on this item, else the item's default center.
+     */
+    public function costCenterIdFor(?int $bookingTypeId): ?int
+    {
+        $typeCostCenterId = $bookingTypeId === null
+            ? null
+            : $this->bookingTypes->firstWhere('id', $bookingTypeId)?->pivot->cost_center_id;
+
+        return $typeCostCenterId ?? $this->cost_center_id;
     }
 
     /**
@@ -84,7 +85,7 @@ class BookableItem extends Model
     public function bookingTypes(): BelongsToMany
     {
         return $this->belongsToMany(BookingType::class, 'bookable_item_booking_type')
-            ->withPivot('price', 'rate_type', 'account_id')
+            ->withPivot('price', 'rate_type', 'account_id', 'cost_center_id')
             ->withTimestamps()
             ->orderBy('booking_types.name');
     }

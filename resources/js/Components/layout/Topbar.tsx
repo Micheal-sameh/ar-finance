@@ -1,6 +1,7 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { LogOut, Menu, User as UserIcon } from 'lucide-react';
 import { Dropdown } from 'react-bootstrap';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import { DevUserSwitcher, type DevUser } from './DevUserSwitcher';
 import { GlobalSearch } from './GlobalSearch';
 import { MemberTenantSwitcher, type MemberTenants } from './MemberTenantSwitcher';
@@ -17,6 +18,13 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
         memberTenants: MemberTenants | null;
     }>().props;
     const user = auth.user;
+    const confirm = useConfirm();
+
+    async function handleLogout() {
+        if (await confirm('Are you sure you want to log out?', { title: 'Log out', confirmLabel: 'Log out', variant: 'primary' })) {
+            router.post(route('logout'));
+        }
+    }
 
     if (!user) {
         return null;
@@ -52,7 +60,7 @@ export function Topbar({ onOpenSidebar }: { onOpenSidebar: () => void }) {
                         </Dropdown.Item>
                         <Dropdown.Divider />
                         <Dropdown.Item
-                            onClick={() => router.post(route('logout'))}
+                            onClick={handleLogout}
                             className="d-flex align-items-center gap-2"
                             style={{ color: 'var(--af-danger)' }}
                         >

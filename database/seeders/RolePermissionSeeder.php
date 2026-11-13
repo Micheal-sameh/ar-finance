@@ -60,6 +60,7 @@ class RolePermissionSeeder extends Seeder
         'tenants.manage',
         'bookable_items.view',
         'bookable_items.manage',
+        'bookable_items.accounting',
         'bookings.view',
         'bookings.create',
         'bookings.manage',
@@ -105,6 +106,9 @@ class RolePermissionSeeder extends Seeder
         'bank_accounts.manage',
         'exchange_rates.view',
         'exchange_rates.manage',
+        'bookable_items.view',
+        'bookable_items.manage',
+        'bookable_items.accounting',
     ];
 
     /**

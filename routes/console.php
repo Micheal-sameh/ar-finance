@@ -12,8 +12,3 @@ Schedule::command('depreciation:run')
     ->monthlyOn(1, '01:00')
     ->withoutOverlapping()
     ->onOneServer();
-
-Schedule::command('bookings:recognize-revenue')
-    ->hourly()
-    ->withoutOverlapping()
-    ->onOneServer();

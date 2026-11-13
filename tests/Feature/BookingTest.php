@@ -3,16 +3,17 @@
 namespace Tests\Feature;
 
 use App\Enums\AccountType;
+use App\Enums\GlMappingRole;
 use App\Models\Account;
 use App\Models\CostCenter;
-use App\Models\JournalEntry;
+use App\Models\GlMapping;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Booking\Models\BookableItem;
 use App\Modules\Booking\Models\BookingType;
-use App\Modules\Booking\Services\BookingService;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class BookingTest extends TestCase
@@ -26,8 +27,6 @@ class BookingTest extends TestCase
     private Account $revenue;
 
     private Account $bank;
-
-    private Account $deferredRevenue;
 
     private CostCenter $costCenter;
 
@@ -57,22 +56,18 @@ class BookingTest extends TestCase
             'normal_balance' => 'debit',
         ]);
 
-        $this->deferredRevenue = Account::create([
-            'tenant_id' => $this->tenant->id,
-            'code' => '2100',
-            'name' => 'Deferred Revenue',
-            'type' => AccountType::Liability,
-            'normal_balance' => 'credit',
-        ]);
-
         $this->costCenter = CostCenter::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Front Desk',
             'type' => 'profit',
         ]);
+
+        foreach ([GlMappingRole::BookingCashPayment, GlMappingRole::BookingBankPayment, GlMappingRole::BookingPosPayment] as $role) {
+            GlMapping::create(['tenant_id' => $this->tenant->id, 'role' => $role, 'account_id' => $this->bank->id]);
+        }
     }
 
-    private function item(bool $isExclusive, ?float $depositPercent = null): BookableItem
+    private function item(bool $isExclusive): BookableItem
     {
         return BookableItem::create([
             'tenant_id' => $this->tenant->id,
@@ -80,10 +75,7 @@ class BookingTest extends TestCase
             'is_exclusive' => $isExclusive,
             'rate_type' => 'hourly',
             'price' => 100,
-            'deposit_percent' => $depositPercent,
             'account_id' => $this->revenue->id,
-            'deferred_revenue_account_id' => $depositPercent ? $this->deferredRevenue->id : null,
-            'deposit_payment_account_id' => $depositPercent ? $this->bank->id : null,
             'cost_center_id' => $this->costCenter->id,
         ]);
     }
@@ -107,6 +99,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'booking_type_id' => $wedding->id,
             'starts_at' => '2027-01-10 10:00:00',
             'ends_at' => '2027-01-10 12:00:00',
@@ -125,6 +118,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $smaller->id,
+            'payment_method' => 'cash',
             'booking_type_id' => $meeting->id,
             'starts_at' => '2027-01-10 10:00:00',
             'ends_at' => '2027-01-10 11:00:00',
@@ -140,6 +134,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2027-01-10 10:00:00',
             'ends_at' => '2027-01-10 12:00:00',
         ])->assertSessionHasErrors('booking_type_id');
@@ -156,6 +151,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'booking_type_id' => $foreign->id,
             'starts_at' => '2027-01-10 10:00:00',
             'ends_at' => '2027-01-10 12:00:00',
@@ -216,12 +212,71 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'booking_type_id' => $wedding->id,
             'starts_at' => '2027-01-10 10:00:00',
             'ends_at' => '2027-01-10 14:00:00',
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('bookings', ['booking_type_id' => $wedding->id, 'price' => 500]);
+    }
+
+    public function test_a_percent_discount_reduces_the_booking_price(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $wedding = $this->offer($item, 'Wedding Pray', 500, 'flat');
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
+            'booking_type_id' => $wedding->id,
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 14:00:00',
+            'discount_type' => 'percent',
+            'discount_value' => 10,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('bookings', ['price' => 450, 'discount_type' => 'percent', 'discount_value' => 10, 'discount_amount' => 50]);
+    }
+
+    public function test_a_fixed_discount_reduces_the_booking_price(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $wedding = $this->offer($item, 'Wedding Pray', 500, 'flat');
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
+            'booking_type_id' => $wedding->id,
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 14:00:00',
+            'discount_type' => 'fixed',
+            'discount_value' => 75,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('bookings', ['price' => 425, 'discount_amount' => 75]);
+    }
+
+    public function test_invalid_discounts_are_rejected(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $wedding = $this->offer($item, 'Wedding Pray', 500, 'flat');
+        $base = [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
+            'booking_type_id' => $wedding->id,
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 14:00:00',
+        ];
+
+        $this->actingAs($this->user)->post(route('bookings.store'), $base + ['discount_type' => 'percent', 'discount_value' => 150])
+            ->assertSessionHasErrors('discount_value');
+        $this->actingAs($this->user)->post(route('bookings.store'), $base + ['discount_value' => 10])
+            ->assertSessionHasErrors('discount_type');
+        $this->actingAs($this->user)->post(route('bookings.store'), $base + ['discount_type' => 'fixed', 'discount_value' => 600])
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseCount('bookings', 0);
     }
 
     public function test_booking_types_can_be_managed_and_a_used_one_cannot_be_deleted(): void
@@ -252,11 +307,12 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2027-01-04 10:00:00',
             'ends_at' => '2027-01-04 12:00:00',
             'recurrence' => 'weekly',
             'recurrence_until' => '2027-01-25',
-        ])->assertSessionHasNoErrors()->assertSessionHas('success', 'Booked 4 times.');
+        ])->assertSessionHasNoErrors()->assertSessionHas('success', 'Booked and paid 4 times.');
 
         $bookings = $item->bookings()->orderBy('starts_at')->get();
 
@@ -274,6 +330,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2027-01-31 10:00:00',
             'ends_at' => '2027-01-31 11:00:00',
             'recurrence' => 'monthly',
@@ -292,6 +349,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2027-06-01 10:00:00',
             'ends_at' => '2027-06-01 11:00:00',
             'recurrence' => 'yearly',
@@ -307,12 +365,14 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2027-01-11 10:00:00',
             'ends_at' => '2027-01-11 12:00:00',
         ]);
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2027-01-04 10:00:00',
             'ends_at' => '2027-01-04 12:00:00',
             'recurrence' => 'weekly',
@@ -328,6 +388,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2027-01-04 10:00:00',
             'ends_at' => '2027-01-04 12:00:00',
             'recurrence' => 'daily',
@@ -335,12 +396,25 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2027-01-04 10:00:00',
             'ends_at' => '2027-01-04 12:00:00',
             'recurrence' => 'none',
         ])->assertSessionHasNoErrors();
 
         $this->assertSame(1, $item->bookings()->count());
+    }
+
+    public function test_item_options_load_for_a_platform_admin_viewing_all_tenants(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $platformAdmin = User::factory()->create(['tenant_id' => null]);
+        $platformAdmin->assignRole('Platform Admin');
+
+        $this->actingAs($platformAdmin)->getJson(route('bookable-items.options'))
+            ->assertOk()
+            ->assertJsonPath('0.id', $item->id)
+            ->assertJsonPath('0.tenant_name', $this->tenant->name);
     }
 
     public function test_calendar_feed_returns_a_plain_array_not_a_data_envelope(): void
@@ -352,6 +426,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 12:00:00',
         ]);
@@ -372,6 +447,7 @@ class BookingTest extends TestCase
 
         $response = $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 12:00:00',
         ]);
@@ -379,8 +455,9 @@ class BookingTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseHas('bookings', [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'price' => 200.00,
-            'status' => 'confirmed',
+            'status' => 'paid',
         ]);
     }
 
@@ -390,6 +467,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 12:00:00',
         ]);
@@ -399,6 +477,7 @@ class BookingTest extends TestCase
 
         $response = $this->actingAs($second)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2026-10-10 11:00:00',
             'ends_at' => '2026-10-10 13:00:00',
         ]);
@@ -413,6 +492,7 @@ class BookingTest extends TestCase
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 11:00:00',
         ]);
@@ -422,6 +502,7 @@ class BookingTest extends TestCase
 
         $response = $this->actingAs($second)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 11:00:00',
         ]);
@@ -431,27 +512,19 @@ class BookingTest extends TestCase
         $this->assertDatabaseCount('bookings', 2);
     }
 
-    public function test_marking_a_booking_paid_posts_revenue_against_the_items_account_and_center(): void
+    public function test_a_booking_is_paid_when_made_and_posts_revenue_against_the_items_account_and_center(): void
     {
         $item = $this->item(isExclusive: true);
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 12:00:00',
-        ]);
+        ])->assertSessionHas('success');
 
-        $booking = $item->bookings()->firstOrFail();
-
-        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
-        $manager->assignRole('Admin');
-
-        $response = $this->actingAs($manager)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-        ]);
-
-        $response->assertRedirect();
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'paid']);
+        $this->assertDatabaseHas('bookings', ['bookable_item_id' => $item->id, 'status' => 'paid']);
+        $this->assertNotNull($item->bookings()->firstOrFail()->paid_at);
         $this->assertDatabaseHas('journal_lines', [
             'account_id' => $this->bank->id,
             'debit' => 200.00,
@@ -464,369 +537,215 @@ class BookingTest extends TestCase
         ]);
     }
 
-    public function test_a_booking_agent_cannot_mark_a_booking_paid(): void
+    public function test_a_booking_types_own_cost_center_is_used_when_posting(): void
     {
+        $item = $this->item(isExclusive: true);
+        $training = $this->offer($item, 'Training', 100);
+        $other = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Academy', 'type' => 'profit']);
+        $item->bookingTypes()->updateExistingPivot($training->id, ['cost_center_id' => $other->id]);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
+            'booking_type_id' => $training->id,
+            'starts_at' => '2026-10-10 10:00:00',
+            'ends_at' => '2026-10-10 12:00:00',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->revenue->id, 'credit' => 200.00, 'cost_center_id' => $other->id]);
+        $this->assertDatabaseMissing('journal_lines', ['cost_center_id' => $this->costCenter->id]);
+    }
+
+    public function test_a_booking_is_refused_when_no_payment_account_is_mapped(): void
+    {
+        GlMapping::query()->delete();
         $item = $this->item(isExclusive: true);
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-        ]);
+            'payment_method' => 'cash',
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
+        ])->assertSessionHas('error');
 
-        $booking = $item->bookings()->firstOrFail();
-
-        $response = $this->actingAs($this->user)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-        ]);
-
-        $response->assertForbidden();
+        $this->assertDatabaseCount('bookings', 0);
+        $this->assertDatabaseCount('journal_entries', 0);
     }
 
-    public function test_booking_an_item_with_a_deposit_percent_collects_the_deposit_immediately(): void
+    public function test_each_payment_method_posts_to_its_own_mapped_account(): void
     {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
+        $cashbox = Account::create(['tenant_id' => $this->tenant->id, 'code' => '1010', 'name' => 'Cash on Hand', 'type' => AccountType::Asset, 'normal_balance' => 'debit']);
+        GlMapping::where('role', GlMappingRole::BookingCashPayment)->update(['account_id' => $cashbox->id]);
+        $item = $this->item(isExclusive: true);
 
-        $response = $this->actingAs($this->user)->post(route('bookings.store'), [
+        $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
+            'payment_method' => 'cash',
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
+        ])->assertSessionHasNoErrors();
 
-        $booking = $item->bookings()->firstOrFail();
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'bank_transfer',
+            'starts_at' => '2027-01-11 10:00:00',
+            'ends_at' => '2027-01-11 12:00:00',
+        ])->assertSessionHasNoErrors();
 
-        $response->assertRedirect();
-        $this->assertDatabaseHas('bookings', [
-            'id' => $booking->id,
-            'status' => 'confirmed',
-            'deposit_amount' => 60.00,
-        ]);
-        $this->assertDatabaseHas('journal_lines', [
+        $this->assertDatabaseHas('bookings', ['starts_at' => '2027-01-10 10:00:00', 'payment_method' => 'cash']);
+        $this->assertDatabaseHas('bookings', ['starts_at' => '2027-01-11 10:00:00', 'payment_method' => 'bank_transfer']);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $cashbox->id, 'debit' => 200.00]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'debit' => 200.00]);
+        $this->assertDatabaseCount('journal_lines', 4);
+    }
+
+    public function test_a_pos_payment_posts_to_the_pos_account(): void
+    {
+        $posAccount = Account::create(['tenant_id' => $this->tenant->id, 'code' => '1020', 'name' => 'POS Clearing', 'type' => AccountType::Asset, 'normal_balance' => 'debit']);
+        GlMapping::where('role', GlMappingRole::BookingPosPayment)->update(['account_id' => $posAccount->id]);
+        $item = $this->item(isExclusive: true);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'pos',
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('bookings', ['payment_method' => 'pos']);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $posAccount->id, 'debit' => 200.00]);
+    }
+
+    public function test_a_payment_method_is_required_and_must_be_valid(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $base = ['bookable_item_id' => $item->id, 'starts_at' => '2027-01-10 10:00:00', 'ends_at' => '2027-01-10 12:00:00'];
+
+        $this->actingAs($this->user)->post(route('bookings.store'), $base)->assertSessionHasErrors('payment_method');
+        $this->actingAs($this->user)->post(route('bookings.store'), $base + ['payment_method' => 'cheque'])->assertSessionHasErrors('payment_method');
+
+        $this->assertDatabaseCount('bookings', 0);
+    }
+
+    public function test_a_method_with_no_mapped_account_is_refused_while_the_other_still_works(): void
+    {
+        GlMapping::where('role', GlMappingRole::BookingCashPayment)->delete();
+        $item = $this->item(isExclusive: true);
+        $base = ['bookable_item_id' => $item->id, 'ends_at' => '2027-01-10 12:00:00'];
+
+        $this->actingAs($this->user)->post(route('bookings.store'), $base + ['payment_method' => 'cash', 'starts_at' => '2027-01-10 10:00:00'])
+            ->assertSessionHas('error');
+        $this->assertDatabaseCount('bookings', 0);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), $base + ['payment_method' => 'bank_transfer', 'starts_at' => '2027-01-10 10:00:00'])
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseCount('bookings', 1);
+    }
+
+    public function test_a_free_booking_is_paid_without_touching_the_ledger(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $type = $this->offer($item, 'Open Day', 0);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
+            'booking_type_id' => $type->id,
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('bookings', ['bookable_item_id' => $item->id, 'status' => 'paid']);
+        $this->assertDatabaseCount('journal_entries', 0);
+    }
+
+    public function test_a_booking_admin_saves_an_item_without_touching_its_accounting(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $type = $this->offer($item, 'Training', 100);
+        $other = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Academy', 'type' => 'profit']);
+        $item->bookingTypes()->updateExistingPivot($type->id, ['account_id' => $this->revenue->id, 'cost_center_id' => $other->id]);
+
+        $bookingAdmin = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $bookingAdmin->assignRole('Booking Admin');
+
+        $this->actingAs($bookingAdmin)->put(route('bookable-items.update', $item), [
+            'name' => 'Renamed Room',
             'account_id' => $this->bank->id,
-            'debit' => 60.00,
-            'cost_center_id' => $this->costCenter->id,
-        ]);
-        $this->assertDatabaseHas('journal_lines', [
-            'account_id' => $this->deferredRevenue->id,
-            'credit' => 60.00,
-            'cost_center_id' => $this->costCenter->id,
-        ]);
+            'cost_center_id' => $other->id,
+            'booking_types' => [['booking_type_id' => $type->id, 'rate_type' => 'hourly', 'price' => 150, 'account_id' => $this->bank->id, 'cost_center_id' => null]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('bookable_items', ['id' => $item->id, 'name' => 'Renamed Room', 'account_id' => $this->revenue->id, 'cost_center_id' => $this->costCenter->id]);
+        $this->assertDatabaseHas('bookable_item_booking_type', ['bookable_item_id' => $item->id, 'price' => 150, 'account_id' => $this->revenue->id, 'cost_center_id' => $other->id]);
     }
 
-    public function test_booking_can_pay_more_than_the_minimum_deposit(): void
+    public function test_an_item_created_by_a_booking_admin_has_no_cost_center_and_cannot_be_booked_without_a_revenue_account(): void
     {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
+        $bookingAdmin = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $bookingAdmin->assignRole('Booking Admin');
+        $type = BookingType::create(['tenant_id' => $this->tenant->id, 'name' => 'Holy Mass']);
 
-        $response = $this->actingAs($this->user)->post(route('bookings.store'), [
+        $this->actingAs($bookingAdmin)->post(route('bookable-items.store'), [
+            'name' => 'Side Chapel',
+            'booking_types' => [['booking_type_id' => $type->id, 'rate_type' => 'flat', 'price' => 200]],
+        ])->assertSessionHasNoErrors();
+
+        $item = BookableItem::where('name', 'Side Chapel')->firstOrFail();
+        $this->assertNull($item->cost_center_id);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-            'deposit_amount' => 150,
-        ]);
+            'payment_method' => 'cash',
+            'booking_type_id' => $type->id,
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
+        ])->assertSessionHas('error');
 
-        $booking = $item->bookings()->firstOrFail();
-
-        $response->assertRedirect();
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'deposit_amount' => 150.00]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'debit' => 150.00]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->deferredRevenue->id, 'credit' => 150.00]);
-    }
-
-    public function test_booking_rejects_a_deposit_below_the_items_minimum(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $response = $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-            'deposit_amount' => 10,
-        ]);
-
-        $response->assertSessionHas('error');
         $this->assertDatabaseCount('bookings', 0);
     }
 
-    public function test_booking_rejects_a_deposit_above_the_price(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $response = $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-            'deposit_amount' => 500,
-        ]);
-
-        $response->assertSessionHas('error');
-        $this->assertDatabaseCount('bookings', 0);
-    }
-
-    public function test_marking_paid_after_a_deposit_clears_deferred_revenue_and_collects_only_the_balance(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $booking = $item->bookings()->firstOrFail();
-
-        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
-        $manager->assignRole('Admin');
-
-        $response = $this->actingAs($manager)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-        ]);
-
-        $response->assertRedirect();
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'paid', 'revenue_recognized_at' => null]);
-        // Remaining balance (200 - 60 = 140) collected in cash, but it's
-        // still 2026-10-10's event hasn't happened yet by test time, so it
-        // stays deferred rather than landing in revenue straight away.
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'debit' => 140.00]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->deferredRevenue->id, 'credit' => 140.00]);
-        $this->assertDatabaseMissing('journal_lines', ['account_id' => $this->revenue->id]);
-    }
-
-    public function test_marking_paid_after_the_event_has_already_ended_recognizes_revenue_immediately(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => now()->subHours(3)->toDateTimeString(),
-            'ends_at' => now()->subHour()->toDateTimeString(),
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $booking = $item->bookings()->firstOrFail();
-
-        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
-        $manager->assignRole('Admin');
-
-        $response = $this->actingAs($manager)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-        ]);
-
-        $response->assertRedirect();
-        $this->assertNotNull($booking->fresh()->revenue_recognized_at);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->deferredRevenue->id, 'debit' => 200.00]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->revenue->id, 'credit' => 200.00]);
-    }
-
-    public function test_recognizing_revenue_for_ended_bookings_clears_deferred_revenue_for_a_booking_paid_ahead_of_its_event(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $booking = $item->bookings()->firstOrFail();
-
-        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
-        $manager->assignRole('Admin');
-
-        $this->actingAs($manager)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-        ]);
-
-        $this->assertNull($booking->fresh()->revenue_recognized_at);
-
-        // The event is now in the past — recognition should pick it up.
-        $booking->update(['ends_at' => now()->subHour()]);
-
-        app(BookingService::class)->recognizeRevenueForEndedBookings();
-
-        $this->assertNotNull($booking->fresh()->revenue_recognized_at);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->deferredRevenue->id, 'debit' => 200.00]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->revenue->id, 'credit' => 200.00]);
-    }
-
-    public function test_collecting_a_partial_balance_payment_posts_to_deferred_revenue_and_leaves_the_booking_confirmed(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $booking = $item->bookings()->firstOrFail();
-
-        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
-        $manager->assignRole('Admin');
-
-        // Balance due is 140 (200 price - 60 deposit); collect only 50 of it.
-        $response = $this->actingAs($manager)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-            'amount' => 50,
-        ]);
-
-        $response->assertRedirect();
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'confirmed', 'balance_paid' => 50.00]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'debit' => 50.00]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->deferredRevenue->id, 'credit' => 50.00]);
-        // Not fully settled yet, so nothing should have hit revenue.
-        $this->assertDatabaseMissing('journal_lines', ['account_id' => $this->revenue->id]);
-    }
-
-    public function test_collecting_the_remaining_balance_after_a_partial_payment_settles_the_booking(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $booking = $item->bookings()->firstOrFail();
-
-        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
-        $manager->assignRole('Admin');
-
-        $this->actingAs($manager)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-            'amount' => 50,
-        ]);
-
-        // 200 price - 60 deposit - 50 partial = 90 left.
-        $response = $this->actingAs($manager)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-        ]);
-
-        $response->assertRedirect();
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'paid', 'balance_paid' => 140.00, 'revenue_recognized_at' => null]);
-        // This final slice (90) is collected the same way the deposit and
-        // the earlier partial payment were — into deferred revenue, since
-        // the event (2026-10-10) hasn't happened by test time yet.
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'debit' => 90.00]);
-        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->deferredRevenue->id, 'credit' => 90.00]);
-        $this->assertDatabaseMissing('journal_lines', ['account_id' => $this->revenue->id]);
-    }
-
-    public function test_collecting_more_than_the_remaining_balance_is_rejected(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $booking = $item->bookings()->firstOrFail();
-
-        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
-        $manager->assignRole('Admin');
-
-        $response = $this->actingAs($manager)->post(route('bookings.mark-paid', $booking), [
-            'payment_account_id' => $this->bank->id,
-            'amount' => 141,
-        ]);
-
-        $response->assertSessionHas('error');
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'confirmed', 'balance_paid' => 0]);
-    }
-
-    public function test_cancelling_a_booking_with_a_paid_deposit_credits_the_account_it_was_debited_to(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $booking = $item->bookings()->firstOrFail();
-
-        $deposit = (float) $booking->deposit_amount;
-        $depositEntry = JournalEntry::where('source_id', $booking->id)->firstOrFail();
-        $debitedAccountId = $depositEntry->lines->firstWhere('debit', '>', 0)->account_id;
-
-        $response = $this->actingAs($this->user)->post(route('bookings.cancel', $booking));
-
-        $response->assertSessionMissing('error');
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'cancelled', 'deposit_paid_at' => null]);
-        $this->assertSame(2, JournalEntry::where('source_id', $booking->id)->count());
-        $this->assertDatabaseHas('journal_lines', [
-            'account_id' => $debitedAccountId,
-            'debit' => 0,
-            'credit' => $deposit,
-        ]);
-    }
-
-    public function test_a_booking_past_its_payment_deadline_is_flagged_overdue(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $booking = $item->bookings()->firstOrFail();
-        $booking->update(['deposit_amount' => 60, 'deposit_paid_at' => now(), 'payment_due_at' => now()->subDay()]);
-
-        $this->assertTrue($booking->fresh()->isOverdue());
-    }
-
-    public function test_an_item_without_a_deposit_percent_rejects_deposit_payment(): void
+    public function test_cancelling_a_paid_booking_reverses_its_journal_at_the_same_accounts_and_cost_center(): void
     {
         $item = $this->item(isExclusive: true);
 
         $this->actingAs($this->user)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
+            'payment_method' => 'cash',
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
+        ])->assertSessionHasNoErrors();
+
+        $booking = $item->bookings()->firstOrFail();
+        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
+        $manager->assignRole('Admin');
+
+        $this->actingAs($manager)->post(route('bookings.cancel', $booking))->assertSessionHas('success');
+
+        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'cancelled']);
+        $this->assertDatabaseCount('journal_entries', 2);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'credit' => 200.00, 'cost_center_id' => $this->costCenter->id]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->revenue->id, 'debit' => 200.00, 'cost_center_id' => $this->costCenter->id]);
+        $this->assertEquals(0.0, (float) DB::table('journal_lines')->where('account_id', $this->revenue->id)->selectRaw('sum(credit) - sum(debit) as net')->value('net'));
+    }
+
+    public function test_a_booking_cannot_be_cancelled_twice(): void
+    {
+        $item = $this->item(isExclusive: true);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
         ]);
 
         $booking = $item->bookings()->firstOrFail();
 
-        $manager = User::factory()->create(['tenant_id' => $this->tenant->id]);
-        $manager->assignRole('Admin');
+        $this->actingAs($this->user)->post(route('bookings.cancel', $booking))->assertSessionHas('success');
+        $this->actingAs($this->user)->post(route('bookings.cancel', $booking))->assertSessionHas('error');
 
-        $response = $this->actingAs($manager)->post(route('bookings.pay-deposit', $booking), [
-            'payment_account_id' => $this->bank->id,
-            'payment_due_at' => now()->addDays(3)->toDateTimeString(),
-        ]);
-
-        $response->assertSessionHas('error');
-        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'deposit_amount' => null]);
-    }
-
-    public function test_booking_an_item_with_a_deposit_percent_requires_the_deposit_payment_fields(): void
-    {
-        $item = $this->item(isExclusive: true, depositPercent: 30);
-
-        $response = $this->actingAs($this->user)->post(route('bookings.store'), [
-            'bookable_item_id' => $item->id,
-            'starts_at' => '2026-10-10 10:00:00',
-            'ends_at' => '2026-10-10 12:00:00',
-        ]);
-
-        $response->assertSessionHasErrors(['payment_due_at']);
-        $this->assertDatabaseCount('bookings', 0);
+        $this->assertDatabaseCount('journal_entries', 2);
     }
 
     public function test_a_booking_agent_is_redirected_from_the_dashboard_to_the_calendar(): void

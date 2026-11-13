@@ -18,7 +18,6 @@ class BookableItemOptionResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'is_exclusive' => $this->is_exclusive,
-            'deposit_percent' => $this->deposit_percent,
             'tenant_name' => app(TenantContext::class)->isViewingAllTenants() ? $this->tenant?->name : null,
             'booking_types' => $this->bookingTypes->map(fn ($type) => ['id' => $type->id, 'name' => $type->name, 'rate_type' => $type->pivot->rate_type, 'price' => $type->pivot->price])->values(),
         ];

@@ -2,6 +2,8 @@
 
 namespace App\Modules\Booking\DTOs;
 
+use App\Modules\Booking\Enums\BookingDiscountType;
+use App\Modules\Booking\Enums\BookingPaymentMethod;
 use App\Modules\Booking\Enums\BookingRecurrence;
 
 final readonly class CreateBookingData
@@ -12,10 +14,11 @@ final readonly class CreateBookingData
         public string $startsAt,
         public string $endsAt,
         public ?string $notes,
-        public ?string $paymentDueAt,
-        public ?float $depositAmount,
+        public BookingPaymentMethod $paymentMethod,
         public BookingRecurrence $recurrence = BookingRecurrence::None,
         public ?string $recurrenceUntil = null,
+        public ?BookingDiscountType $discountType = null,
+        public ?float $discountValue = null,
     ) {}
 
     public static function fromArray(array $data): self
@@ -26,10 +29,11 @@ final readonly class CreateBookingData
             startsAt: $data['starts_at'],
             endsAt: $data['ends_at'],
             notes: $data['notes'] ?? null,
-            paymentDueAt: $data['payment_due_at'] ?? null,
+            paymentMethod: BookingPaymentMethod::from($data['payment_method']),
             recurrence: BookingRecurrence::from($data['recurrence'] ?? 'none'),
             recurrenceUntil: $data['recurrence_until'] ?? null,
-            depositAmount: isset($data['deposit_amount']) && $data['deposit_amount'] !== '' ? (float) $data['deposit_amount'] : null,
+            discountType: ! empty($data['discount_type']) ? BookingDiscountType::from($data['discount_type']) : null,
+            discountValue: isset($data['discount_value']) && $data['discount_value'] !== '' ? (float) $data['discount_value'] : null,
         );
     }
 }

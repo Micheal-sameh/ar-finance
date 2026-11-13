@@ -22,7 +22,7 @@ class EloquentBookableItemRepository implements BookableItemRepositoryInterface
     public function all(): Collection
     {
         return BookableItem::query()
-            ->with('bookingTypes')
+            ->with(['bookingTypes', 'tenant:id,name'])
             ->where('is_active', true)
             ->orderBy('name')
             ->get();

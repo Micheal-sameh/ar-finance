@@ -5,8 +5,9 @@ namespace App\Modules\Booking\Services;
 use App\DTOs\CreateJournalEntryData;
 use App\DTOs\JournalLineData;
 use App\Enums\JournalSourceType;
-use App\Models\Tenant;
 use App\Modules\Booking\DTOs\CreateBookingData;
+use App\Modules\Booking\Enums\BookingDiscountType;
+use App\Modules\Booking\Enums\BookingPaymentMethod;
 use App\Modules\Booking\Enums\BookingRateType;
 use App\Modules\Booking\Enums\BookingRecurrence;
 use App\Modules\Booking\Enums\BookingStatus;
@@ -15,6 +16,7 @@ use App\Modules\Booking\Models\BookableItem;
 use App\Modules\Booking\Models\Booking;
 use App\Modules\Booking\Models\BookingType;
 use App\Modules\Booking\Repositories\Contracts\BookingRepositoryInterface;
+use App\Services\GlMappingService;
 use App\Services\JournalService;
 use App\Support\TenantContext;
 use Carbon\Carbon;
@@ -40,6 +42,7 @@ class BookingService
     public function __construct(
         private readonly BookingRepositoryInterface $bookings,
         private readonly JournalService $journals,
+        private readonly GlMappingService $glMapping,
     ) {}
 
     public function find(int $id): ?Booking
@@ -50,7 +53,7 @@ class BookingService
     /**
      * Books the slot — and, for a repeating booking, every repeat of it up to
      * the end date. Each occurrence is an ordinary booking of its own (own
-     * conflict check, price, deposit and payments), created all-or-nothing:
+     * conflict check and price), created all-or-nothing:
      * if any date is taken or fails, none are booked.
      *
      * @return Booking the first booking of the series
@@ -140,6 +143,11 @@ class BookingService
 
     private function createOccurrence(CreateBookingData $data, BookableItem $item, ?BookingType $type, int $userId, string $startsAt, string $endsAt, ?string $groupId): Booking
     {
+        $item->revenueAccountIdFor($type?->id);
+
+        $grossPrice = $this->priceFor($item, $type, $startsAt, $endsAt);
+        $discountAmount = $this->discountFor($data, $grossPrice);
+
         $booking = $this->bookings->create([
             'tenant_id' => app(TenantContext::class)->id(),
             'bookable_item_id' => $item->id,
@@ -147,29 +155,41 @@ class BookingService
             'user_id' => $userId,
             'starts_at' => $startsAt,
             'ends_at' => $endsAt,
-            'price' => $this->priceFor($item, $type, $startsAt, $endsAt),
+            'price' => round($grossPrice - $discountAmount, 2),
+            'discount_type' => $data->discountType,
+            'discount_value' => $data->discountType ? $data->discountValue : null,
+            'discount_amount' => $discountAmount,
             'status' => BookingStatus::Confirmed,
             'notes' => $data->notes,
+            'payment_method' => $data->paymentMethod,
             'recurrence' => $groupId !== null ? $data->recurrence : BookingRecurrence::None,
             'recurrence_until' => $groupId !== null ? $data->recurrenceUntil : null,
             'recurrence_group_id' => $groupId,
         ]);
 
-        // The item's deposit percentage and payment account are set by the
-        // admin; the request layer only requires a due date once the item
-        // accepts deposits, so collect it immediately. For a repeat, the
-        // balance deadline moves out with the occurrence.
-        if ($item->acceptsDeposits() && $data->paymentDueAt !== null && (float) $booking->price > 0) {
-            if ($item->deposit_payment_account_id === null) {
-                throw new RuntimeException("\"{$item->name}\" has no deposit payment account configured — set one on the item before booking it.");
-            }
+        return $this->settle($booking, $item, $data->paymentMethod);
+    }
 
-            $dueAt = CarbonImmutable::parse($data->paymentDueAt)->add(CarbonImmutable::parse($data->startsAt)->diff(CarbonImmutable::parse($startsAt)));
-
-            $booking = $this->payDeposit($booking, $item->deposit_payment_account_id, $dueAt->toDateTimeString(), $data->depositAmount);
+    /**
+     * The discount in money for one booking priced at $grossPrice — a percent
+     * of it, or a fixed amount (applied to each booking of a repeating
+     * series). It can never take the price below zero.
+     */
+    private function discountFor(CreateBookingData $data, float $grossPrice): float
+    {
+        if ($data->discountType === null || $data->discountValue === null) {
+            return 0.0;
         }
 
-        return $booking;
+        $discount = $data->discountType === BookingDiscountType::Percent
+            ? round($grossPrice * $data->discountValue / 100, 2)
+            : round($data->discountValue, 2);
+
+        if ($discount > $grossPrice) {
+            throw new RuntimeException("The discount ({$discount}) can't be more than the booking's price ({$grossPrice}).");
+        }
+
+        return $discount;
     }
 
     /**
@@ -191,30 +211,83 @@ class BookingService
         return round($rate * $hours, 2);
     }
 
+    /**
+     * Cancels the booking. If it was already paid, each journal entry posted
+     * for it is reversed as its own entry (debits and credits swapped, same
+     * accounts and cost centers), so the money and revenue come back out of
+     * the books exactly where they went in — all in one transaction.
+     */
+    /**
+     * Cancels a booking. Bookings are paid when they are made, so what was
+     * collected is returned: each ledger entry posted for it is reversed as
+     * its own entry, crediting the account it was originally debited to.
+     */
     public function cancel(Booking $booking): Booking
     {
-        if ($booking->status === BookingStatus::Paid) {
-            throw new RuntimeException('A paid booking cannot be cancelled — it has already been posted to the ledger.');
-        }
-
         if ($booking->status === BookingStatus::Cancelled) {
             throw new RuntimeException('This booking is already cancelled.');
         }
 
         return DB::transaction(function () use ($booking) {
-            $this->refundCollectedPayments($booking);
+            foreach ($this->bookings->journalEntries($booking) as $entry) {
+                $this->journals->postJournalEntry(new CreateJournalEntryData(
+                    date: now()->toDateString(),
+                    description: "Cancelled Booking #{$booking->id} — reversal of: {$entry->description}",
+                    reference: null,
+                    sourceType: JournalSourceType::Booking,
+                    sourceId: $booking->id,
+                    createdBy: auth()->id(),
+                    lines: $entry->lines->map(fn ($line) => new JournalLineData(
+                        accountId: $line->account_id,
+                        debit: (float) $line->credit,
+                        credit: (float) $line->debit,
+                        costCenterId: $line->cost_center_id,
+                    ))->all(),
+                ));
+            }
 
             return $this->bookings->update($booking, ['status' => BookingStatus::Cancelled]);
         });
     }
 
     /**
-     * Reverses each entry posted for the booking as its own entry, with
-     * debits and credits swapped — so the money is credited back to the
-     * same payment account it was originally debited to, and taken out of
-     * the same deferred revenue account it was held in.
+     * Bookings are paid the moment they are made: Dr the account mapped to the
+     * chosen payment method (cash or bank transfer) / Cr the revenue account for the booking's type,
+     * both at the type's cost center. A free booking owes nothing, so it is
+     * marked paid without touching the ledger.
      */
-    private function refundCollectedPayments(Booking $booking): void
+    private function settle(Booking $booking, BookableItem $item, BookingPaymentMethod $method): Booking
+    {
+        $price = (float) $booking->price;
+
+        if ($price > 0) {
+            $role = $method->glRole();
+            $paymentAccountId = $this->glMapping->defaults()[$role->value] ?? null;
+
+            if ($paymentAccountId === null) {
+                throw new RuntimeException("No account is set for {$method->label()} payments — ask finance or an admin to set \"{$role->label()}\" in the General Ledger mapping, or choose another payment method.");
+            }
+
+            $costCenterId = $item->costCenterIdFor($booking->booking_type_id);
+
+            $this->journals->postJournalEntry(new CreateJournalEntryData(
+                date: now()->toDateString(),
+                description: "Booking #{$booking->id} — {$item->name}",
+                reference: null,
+                sourceType: JournalSourceType::Booking,
+                sourceId: $booking->id,
+                createdBy: auth()->id(),
+                lines: [
+                    new JournalLineData(accountId: $paymentAccountId, debit: $price, credit: 0, costCenterId: $costCenterId),
+                    new JournalLineData(accountId: $item->revenueAccountIdFor($booking->booking_type_id), debit: 0, credit: $price, costCenterId: $costCenterId),
+                ],
+            ));
+        }
+
+        return $this->bookings->update($booking, ['status' => BookingStatus::Paid, 'paid_at' => now()]);
+    }
+
+    private function reverseJournalEntries(Booking $booking): void
     {
         foreach ($this->bookings->journalEntries($booking) as $entry) {
             $this->journals->postJournalEntry(new CreateJournalEntryData(
@@ -232,217 +305,6 @@ class BookingService
                 ))->all(),
             ));
         }
-
-        $this->bookings->update($booking, ['balance_paid' => 0, 'deposit_amount' => null, 'deposit_paid_at' => null]);
-    }
-
-    /**
-     * Posts Dr $paymentAccountId / Cr the item's deferred revenue account
-     * (at its cost center) for the deposit, and records the deadline by
-     * which the remaining balance is due. The deposit only moves to actual
-     * revenue once the booking is fully paid — see markPaid().
-     *
-     * $amount lets the person paying offer more than the item's
-     * deposit_percent minimum; it's capped at the booking's price so the
-     * journal entry in markPaid() never goes negative.
-     */
-    public function payDeposit(Booking $booking, int $paymentAccountId, string $paymentDueAt, ?float $amount = null): Booking
-    {
-        if ($booking->status !== BookingStatus::Confirmed) {
-            throw new RuntimeException('Only a confirmed booking can take a deposit.');
-        }
-
-        if ($booking->deposit_paid_at !== null) {
-            throw new RuntimeException('A deposit has already been paid for this booking.');
-        }
-
-        $item = $booking->bookableItem;
-
-        if (! $item->acceptsDeposits()) {
-            throw new RuntimeException("\"{$item->name}\" does not accept deposits.");
-        }
-
-        if ($item->deferred_revenue_account_id === null) {
-            throw new RuntimeException("\"{$item->name}\" has no deferred revenue account configured.");
-        }
-
-        $minimumDeposit = round((float) $booking->price * ((float) $item->deposit_percent / 100), 2);
-        $depositAmount = $amount ?? $minimumDeposit;
-
-        if ($depositAmount < $minimumDeposit) {
-            throw new RuntimeException("The deposit must be at least {$minimumDeposit}.");
-        }
-
-        if ($depositAmount > (float) $booking->price) {
-            throw new RuntimeException("The deposit can't be more than the booking's price ({$booking->price}).");
-        }
-
-        return DB::transaction(function () use ($booking, $item, $paymentAccountId, $paymentDueAt, $depositAmount) {
-            $this->journals->postJournalEntry(new CreateJournalEntryData(
-                date: now()->toDateString(),
-                description: "Deposit for Booking #{$booking->id} — {$item->name}",
-                reference: null,
-                sourceType: JournalSourceType::Booking,
-                sourceId: $booking->id,
-                createdBy: auth()->id(),
-                lines: [
-                    new JournalLineData(accountId: $paymentAccountId, debit: $depositAmount, credit: 0, costCenterId: $item->cost_center_id),
-                    new JournalLineData(accountId: $item->deferred_revenue_account_id, debit: 0, credit: $depositAmount, costCenterId: $item->cost_center_id),
-                ],
-            ));
-
-            return $this->bookings->update($booking, [
-                'deposit_amount' => $depositAmount,
-                'deposit_paid_at' => now(),
-                'payment_due_at' => $paymentDueAt,
-            ]);
-        });
-    }
-
-    /**
-     * Collects toward the remaining balance. $amount defaults to the full
-     * remaining balance; a smaller amount records a partial payment and
-     * leaves the booking confirmed with a smaller balance due.
-     *
-     * Either way the cash posts Dr $paymentAccountId / Cr the item's
-     * deferred revenue account — same clearing account the deposit uses.
-     * Collecting the last slice flips status to Paid, but the money stays
-     * in deferred revenue: revenue isn't recognised until the event itself
-     * has finished (see recognizeRevenue()/RecognizeBookingRevenue), unless
-     * it already has by the time this final payment lands, in which case
-     * it's recognised immediately instead of waiting on the scheduled job.
-     *
-     * Items with no deferred revenue account (never accept deposits, so
-     * nothing can be partially collected) are settled the old way instead:
-     * straight Dr $paymentAccountId / Cr revenue, recognised on the spot.
-     */
-    public function markPaid(Booking $booking, int $paymentAccountId, ?float $amount = null): Booking
-    {
-        if ($booking->status !== BookingStatus::Confirmed) {
-            throw new RuntimeException('Only a confirmed booking can be marked as paid.');
-        }
-
-        $item = $booking->bookableItem;
-        $price = (float) $booking->price;
-        $alreadyCollected = (float) ($booking->deposit_amount ?? 0) + (float) ($booking->balance_paid ?? 0);
-        $remaining = round($price - $alreadyCollected, 2);
-
-        // A free booking owes nothing: settle it without touching the ledger.
-        if ($price <= 0) {
-            return $this->bookings->update($booking, [
-                'status' => BookingStatus::Paid,
-                'paid_at' => now(),
-                'revenue_recognized_at' => now(),
-            ]);
-        }
-
-        if ($remaining <= 0) {
-            throw new RuntimeException('This booking has already been paid in full.');
-        }
-
-        $collecting = $amount ?? $remaining;
-
-        if ($collecting <= 0) {
-            throw new RuntimeException('Enter a valid amount to collect.');
-        }
-
-        if ($collecting > $remaining) {
-            throw new RuntimeException("Can't collect more than the remaining balance ({$remaining}).");
-        }
-
-        $isFinalPayment = $collecting >= $remaining;
-
-        if (! $isFinalPayment && $item->deferred_revenue_account_id === null) {
-            throw new RuntimeException("\"{$item->name}\" has no deferred revenue account configured — partial payments aren't supported until it's set, or collect the full balance instead.");
-        }
-
-        return DB::transaction(function () use ($booking, $item, $paymentAccountId, $price, $collecting, $isFinalPayment) {
-            if ($item->deferred_revenue_account_id === null) {
-                $this->journals->postJournalEntry(new CreateJournalEntryData(
-                    date: now()->toDateString(),
-                    description: "Booking #{$booking->id} — {$item->name}",
-                    reference: null,
-                    sourceType: JournalSourceType::Booking,
-                    sourceId: $booking->id,
-                    createdBy: auth()->id(),
-                    lines: [
-                        new JournalLineData(accountId: $paymentAccountId, debit: $collecting, credit: 0, costCenterId: $item->cost_center_id),
-                        new JournalLineData(accountId: $item->revenueAccountIdFor($booking->booking_type_id), debit: 0, credit: $price, costCenterId: $item->cost_center_id),
-                    ],
-                ));
-
-                return $this->bookings->update($booking, [
-                    'balance_paid' => (float) ($booking->balance_paid ?? 0) + $collecting,
-                    'status' => BookingStatus::Paid,
-                    'paid_at' => now(),
-                    'revenue_recognized_at' => now(),
-                ]);
-            }
-
-            $this->journals->postJournalEntry(new CreateJournalEntryData(
-                date: now()->toDateString(),
-                description: ($isFinalPayment ? "Final payment for Booking #{$booking->id}" : "Partial payment for Booking #{$booking->id}")." — {$item->name}",
-                reference: null,
-                sourceType: JournalSourceType::Booking,
-                sourceId: $booking->id,
-                createdBy: auth()->id(),
-                lines: [
-                    new JournalLineData(accountId: $paymentAccountId, debit: $collecting, credit: 0, costCenterId: $item->cost_center_id),
-                    new JournalLineData(accountId: $item->deferred_revenue_account_id, debit: 0, credit: $collecting, costCenterId: $item->cost_center_id),
-                ],
-            ));
-
-            $booking = $this->bookings->update($booking, [
-                'balance_paid' => (float) ($booking->balance_paid ?? 0) + $collecting,
-                ...($isFinalPayment ? ['status' => BookingStatus::Paid, 'paid_at' => now()] : []),
-            ]);
-
-            if ($isFinalPayment && $booking->ends_at->isPast()) {
-                $booking = $this->recognizeRevenue($booking);
-            }
-
-            return $booking;
-        });
-    }
-
-    /**
-     * Clears everything collected for a fully-paid booking out of deferred
-     * revenue into the item's actual revenue account, once the event it
-     * was for has finished. Called directly from markPaid() when the event
-     * has already ended by settlement time, and by RecognizeBookingRevenue
-     * for bookings that were paid ahead of their event.
-     */
-    public function recognizeRevenue(Booking $booking): Booking
-    {
-        if ($booking->status !== BookingStatus::Paid) {
-            throw new RuntimeException('Only a paid booking can have its revenue recognized.');
-        }
-
-        if ($booking->revenue_recognized_at !== null) {
-            throw new RuntimeException('Revenue has already been recognized for this booking.');
-        }
-
-        $item = $booking->bookableItem;
-        $collected = round((float) ($booking->deposit_amount ?? 0) + (float) ($booking->balance_paid ?? 0), 2);
-
-        return DB::transaction(function () use ($booking, $item, $collected) {
-            if ($collected > 0 && $item->deferred_revenue_account_id !== null) {
-                $this->journals->postJournalEntry(new CreateJournalEntryData(
-                    date: now()->toDateString(),
-                    description: "Revenue recognized for Booking #{$booking->id} — {$item->name}",
-                    reference: null,
-                    sourceType: JournalSourceType::Booking,
-                    sourceId: $booking->id,
-                    createdBy: auth()->id(),
-                    lines: [
-                        new JournalLineData(accountId: $item->deferred_revenue_account_id, debit: $collected, credit: 0, costCenterId: $item->cost_center_id),
-                        new JournalLineData(accountId: $item->revenueAccountIdFor($booking->booking_type_id), debit: 0, credit: $collected, costCenterId: $item->cost_center_id),
-                    ],
-                ));
-            }
-
-            return $this->bookings->update($booking, ['revenue_recognized_at' => now()]);
-        });
     }
 
     /**
@@ -451,35 +313,5 @@ class BookingService
     public function calendar(string $from, string $to, ?int $bookableItemId = null): Collection
     {
         return $this->bookings->forCalendar($from, $to, $bookableItemId);
-    }
-
-    /**
-     * Runs recognizeRevenue() for every tenant's paid-but-not-yet-
-     * recognized bookings whose event has finished — what
-     * RecognizeBookingRevenue calls on its schedule. Loops tenants
-     * explicitly (console runs have no active tenant of their own) so it
-     * covers everyone in one pass.
-     *
-     * @return array<int, array{booking: Booking, recognized: bool, message: ?string}>
-     */
-    public function recognizeRevenueForEndedBookings(): array
-    {
-        $results = [];
-        $tenantContext = app(TenantContext::class);
-
-        foreach (Tenant::all() as $tenant) {
-            $tenantContext->runAs($tenant->id, function () use (&$results) {
-                foreach ($this->bookings->awaitingRevenueRecognition() as $booking) {
-                    try {
-                        $this->recognizeRevenue($booking);
-                        $results[] = ['booking' => $booking, 'recognized' => true, 'message' => null];
-                    } catch (RuntimeException $e) {
-                        $results[] = ['booking' => $booking, 'recognized' => false, 'message' => $e->getMessage()];
-                    }
-                }
-            });
-        }
-
-        return $results;
     }
 }

@@ -3,10 +3,7 @@
 namespace App\Modules\Booking\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Booking\Enums\BookingStatus;
 use App\Modules\Booking\Exceptions\BookingConflictException;
-use App\Modules\Booking\Http\Requests\MarkBookingPaidRequest;
-use App\Modules\Booking\Http\Requests\PayBookingDepositRequest;
 use App\Modules\Booking\Http\Requests\StoreBookingRequest;
 use App\Modules\Booking\Http\Resources\BookingEventResource;
 use App\Modules\Booking\Models\BookableItem;
@@ -69,7 +66,7 @@ class BookingController extends Controller
 
         $count = $this->bookings->seriesSize($booking);
 
-        return back()->with('success', $count > 1 ? "Booked {$count} times." : 'Booked.');
+        return back()->with('success', $count > 1 ? "Booked and paid {$count} times." : 'Booked and paid.');
     }
 
     public function cancel(Booking $booking): RedirectResponse
@@ -83,38 +80,5 @@ class BookingController extends Controller
         }
 
         return back()->with('success', 'Booking cancelled.');
-    }
-
-    public function markPaid(MarkBookingPaidRequest $request, Booking $booking): RedirectResponse
-    {
-        try {
-            $settled = $this->bookings->markPaid(
-                $booking,
-                (int) $request->validated('payment_account_id'),
-                $request->filled('amount') ? (float) $request->validated('amount') : null,
-            );
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
-        }
-
-        $message = $settled->status === BookingStatus::Paid ? 'Booking marked as paid.' : 'Payment collected — balance still due.';
-
-        return back()->with('success', $message);
-    }
-
-    public function payDeposit(PayBookingDepositRequest $request, Booking $booking): RedirectResponse
-    {
-        try {
-            $this->bookings->payDeposit(
-                $booking,
-                (int) $request->validated('payment_account_id'),
-                $request->validated('payment_due_at'),
-                $request->filled('deposit_amount') ? (float) $request->validated('deposit_amount') : null,
-            );
-        } catch (RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
-        }
-
-        return back()->with('success', 'Deposit recorded.');
     }
 }

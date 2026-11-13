@@ -5,6 +5,8 @@ namespace App\Modules\Booking\Models;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\BelongsToTenant;
 use App\Models\User;
+use App\Modules\Booking\Enums\BookingDiscountType;
+use App\Modules\Booking\Enums\BookingPaymentMethod;
 use App\Modules\Booking\Enums\BookingRecurrence;
 use App\Modules\Booking\Enums\BookingStatus;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,32 +28,30 @@ class Booking extends Model
         'starts_at',
         'ends_at',
         'price',
-        'deposit_amount',
-        'balance_paid',
-        'deposit_paid_at',
-        'payment_due_at',
+        'discount_type',
+        'discount_value',
+        'discount_amount',
+        'payment_method',
         'status',
         'notes',
         'recurrence',
         'recurrence_until',
         'recurrence_group_id',
         'paid_at',
-        'revenue_recognized_at',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'price' => 'decimal:2',
-        'deposit_amount' => 'decimal:2',
-        'balance_paid' => 'decimal:2',
-        'deposit_paid_at' => 'datetime',
-        'payment_due_at' => 'datetime',
+        'discount_type' => BookingDiscountType::class,
+        'discount_value' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'payment_method' => BookingPaymentMethod::class,
         'status' => BookingStatus::class,
         'recurrence' => BookingRecurrence::class,
         'recurrence_until' => 'date',
         'paid_at' => 'datetime',
-        'revenue_recognized_at' => 'datetime',
     ];
 
     public function bookableItem(): BelongsTo
@@ -70,30 +70,11 @@ class Booking extends Model
     }
 
     /**
-     * Past its payment deadline, with the balance still outstanding.
-     * Purely informational — nothing cancels the booking automatically.
+     * What is still owed: the full price until the booking is paid.
      */
-    public function isOverdue(): bool
-    {
-        return $this->payment_due_at !== null
-            && $this->payment_due_at->isPast()
-            && $this->status === BookingStatus::Confirmed;
-    }
-
     public function balanceDue(): float
     {
-        return round((float) $this->price - (float) ($this->deposit_amount ?? 0) - (float) ($this->balance_paid ?? 0), 2);
-    }
-
-    /**
-     * Paid, with the event over, but still sitting in deferred revenue —
-     * what RecognizeBookingRevenue clears out.
-     */
-    public function scopeAwaitingRevenueRecognition(Builder $query): Builder
-    {
-        return $query->where('status', BookingStatus::Paid->value)
-            ->whereNull('revenue_recognized_at')
-            ->where('ends_at', '<=', now());
+        return $this->status === BookingStatus::Paid ? 0.0 : round((float) $this->price, 2);
     }
 
     /**

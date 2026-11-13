@@ -26,6 +26,4 @@ Route::middleware(['auth', 'active', 'tenant'])->group(function () {
 
     Route::resource('bookings', BookingController::class)->only(['store']);
     Route::post('bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
-    Route::post('bookings/{booking}/deposit', [BookingController::class, 'payDeposit'])->name('bookings.pay-deposit');
-    Route::post('bookings/{booking}/pay', [BookingController::class, 'markPaid'])->name('bookings.mark-paid');
 });

@@ -75,23 +75,18 @@ class GlMappingTest extends TestCase
 
     public function test_booking_roles_prefill_the_bookable_item_form(): void
     {
-        $deferred = $this->account($this->tenant, '2300', 'Deferred revenue', AccountType::Liability);
-        $bank = $this->account($this->tenant, '1000', 'Bank', AccountType::Asset);
 
         $this->actingAs($this->user)->put(route('gl-mapping.update'), ['mappings' => [
             'booking_revenue' => $this->sales->id,
-            'booking_deferred_revenue' => $deferred->id,
-            'booking_deposit_payment' => $bank->id,
         ]])->assertSessionHas('success');
 
         $this->actingAs($this->user)->get(route('bookable-items.index'))->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('glDefaults.booking_revenue', $this->sales->id)
-                ->where('glDefaults.booking_deferred_revenue', $deferred->id)
-                ->where('glDefaults.booking_deposit_payment', $bank->id));
+            );
 
         $this->actingAs($this->user)
-            ->put(route('gl-mapping.update'), ['mappings' => ['booking_deferred_revenue' => $this->sales->id]])
+            ->put(route('gl-mapping.update'), ['mappings' => ['payable' => $this->sales->id]])
             ->assertSessionHas('error');
     }
 

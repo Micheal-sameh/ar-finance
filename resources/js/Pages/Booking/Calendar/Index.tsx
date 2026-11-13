@@ -1,24 +1,23 @@
-import type { DateSelectArg, EventClickArg } from '@fullcalendar/core';
+import type { DateSelectArg, EventApi, EventClickArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { Head, router } from '@inertiajs/react';
-import { CalendarClock } from 'lucide-react';
+import { Banknote, CalendarClock, CreditCard, Landmark } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { AccountPicker } from '@/Components/finance/AccountPicker';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { InfoTip } from '@/Components/ui/InfoTip';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Select } from '@/Components/ui/Select';
 import { useBookableItems } from '@/hooks/useBookableItems';
 import api from '@/lib/api';
 import type { BookingEvent, BookingRecurrence } from '@/types/booking';
-import { InfoTip } from '@/Components/ui/InfoTip';
 
 const STATUS_VARIANT: Record<BookingEvent['status'], 'info' | 'success' | 'neutral'> = {
     confirmed: 'info',
@@ -39,6 +38,8 @@ interface Props {
 
 export default function CalendarIndex({ viewingAllTenants }: Props) {
     const calendarRef = useRef<FullCalendar>(null);
+    /** Placeholder shown the instant a booking is saved, until the refetch brings the real event in. */
+    const pendingEventRef = useRef<EventApi | null>(null);
     const [isNarrowScreen] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767.98px)').matches);
     const { items, loading: itemsLoading } = useBookableItems();
 
@@ -48,17 +49,13 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
     const [recurrence, setRecurrence] = useState<BookingRecurrence>('none');
     const [recurrenceUntil, setRecurrenceUntil] = useState('');
     const [notes, setNotes] = useState('');
-    const [bookingDepositAmount, setBookingDepositAmount] = useState('');
-    const [bookingDepositDueAt, setBookingDepositDueAt] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer' | 'pos'>('cash');
+    const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
+    const [discountValue, setDiscountValue] = useState('');
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
     const [selectedEvent, setSelectedEvent] = useState<BookingEvent | null>(null);
-    const [paymentAccountId, setPaymentAccountId] = useState<number | null>(null);
-    const [payMode, setPayMode] = useState(false);
-    const [payAmount, setPayAmount] = useState('');
-    const [depositMode, setDepositMode] = useState(false);
-    const [depositDueAt, setDepositDueAt] = useState('');
 
     const [dayViewDate, setDayViewDate] = useState<string | null>(null);
     const [dayViewBookings, setDayViewBookings] = useState<BookingEvent[]>([]);
@@ -69,7 +66,8 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
     const needsType = Boolean(selectedItem && selectedItem.booking_types.length > 0);
     const unitPrice = selectedType ? Number(selectedType.price) : 0;
 
-    function estimatedPrice(): number | null {
+    /** The price before any discount. */
+    function grossPrice(): number | null {
         if (!selectedItem || !selection) return null;
 
         if (!selectedType) return null;
@@ -81,37 +79,36 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
         return Math.round(unitPrice * hours * 100) / 100;
     }
 
-    function estimatedDeposit(): number | null {
-        const price = estimatedPrice();
+    /** What the discount comes to in money, capped so it never exceeds the price. */
+    function discountAmount(): number {
+        const gross = grossPrice();
+        const value = Number(discountValue);
 
-        if (!selectedItem?.deposit_percent || price === null) return null;
+        if (gross === null || discountValue === '' || !Number.isFinite(value) || value <= 0) return 0;
 
-        return Math.round(price * (Number(selectedItem.deposit_percent) / 100) * 100) / 100;
+        const amount = discountType === 'percent' ? Math.round(gross * value) / 100 : value;
+
+        return Math.min(Math.round(amount * 100) / 100, gross);
     }
 
-    /** What actually gets submitted — the person's override if they typed one and it's valid, otherwise the item's minimum. */
-    function depositToCollect(): number | null {
-        const minimum = estimatedDeposit();
+    function discountError(): string | undefined {
+        if (discountValue === '') return undefined;
 
-        if (bookingDepositAmount === '') return minimum;
+        const value = Number(discountValue);
+        const gross = grossPrice();
 
-        const entered = Number(bookingDepositAmount);
-
-        return Number.isFinite(entered) ? entered : minimum;
-    }
-
-    function depositAmountError(): string | undefined {
-        if (bookingDepositAmount === '') return undefined;
-
-        const entered = Number(bookingDepositAmount);
-        const minimum = estimatedDeposit();
-        const price = estimatedPrice();
-
-        if (!Number.isFinite(entered) || entered <= 0) return 'Enter a valid amount.';
-        if (minimum !== null && entered < minimum) return `Must be at least the minimum deposit (${minimum}).`;
-        if (price !== null && entered > price) return `Can't be more than the price (${price}).`;
+        if (!Number.isFinite(value) || value <= 0) return 'Enter a valid discount.';
+        if (discountType === 'percent' && value > 100) return "A percent discount can't be more than 100.";
+        if (discountType === 'fixed' && gross !== null && value > gross) return `Can't be more than the price (${gross}).`;
 
         return undefined;
+    }
+
+    /** The price after the discount — what the customer actually owes. */
+    function estimatedPrice(): number | null {
+        const gross = grossPrice();
+
+        return gross === null ? null : Math.round((gross - discountAmount()) * 100) / 100;
     }
 
     function handleSelect(info: DateSelectArg) {
@@ -120,8 +117,9 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
         setRecurrence('none');
         setRecurrenceUntil('');
         setNotes('');
-        setBookingDepositAmount('');
-        setBookingDepositDueAt('');
+        setDiscountType('percent');
+        setDiscountValue('');
+        setPaymentMethod('cash');
         setBookingError(null);
 
         // A month-view (or any all-day) selection spans the whole day(s)
@@ -142,8 +140,6 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
 
     function closeBookingModal() {
         setSelection(null);
-        setBookingDepositAmount('');
-        setBookingDepositDueAt('');
     }
 
     /** A Platform Admin's view is read-only, so a day click opens that day's bookings grouped by tenant instead of starting a new booking. */
@@ -173,7 +169,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
     function submitBooking() {
         if (!selection || !bookableItemId || (needsType && !bookingTypeId)) return;
         if (recurrence !== 'none' && !recurrenceUntil) return;
-        if (selectedItem?.deposit_percent && (!bookingDepositDueAt || depositAmountError())) return;
+        if (discountError()) return;
 
         setSubmitting(true);
         setBookingError(null);
@@ -188,8 +184,9 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                 starts_at: selection.start,
                 ends_at: selection.end,
                 notes: notes || null,
-                payment_due_at: bookingDepositDueAt || null,
-                deposit_amount: selectedItem?.deposit_percent ? depositToCollect() : null,
+                payment_method: paymentMethod,
+                discount_type: discountValue === '' ? null : discountType,
+                discount_value: discountValue === '' ? null : Number(discountValue),
             },
             {
                 // Without this, Inertia fully remounts the page on this
@@ -204,10 +201,20 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                     if (error) {
                         setBookingError(error);
                     } else {
+                        const api = calendarRef.current?.getApi();
+
+                        pendingEventRef.current?.remove();
+                        pendingEventRef.current = selection
+                            ? (api?.addEvent({
+                                  title: `${selectedItem?.name ?? 'Booking'} · saving…`,
+                                  start: selection.start,
+                                  end: selection.end,
+                                  classNames: ['opacity-75'],
+                              }) ?? null)
+                            : null;
+
                         setSelection(null);
-                        setBookingDepositAmount('');
-                        setBookingDepositDueAt('');
-                        calendarRef.current?.getApi().refetchEvents();
+                        api?.refetchEvents();
                     }
                 },
                 onFinish: () => setSubmitting(false),
@@ -217,32 +224,6 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
 
     function closeEventModal() {
         setSelectedEvent(null);
-        setPayMode(false);
-        setPayAmount('');
-        setDepositMode(false);
-        setPaymentAccountId(null);
-        setDepositDueAt('');
-    }
-
-    /** What actually gets submitted — the person's partial amount if they typed one and it's valid, otherwise the full remaining balance. */
-    function amountToCollect(): number | null {
-        if (!selectedEvent) return null;
-        if (payAmount === '') return selectedEvent.balance_due;
-
-        const entered = Number(payAmount);
-
-        return Number.isFinite(entered) ? entered : selectedEvent.balance_due;
-    }
-
-    function payAmountError(): string | undefined {
-        if (!selectedEvent || payAmount === '') return undefined;
-
-        const entered = Number(payAmount);
-
-        if (!Number.isFinite(entered) || entered <= 0) return 'Enter a valid amount.';
-        if (entered > selectedEvent.balance_due) return `Can't exceed the balance due (${selectedEvent.balance_due}).`;
-
-        return undefined;
     }
 
     function cancelBooking() {
@@ -256,40 +237,6 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                 calendarRef.current?.getApi().refetchEvents();
             },
         });
-    }
-
-    function markPaid() {
-        if (!selectedEvent || !paymentAccountId || payAmountError()) return;
-
-        router.post(
-            route('bookings.mark-paid', selectedEvent.id),
-            { payment_account_id: paymentAccountId, amount: amountToCollect() },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                onSuccess: () => {
-                    closeEventModal();
-                    calendarRef.current?.getApi().refetchEvents();
-                },
-            },
-        );
-    }
-
-    function payDeposit() {
-        if (!selectedEvent || !paymentAccountId || !depositDueAt) return;
-
-        router.post(
-            route('bookings.pay-deposit', selectedEvent.id),
-            { payment_account_id: paymentAccountId, payment_due_at: depositDueAt },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                onSuccess: () => {
-                    closeEventModal();
-                    calendarRef.current?.getApi().refetchEvents();
-                },
-            },
-        );
     }
 
     return (
@@ -335,6 +282,9 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                 .then((response) => {
                                     const rows = response.data;
 
+                                    pendingEventRef.current?.remove();
+                                    pendingEventRef.current = null;
+
                                     if (!Array.isArray(rows)) {
                                         failureCallback(new Error('Unexpected response loading the calendar.'));
                                         return;
@@ -346,16 +296,16 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                             title: event.tenant_name ? `${event.tenant_name} · ${event.title}` : event.title,
                                             start: event.start,
                                             end: event.end,
-                                            backgroundColor: event.status === 'cancelled'
-                                                ? 'var(--af-label)'
-                                                : event.is_overdue
-                                                  ? 'var(--af-danger)'
-                                                  : undefined,
+                                            backgroundColor: event.status === 'cancelled' ? 'var(--af-label)' : undefined,
                                             extendedProps: event,
                                         })),
                                     );
                                 })
-                                .catch((error) => failureCallback(error));
+                                .catch((error) => {
+                                    pendingEventRef.current?.remove();
+                                    pendingEventRef.current = null;
+                                    failureCallback(error);
+                                });
                         }}
                     />
                 </div>
@@ -379,7 +329,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                 (recurrence !== 'none' && !recurrenceUntil) ||
                                 !selection ||
                                 selection.end <= selection.start ||
-                                Boolean(selectedItem?.deposit_percent && (!bookingDepositDueAt || depositAmountError()))
+                                Boolean(discountError())
                             }
                         >
                             Book
@@ -463,46 +413,73 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                         )}
                     </div>
 
+                    {grossPrice() !== null && (
+                        <div className="d-flex gap-3 align-items-start">
+                            <Select
+                                label="Discount"
+                                help="Optionally reduce the price. Choose Percent to take off a share of it, or Fixed amount to take off a set sum."
+                                value={discountType}
+                                onChange={(e) => setDiscountType(e.target.value as 'percent' | 'fixed')}
+                            >
+                                <option value="percent">Percent (%)</option>
+                                <option value="fixed">Fixed amount</option>
+                            </Select>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                label="Discount value (optional)"
+                                help="How much to take off. For a repeating booking it is applied to every booking in the series."
+                                placeholder={discountType === 'percent' ? 'e.g. 10' : 'e.g. 50'}
+                                value={discountValue}
+                                onChange={(e) => setDiscountValue(e.target.value)}
+                                error={discountError()}
+                            />
+                        </div>
+                    )}
+
                     {estimatedPrice() !== null && (
                         <div style={{ fontSize: '14px' }}>
+                            {discountAmount() > 0 && (
+                                <div style={{ color: 'var(--af-label)' }}>
+                                    Price {grossPrice()} − discount {discountAmount()}
+                                </div>
+                            )}
                             Estimated price: <strong>{estimatedPrice()}</strong>
                         </div>
                     )}
 
-                    {selectedItem?.deposit_percent && (
-                        <div className="d-flex flex-column gap-3" style={{ borderTop: '1px solid var(--af-border)', paddingTop: '12px' }}>
-                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                This item requires a minimum {selectedItem.deposit_percent}% deposit
-                                {estimatedDeposit() !== null && (
-                                    <>
-                                        {' '}
-                                        — <strong>{estimatedDeposit()}</strong>
-                                    </>
-                                )}{' '}
-                                — collected now into the account the admin set up for this item. The person booking can pay more upfront if they want.
-                            </div>
-
-                            <Input
-                                type="number"
-                                step="0.01"
-                                min={estimatedDeposit() ?? 0.01}
-                                label="Deposit to collect"
-                                help="The part of the price paid upfront to hold the booking. The rest is collected later."
-                                placeholder={estimatedDeposit() !== null ? String(estimatedDeposit()) : undefined}
-                                value={bookingDepositAmount}
-                                onChange={(e) => setBookingDepositAmount(e.target.value)}
-                                error={depositAmountError()}
-                            />
-
-                            <Input
-                                type="datetime-local"
-                                label="Balance due by"
-                                help="The date the remaining balance must be paid."
-                                value={bookingDepositDueAt}
-                                onChange={(e) => setBookingDepositDueAt(e.target.value)}
-                            />
+                    <div>
+                        <div className="d-block" style={{ fontSize: '12px', fontWeight: 600, color: '#5e6b80', marginBottom: '6px' }}>
+                            Payment method
+                            <span className="ms-1">
+                                <InfoTip label="About Payment method">
+                                    How the customer pays. The money is recorded in the account your finance team set for this method (cash, bank or POS).
+                                </InfoTip>
+                            </span>
                         </div>
-                    )}
+                        <div className="d-flex gap-2 flex-wrap">
+                            {(
+                                [
+                                    { value: 'cash', label: 'Cash', icon: <Banknote size={16} /> },
+                                    { value: 'bank_transfer', label: 'Bank transfer', icon: <Landmark size={16} /> },
+                                    { value: 'pos', label: 'POS', icon: <CreditCard size={16} /> },
+                                ] as const
+                            ).map((method) => (
+                                <Button
+                                    key={method.value}
+                                    type="button"
+                                    variant={paymentMethod === method.value ? 'primary' : 'outline'}
+                                    leadingIcon={method.icon}
+                                    aria-pressed={paymentMethod === method.value}
+                                    onClick={() => setPaymentMethod(method.value)}
+                                    style={{ flex: 1 }}
+                                >
+                                    {method.label}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
 
                     <Input label="Notes (optional)" help="Anything staff should know about this booking, such as set-up requests." value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
@@ -515,30 +492,9 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                 footer={
                     selectedEvent && (
                         <>
-                            {selectedEvent.can_cancel && selectedEvent.status === 'confirmed' && !payMode && !depositMode && (
+                            {selectedEvent.can_cancel && selectedEvent.status !== 'cancelled' && (
                                 <Button variant="outline" onClick={cancelBooking}>
                                     Cancel booking
-                                </Button>
-                            )}
-                            {selectedEvent.can_pay_deposit &&
-                                selectedEvent.accepts_deposits &&
-                                selectedEvent.status === 'confirmed' &&
-                                !selectedEvent.deposit_paid_at &&
-                                !payMode &&
-                                !depositMode && <Button variant="outline" onClick={() => setDepositMode(true)}>Pay deposit</Button>}
-                            {selectedEvent.can_mark_paid && selectedEvent.status === 'confirmed' && !payMode && !depositMode && (
-                                <Button onClick={() => setPayMode(true)}>
-                                    {selectedEvent.balance_due < Number(selectedEvent.price) ? 'Collect balance' : 'Mark paid'}
-                                </Button>
-                            )}
-                            {payMode && (
-                                <Button onClick={markPaid} disabled={!paymentAccountId || Boolean(payAmountError())}>
-                                    Confirm payment
-                                </Button>
-                            )}
-                            {depositMode && (
-                                <Button onClick={payDeposit} disabled={!paymentAccountId || !depositDueAt}>
-                                    Confirm deposit
                                 </Button>
                             )}
                         </>
@@ -552,7 +508,6 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                             <Badge variant={selectedEvent.is_exclusive ? 'warning' : 'info'}>
                                 {selectedEvent.is_exclusive ? 'Exclusive' : 'Shared'}
                             </Badge>
-                            {selectedEvent.is_overdue && <Badge variant="danger">Overdue</Badge>}
                         </div>
 
                         {selectedEvent.tenant_name && (
@@ -566,73 +521,17 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                 {selectedEvent.recurrence_until && ` until ${selectedEvent.recurrence_until}`}
                             </div>
                         )}
-                        <div style={{ fontSize: '14px' }}>Price: {selectedEvent.price}</div>
+                        <div style={{ fontSize: '14px' }}>
+                            Price: {selectedEvent.price}
+                            {Number(selectedEvent.discount_amount) > 0 && (
+                                <span style={{ color: 'var(--af-label)' }}>
+                                    {' '}
+                                    (after {selectedEvent.discount_type === 'percent' ? `${Number(selectedEvent.discount_value)}%` : selectedEvent.discount_amount} discount)
+                                </span>
+                            )}
+                            {selectedEvent.payment_method_label && <span style={{ color: 'var(--af-label)' }}> · paid by {selectedEvent.payment_method_label.toLowerCase()}</span>}
+                        </div>
 
-                        {selectedEvent.deposit_paid_at && (
-                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Deposit of {selectedEvent.deposit_amount} paid {new Date(selectedEvent.deposit_paid_at).toLocaleString()}.
-                            </div>
-                        )}
-
-                        {selectedEvent.status === 'confirmed' && selectedEvent.balance_due < Number(selectedEvent.price) && (
-                            <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                Collected so far: {Math.round((Number(selectedEvent.price) - selectedEvent.balance_due) * 100) / 100}.
-                            </div>
-                        )}
-
-                        {selectedEvent.status === 'confirmed' && (
-                            <div style={{ fontSize: '14px' }}>
-                                Balance due: <strong>{selectedEvent.balance_due}</strong>
-                                {selectedEvent.payment_due_at && <> by {new Date(selectedEvent.payment_due_at).toLocaleString()}.</>}
-                            </div>
-                        )}
-
-                        {payMode && (
-                            <div className="d-flex flex-column gap-3">
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    min="0.01"
-                                    max={selectedEvent.balance_due}
-                                    label="Amount to collect"
-                                    placeholder={String(selectedEvent.balance_due)}
-                                    help="Defaults to the full balance due — enter less to record a partial payment."
-                                    value={payAmount}
-                                    onChange={(e) => setPayAmount(e.target.value)}
-                                    error={payAmountError()}
-                                />
-                                <div>
-                                    <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                        Received into <InfoTip>The bank or cash account that receives this payment.</InfoTip>
-                                    </label>
-                                    <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" tenantId={selectedEvent.tenant_id ?? null} />
-                                </div>
-                            </div>
-                        )}
-
-                        {depositMode && (
-                            <div className="d-flex flex-column gap-3">
-                                <div style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                    Deposit ({selectedEvent.deposit_percent}%):{' '}
-                                    <strong>
-                                        {Math.round(Number(selectedEvent.price) * (Number(selectedEvent.deposit_percent) / 100) * 100) / 100}
-                                    </strong>
-                                </div>
-                                <div>
-                                    <label className="d-block mb-1" style={{ fontSize: '13px', color: 'var(--af-label)' }}>
-                                        Received into
-                                    </label>
-                                    <AccountPicker value={paymentAccountId} onChange={setPaymentAccountId} filterType="asset" tenantId={selectedEvent.tenant_id ?? null} />
-                                </div>
-                                <Input
-                                    type="datetime-local"
-                                    label="Complete payment by"
-                                    help="The date the remaining balance must be paid."
-                                    value={depositDueAt}
-                                    onChange={(e) => setDepositDueAt(e.target.value)}
-                                />
-                            </div>
-                        )}
                     </div>
                 )}
             </Modal>

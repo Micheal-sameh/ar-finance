@@ -41,6 +41,7 @@ class BookableItemController extends Controller
             'viewingAllTenants' => $this->tenantContext->isViewingAllTenants(),
             'glDefaults' => $this->tenantContext->isViewingAllTenants() ? null : $this->glMapping->defaults(),
             'canManage' => $request->user()->can('bookable_items.manage'),
+            'canManageAccounting' => $request->user()->can('bookable_items.accounting'),
         ]);
     }
 

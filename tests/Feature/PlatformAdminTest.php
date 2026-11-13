@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Enums\AccountType;
+use App\Enums\GlMappingRole;
 use App\Models\Account;
 use App\Models\Client;
 use App\Models\CostCenter;
+use App\Models\GlMapping;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Booking\Models\BookableItem;
@@ -444,8 +446,6 @@ class PlatformAdminTest extends TestCase
             'tenant_name' => 'Alpha Co',
             'tenant_id' => $booking->tenant_id,
             'can_cancel' => true,
-            'can_mark_paid' => true,
-            'can_pay_deposit' => true,
         ]);
     }
 
@@ -462,6 +462,10 @@ class PlatformAdminTest extends TestCase
             'normal_balance' => 'credit',
         ]);
         $costCenter = CostCenter::create(['tenant_id' => $tenant->id, 'name' => 'Front Desk', 'type' => 'profit']);
+        $bank = Account::create(['tenant_id' => $tenant->id, 'code' => '1000', 'name' => 'Bank', 'type' => AccountType::Asset, 'normal_balance' => 'debit']);
+        foreach ([GlMappingRole::BookingCashPayment, GlMappingRole::BookingBankPayment, GlMappingRole::BookingPosPayment] as $role) {
+            GlMapping::create(['tenant_id' => $tenant->id, 'role' => $role, 'account_id' => $bank->id]);
+        }
         $item = BookableItem::create([
             'tenant_id' => $tenant->id,
             'name' => 'Treatment Room',
@@ -473,6 +477,7 @@ class PlatformAdminTest extends TestCase
 
         $response = $this->actingAs($admin)->post(route('bookings.store'), [
             'bookable_item_id' => $item->id,
+            'payment_method' => 'cash',
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 12:00:00',
         ]);

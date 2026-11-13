@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\AccountType;
+use App\Enums\GlMappingRole;
 use App\Models\Account;
 use App\Models\CostCenter;
+use App\Models\GlMapping;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Booking\Models\BookableItem;
@@ -43,6 +45,10 @@ class BookingTypeRevenueAccountTest extends TestCase
         $this->weddingRevenue = $this->account('4100', 'Wedding revenue', AccountType::Revenue);
         $this->bank = $this->account('1000', 'Bank', AccountType::Asset);
 
+        foreach ([GlMappingRole::BookingCashPayment, GlMappingRole::BookingBankPayment, GlMappingRole::BookingPosPayment] as $role) {
+            GlMapping::create(['tenant_id' => $this->tenant->id, 'role' => $role, 'account_id' => $this->bank->id]);
+        }
+
         $this->item = BookableItem::create([
             'tenant_id' => $this->tenant->id,
             'name' => 'Hall',
@@ -75,15 +81,12 @@ class BookingTypeRevenueAccountTest extends TestCase
     {
         $this->actingAs($this->admin)->post(route('bookings.store'), [
             'bookable_item_id' => $this->item->id,
+            'payment_method' => 'cash',
             'booking_type_id' => $type->id,
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 12:00:00',
         ])->assertSessionHasNoErrors();
 
-        $booking = $this->item->bookings()->latest('id')->firstOrFail();
-
-        $this->actingAs($this->admin)->post(route('bookings.mark-paid', $booking), ['payment_account_id' => $this->bank->id])
-            ->assertSessionHasNoErrors();
     }
 
     public function test_a_paid_booking_credits_its_booking_types_own_revenue_account(): void
@@ -138,6 +141,7 @@ class BookingTypeRevenueAccountTest extends TestCase
 
         $this->actingAs($this->admin)->post(route('bookings.store'), [
             'bookable_item_id' => $this->item->id,
+            'payment_method' => 'cash',
             'booking_type_id' => $type->id,
             'starts_at' => '2026-10-10 10:00:00',
             'ends_at' => '2026-10-10 12:00:00',
@@ -145,9 +149,6 @@ class BookingTypeRevenueAccountTest extends TestCase
 
         $booking = $this->item->bookings()->firstOrFail();
         $this->assertEquals(0, $booking->price);
-
-        $this->actingAs($this->admin)->post(route('bookings.mark-paid', $booking), ['payment_account_id' => $this->bank->id])
-            ->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'paid']);
         $this->assertDatabaseCount('journal_entries', 0);

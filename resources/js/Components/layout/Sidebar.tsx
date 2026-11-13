@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useConfirm } from '@/Components/ui/ConfirmProvider';
 import logo from '../../assets/logo.png';
 import logoMark from '../../assets/logo-mark.png';
 import { Icon } from './Icon';
@@ -39,6 +40,14 @@ export function Sidebar({
     // tenant) shows only the Platform section; impersonating a tenant (or
     // being an ordinary tenant user, who never has a `platform` share at
     // all) shows only the ordinary tenant-scoped sections.
+    const confirm = useConfirm();
+
+    async function handleLogout() {
+        if (await confirm('Are you sure you want to log out?', { title: 'Log out', confirmLabel: 'Log out', variant: 'primary' })) {
+            router.post(route('logout'));
+        }
+    }
+
     const isPlatformAdminViewingAllTenants = Boolean(platform) && !platform?.isImpersonating;
     const visibleGroups = visibleNavGroups(auth.permissions, isPlatformAdminViewingAllTenants);
 
@@ -211,7 +220,7 @@ export function Sidebar({
                         <b>{user.name}</b>
                         <small>{user.email}</small>
                     </div>
-                    <button type="button" aria-label="Log out" onClick={() => router.post(route('logout'))}>
+                    <button type="button" aria-label="Log out" onClick={handleLogout}>
                         <Icon name="logout" size={17} />
                     </button>
                 </div>
