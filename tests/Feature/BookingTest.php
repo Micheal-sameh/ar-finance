@@ -616,6 +616,29 @@ class BookingTest extends TestCase
         $this->assertDatabaseHas('journal_lines', ['account_id' => $posAccount->id, 'debit' => 200.00]);
     }
 
+    public function test_a_payment_reference_is_saved_on_the_booking_and_its_journal_entry_for_every_method(): void
+    {
+        $item = $this->item(isExclusive: true);
+        $slot = fn (int $day) => ['starts_at' => "2027-01-{$day} 10:00:00", 'ends_at' => "2027-01-{$day} 12:00:00"];
+
+        $this->actingAs($this->user)->post(route('bookings.store'), ['bookable_item_id' => $item->id, 'payment_method' => 'bank_transfer', 'payment_reference' => ' TRX-889 '] + $slot(10))
+            ->assertSessionHasNoErrors();
+        $this->actingAs($this->user)->post(route('bookings.store'), ['bookable_item_id' => $item->id, 'payment_method' => 'pos', 'payment_reference' => 'POS-77'] + $slot(11))
+            ->assertSessionHasNoErrors();
+        $this->actingAs($this->user)->post(route('bookings.store'), ['bookable_item_id' => $item->id, 'payment_method' => 'cash', 'payment_reference' => 'CASH-5'] + $slot(12))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('bookings', ['payment_method' => 'bank_transfer', 'payment_reference' => 'TRX-889']);
+        $this->assertDatabaseHas('bookings', ['payment_method' => 'pos', 'payment_reference' => 'POS-77']);
+        $this->assertDatabaseHas('bookings', ['payment_method' => 'cash', 'payment_reference' => 'CASH-5']);
+        $this->assertDatabaseHas('journal_entries', ['reference' => 'TRX-889']);
+        $this->assertDatabaseHas('journal_entries', ['reference' => 'POS-77']);
+        $this->assertDatabaseHas('journal_entries', ['reference' => 'CASH-5']);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), ['bookable_item_id' => $item->id, 'payment_method' => 'pos', 'payment_reference' => str_repeat('x', 101)] + $slot(13))
+            ->assertSessionHasErrors('payment_reference');
+    }
+
     public function test_a_payment_method_is_required_and_must_be_valid(): void
     {
         $item = $this->item(isExclusive: true);

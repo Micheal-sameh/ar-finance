@@ -50,6 +50,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
     const [recurrenceUntil, setRecurrenceUntil] = useState('');
     const [notes, setNotes] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer' | 'pos'>('cash');
+    const [paymentReference, setPaymentReference] = useState('');
     const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
     const [discountValue, setDiscountValue] = useState('');
     const [bookingError, setBookingError] = useState<string | null>(null);
@@ -120,6 +121,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
         setDiscountType('percent');
         setDiscountValue('');
         setPaymentMethod('cash');
+        setPaymentReference('');
         setBookingError(null);
 
         // A month-view (or any all-day) selection spans the whole day(s)
@@ -185,6 +187,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                 ends_at: selection.end,
                 notes: notes || null,
                 payment_method: paymentMethod,
+                payment_reference: paymentReference.trim() || null,
                 discount_type: discountValue === '' ? null : discountType,
                 discount_value: discountValue === '' ? null : Number(discountValue),
             },
@@ -481,6 +484,22 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                         </div>
                     </div>
 
+                        <Input
+                            label={
+                                paymentMethod === 'pos' ? 'POS transaction reference (optional)' : paymentMethod === 'cash' ? 'Cash receipt number (optional)' : 'Bank transfer reference (optional)'
+                            }
+                            help={
+                                paymentMethod === 'pos'
+                                    ? 'The transaction or receipt number printed on the POS slip. It is saved on the booking and its journal entry so the payment can be matched later.'
+                                    : paymentMethod === 'cash'
+                                      ? 'The number on the cash receipt or voucher given to the customer. It is saved on the booking and its journal entry so the payment can be matched later.'
+                                      : 'The reference number of the bank transfer, as shown on the transfer receipt or bank statement. It is saved on the booking and its journal entry so the payment can be matched later.'
+                            }
+                            maxLength={100}
+                            value={paymentReference}
+                            onChange={(e) => setPaymentReference(e.target.value)}
+                        />
+
                     <Input label="Notes (optional)" help="Anything staff should know about this booking, such as set-up requests." value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
             </Modal>
@@ -529,7 +548,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                     (after {selectedEvent.discount_type === 'percent' ? `${Number(selectedEvent.discount_value)}%` : selectedEvent.discount_amount} discount)
                                 </span>
                             )}
-                            {selectedEvent.payment_method_label && <span style={{ color: 'var(--af-label)' }}> · paid by {selectedEvent.payment_method_label.toLowerCase()}</span>}
+                            {selectedEvent.payment_method_label && <span style={{ color: 'var(--af-label)' }}> · paid by {selectedEvent.payment_method_label.toLowerCase()}{selectedEvent.payment_reference && ` (ref ${selectedEvent.payment_reference})`}</span>}
                         </div>
 
                     </div>

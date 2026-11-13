@@ -39,6 +39,7 @@ class BookingEventResource extends JsonResource
             'discount_amount' => $this->discount_amount,
             'payment_method' => $this->payment_method?->value,
             'payment_method_label' => $this->payment_method?->label(),
+            'payment_reference' => $this->payment_reference,
             'balance_due' => $this->balanceDue(),
             'tenant_name' => $viewingAllTenants ? $this->tenant?->name : null,
             'tenant_id' => $this->tenant_id,

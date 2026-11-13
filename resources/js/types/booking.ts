@@ -72,6 +72,7 @@ export interface BookingEvent {
     discount_amount: string;
     payment_method: 'cash' | 'bank_transfer' | 'pos' | null;
     payment_method_label: string | null;
+    payment_reference: string | null;
     /** Owning tenant's name — only present when a Platform Admin is viewing the combined "All tenants" list. */
     tenant_name: string | null;
     can_cancel: boolean;

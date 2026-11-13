@@ -162,6 +162,7 @@ class BookingService
             'status' => BookingStatus::Confirmed,
             'notes' => $data->notes,
             'payment_method' => $data->paymentMethod,
+            'payment_reference' => $data->paymentReference,
             'recurrence' => $groupId !== null ? $data->recurrence : BookingRecurrence::None,
             'recurrence_until' => $groupId !== null ? $data->recurrenceUntil : null,
             'recurrence_group_id' => $groupId,
@@ -273,7 +274,7 @@ class BookingService
             $this->journals->postJournalEntry(new CreateJournalEntryData(
                 date: now()->toDateString(),
                 description: "Booking #{$booking->id} — {$item->name}",
-                reference: null,
+                reference: $booking->payment_reference,
                 sourceType: JournalSourceType::Booking,
                 sourceId: $booking->id,
                 createdBy: auth()->id(),

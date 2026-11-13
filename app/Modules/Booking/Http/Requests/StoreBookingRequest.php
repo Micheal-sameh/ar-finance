@@ -29,6 +29,8 @@ class StoreBookingRequest extends FormRequest
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'notes' => ['nullable', 'string'],
             'payment_method' => ['required', new Enum(BookingPaymentMethod::class)],
+            // The cash receipt, POS transaction or bank transfer number.
+            'payment_reference' => ['nullable', 'string', 'max:100'],
             'recurrence' => ['nullable', new Enum(BookingRecurrence::class)],
             // A repeating booking needs an end date, otherwise a daily one
             // would never stop.
