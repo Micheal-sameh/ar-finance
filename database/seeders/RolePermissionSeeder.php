@@ -64,6 +64,9 @@ class RolePermissionSeeder extends Seeder
         'bookings.view',
         'bookings.create',
         'bookings.manage',
+        'donations.view',
+        'donations.create',
+        'donations.manage',
     ];
 
     /**
@@ -184,5 +187,17 @@ class RolePermissionSeeder extends Seeder
         // bookings.manage — and no access to accounting.
         $bookingAdmin = Role::firstOrCreate(['name' => 'Booking Admin', 'guard_name' => 'web']);
         $bookingAdmin->syncPermissions(['bookings.view', 'bookings.create', 'bookable_items.view', 'bookable_items.manage']);
+
+        // Donations Agent = can see donations and donors and record new
+        // ones (and add a donor while doing so), but not cancel a donation
+        // or edit a donor. The module itself only appears for tenants it
+        // has been switched on for.
+        $donationsAgent = Role::firstOrCreate(['name' => 'Donations Agent', 'guard_name' => 'web']);
+        $donationsAgent->syncPermissions(['donations.view', 'donations.create']);
+
+        // Donations Admin = a Donations Agent who can also cancel donations
+        // and edit donors. No access to accounting or the GL mapping.
+        $donationsAdmin = Role::firstOrCreate(['name' => 'Donations Admin', 'guard_name' => 'web']);
+        $donationsAdmin->syncPermissions(['donations.view', 'donations.create', 'donations.manage']);
     }
 }

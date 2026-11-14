@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TenantModule;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -16,11 +17,18 @@ class Tenant extends Model
         'slug',
         'base_currency',
         'is_active',
+        'modules',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'modules' => 'array',
     ];
+
+    public function hasModule(TenantModule $module): bool
+    {
+        return in_array($module->value, $this->modules ?? [], true);
+    }
 
     public function users(): HasMany
     {

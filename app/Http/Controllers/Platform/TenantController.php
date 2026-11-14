@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Platform;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenants\SaveTenantRequest;
+use App\Http\Requests\Tenants\UpdateTenantModulesRequest;
 use App\Models\Tenant;
 use App\Services\TenantService;
 use Illuminate\Http\RedirectResponse;
@@ -22,6 +23,7 @@ class TenantController extends Controller
 
         return Inertia::render('Platform/Tenants/Index', [
             'tenants' => $this->tenants->paginate(),
+            'moduleOptions' => $this->tenants->moduleOptions(),
         ]);
     }
 
@@ -41,5 +43,14 @@ class TenantController extends Controller
         $this->tenants->update($tenant, $request->validated());
 
         return redirect()->route('platform.tenants.index')->with('success', 'Tenant updated.');
+    }
+
+    public function updateModules(UpdateTenantModulesRequest $request, Tenant $tenant): RedirectResponse
+    {
+        $this->authorize('manage', Tenant::class);
+
+        $this->tenants->updateModules($tenant, $request->modules());
+
+        return back()->with('success', "Modules updated for {$tenant->name}.");
     }
 }

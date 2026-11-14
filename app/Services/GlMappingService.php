@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\GlMappingRole;
 use App\Repositories\Contracts\AccountRepositoryInterface;
 use App\Repositories\Contracts\GlMappingRepositoryInterface;
+use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -41,6 +42,13 @@ class GlMappingService
     public function rows(): array
     {
         $defaults = $this->defaults();
+        $tenant = app(TenantContext::class)->tenant();
+
+        // Roles of an optional module are only listed once the tenant has it.
+        $roles = array_filter(
+            GlMappingRole::cases(),
+            fn (GlMappingRole $role) => $role->module() === null || ($tenant !== null && $tenant->hasModule($role->module())),
+        );
 
         return array_map(fn (GlMappingRole $role) => [
             'role' => $role->value,
@@ -49,7 +57,7 @@ class GlMappingService
             'group' => $role->group(),
             'account_id' => $defaults[$role->value],
             'allowed_types' => array_map(fn ($type) => $type->value, $role->allowedTypes()),
-        ], GlMappingRole::cases());
+        ], array_values($roles));
     }
 
     /**

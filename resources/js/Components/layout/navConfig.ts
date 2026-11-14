@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Gauge, Target, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves, Workflow } from 'lucide-react';
+import { ArrowLeftRight, Gauge, HeartHandshake, Target, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves, Workflow } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -14,6 +14,8 @@ export interface NavConfigGroup {
     items: NavConfigItem[];
     /** Only shown to a Platform Admin (see HandleInertiaRequests' `platform` share). */
     platformOnly?: boolean;
+    /** Only shown while this optional module is switched on for the tenant (see TenantModule). */
+    module?: string;
 }
 
 /**
@@ -45,6 +47,14 @@ export const navConfig: NavConfigGroup[] = [
             { label: 'Calendar', routeName: 'bookings.index', icon: Calendar, permission: 'bookings.view' },
             { label: 'Bookable Items', routeName: 'bookable-items.index', icon: ClipboardList, permission: 'bookable_items.view' },
             { label: 'Booking Types', routeName: 'booking-types.index', icon: Tags, permission: 'bookable_items.view' },
+        ],
+    },
+    {
+        label: 'Donations',
+        module: 'donations',
+        items: [
+            { label: 'Donations', routeName: 'donations.index', icon: HeartHandshake, permission: 'donations.view' },
+            { label: 'Donors', routeName: 'donors.index', icon: Users, permission: 'donations.view' },
         ],
     },
     {
@@ -147,11 +157,12 @@ export const navConfig: NavConfigGroup[] = [
  * (the server would 403 on the rest, so they're hidden rather than left to
  * click through into a dead end).
  */
-export function visibleNavGroups(permissions: string[], isPlatformAdminViewingAllTenants: boolean): NavConfigGroup[] {
+export function visibleNavGroups(permissions: string[], isPlatformAdminViewingAllTenants: boolean, enabledModules: string[] = []): NavConfigGroup[] {
     const held = new Set(permissions);
 
     return navConfig
         .filter((group) => Boolean(group.platformOnly) === isPlatformAdminViewingAllTenants)
+        .filter((group) => !group.module || enabledModules.includes(group.module))
         .map((group) => ({
             ...group,
             items: group.items.filter((item) => !item.permission || held.has(item.permission)),

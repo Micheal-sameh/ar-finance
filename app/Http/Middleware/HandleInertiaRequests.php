@@ -38,7 +38,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+                'receipt_url' => fn () => $request->session()->get('receipt_url'),
             ],
+            'enabledModules' => $user !== null ? ($tenantContext->tenant()?->modules ?? []) : [],
             'platform' => $user?->isPlatformAdmin() ? [
                 'tenants' => Tenant::query()->orderBy('name')->get(['id', 'name', 'is_active']),
                 'activeTenantId' => $tenantContext->id(),

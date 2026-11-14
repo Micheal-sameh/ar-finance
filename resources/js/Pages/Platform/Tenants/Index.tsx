@@ -1,21 +1,92 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Building2, LogIn, Pencil, Plus } from 'lucide-react';
+import { Building2, HeartHandshake, LogIn, Pencil, Plus, type LucideIcon } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
 import { Button } from '@/Components/ui/Button';
 import { Card } from '@/Components/ui/Card';
 import { EmptyState } from '@/Components/ui/EmptyState';
+import { InfoTip } from '@/Components/ui/InfoTip';
 import { Input } from '@/Components/ui/Input';
 import { Modal } from '@/Components/ui/Modal';
 import { Table } from '@/Components/ui/Table';
 import type { Paginated, Tenant } from '@/types/finance';
 
-interface Props {
-    tenants: Paginated<Tenant>;
+interface ModuleOption {
+    value: string;
+    label: string;
+    description: string;
 }
 
-export default function TenantsIndex({ tenants }: Props) {
+interface Props {
+    tenants: Paginated<Tenant>;
+    moduleOptions: ModuleOption[];
+}
+
+const MODULE_ICONS: Record<string, LucideIcon> = {
+    donations: HeartHandshake,
+};
+
+/**
+ * One toggle chip per optional module, saved the moment it is clicked — the
+ * quick way to switch a module on or off for a service without opening it.
+ */
+function ModuleChips({ tenant, moduleOptions }: { tenant: Tenant; moduleOptions: ModuleOption[] }) {
+    const [enabled, setEnabled] = useState<string[]>(tenant.modules ?? []);
+    const [saving, setSaving] = useState(false);
+
+    function toggle(value: string) {
+        const previous = enabled;
+        const next = enabled.includes(value) ? enabled.filter((module) => module !== value) : [...enabled, value];
+
+        setEnabled(next);
+        setSaving(true);
+        router.put(
+            route('platform.tenants.modules', tenant.id),
+            { modules: next },
+            {
+                preserveScroll: true,
+                onError: () => setEnabled(previous),
+                onFinish: () => setSaving(false),
+            },
+        );
+    }
+
+    return (
+        <div className="d-flex flex-wrap gap-1">
+            {moduleOptions.map((module) => {
+                const Icon = MODULE_ICONS[module.value] ?? Building2;
+                const on = enabled.includes(module.value);
+
+                return (
+                    <button
+                        key={module.value}
+                        type="button"
+                        disabled={saving}
+                        aria-pressed={on}
+                        title={`${on ? 'Switch off' : 'Switch on'} ${module.label} — ${module.description}`}
+                        onClick={() => toggle(module.value)}
+                        className="d-inline-flex align-items-center gap-1"
+                        style={{
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            padding: '3px 10px',
+                            borderRadius: '999px',
+                            border: `1px solid ${on ? 'var(--af-primary)' : 'var(--af-border)'}`,
+                            backgroundColor: on ? 'var(--af-primary)' : 'var(--af-surface)',
+                            color: on ? '#fff' : 'var(--af-label)',
+                            opacity: saving ? 0.6 : 1,
+                        }}
+                    >
+                        <Icon size={13} />
+                        {module.label}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+export default function TenantsIndex({ tenants, moduleOptions }: Props) {
     const [modalOpen, setModalOpen] = useState(false);
     const [editing, setEditing] = useState<Tenant | null>(null);
 
@@ -24,11 +95,13 @@ export default function TenantsIndex({ tenants }: Props) {
         slug: string;
         base_currency: string;
         is_active: boolean;
+        modules: string[];
     }>({
         name: '',
         slug: '',
         base_currency: 'EGP',
         is_active: true,
+        modules: [],
     });
 
     function openCreate() {
@@ -45,6 +118,7 @@ export default function TenantsIndex({ tenants }: Props) {
             slug: tenant.slug,
             base_currency: tenant.base_currency,
             is_active: tenant.is_active,
+            modules: tenant.modules ?? [],
         });
         form.clearErrors();
         setModalOpen(true);
@@ -97,6 +171,7 @@ export default function TenantsIndex({ tenants }: Props) {
                             <Table.HeadCell className="ps-3">Name</Table.HeadCell>
                             <Table.HeadCell>Slug</Table.HeadCell>
                             <Table.HeadCell>Base Currency</Table.HeadCell>
+                            {moduleOptions.length > 0 && <Table.HeadCell>Modules</Table.HeadCell>}
                             <Table.HeadCell>Status</Table.HeadCell>
                             <Table.HeadCell className="text-end pe-3">Actions</Table.HeadCell>
                         </Table.Head>
@@ -108,6 +183,11 @@ export default function TenantsIndex({ tenants }: Props) {
                                     </Table.Cell>
                                     <Table.Cell label="Slug">{tenant.slug}</Table.Cell>
                                     <Table.Cell label="Base Currency">{tenant.base_currency}</Table.Cell>
+                                    {moduleOptions.length > 0 && (
+                                        <Table.Cell label="Modules">
+                                            <ModuleChips key={`${tenant.id}-${(tenant.modules ?? []).join(",")}`} tenant={tenant} moduleOptions={moduleOptions} />
+                                        </Table.Cell>
+                                    )}
                                     <Table.Cell label="Status">
                                         <Badge variant={tenant.is_active ? 'success' : 'neutral'}>{tenant.is_active ? 'Active' : 'Inactive'}</Badge>
                                     </Table.Cell>
@@ -160,6 +240,37 @@ export default function TenantsIndex({ tenants }: Props) {
                         error={form.errors.base_currency}
                         maxLength={3}
                     />
+                    {moduleOptions.length > 0 && (
+                        <div>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#5e6b80', marginBottom: '6px' }}>
+                                Modules
+                                <span className="ms-1">
+                                    <InfoTip label="About Modules">Extra features this service can use. A module that is off is hidden from its menu and cannot be opened.</InfoTip>
+                                </span>
+                            </div>
+                            <div className="d-flex flex-column gap-2">
+                                {moduleOptions.map((module) => (
+                                    <label key={module.value} className="d-flex align-items-start gap-2" style={{ fontSize: '14px' }}>
+                                        <input
+                                            type="checkbox"
+                                            className="mt-1"
+                                            checked={form.data.modules.includes(module.value)}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    'modules',
+                                                    e.target.checked ? [...form.data.modules, module.value] : form.data.modules.filter((value) => value !== module.value),
+                                                )
+                                            }
+                                        />
+                                        <span>
+                                            {module.label}
+                                            <span className="d-block" style={{ fontSize: '12px', color: 'var(--af-label)' }}>{module.description}</span>
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                     {editing && (
                         <label className="d-flex align-items-center gap-2" style={{ fontSize: '14px' }}>
                             <input

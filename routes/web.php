@@ -81,6 +81,7 @@ Route::middleware(['auth', 'active', 'permission:platform.access', 'throttle:240
     Route::post('tenants/{tenant}/switch', [SwitchTenantController::class, 'switch'])->name('switch-tenant');
     Route::post('stop-impersonating', [SwitchTenantController::class, 'stop'])->name('stop-impersonating');
 
+    Route::put('tenants/{tenant}/modules', [TenantController::class, 'updateModules'])->name('tenants.modules');
     Route::resource('tenants', TenantController::class)->only(['index', 'store', 'update']);
 
     Route::post('users', [UserController::class, 'store'])->name('users.store');

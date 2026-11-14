@@ -30,6 +30,8 @@ interface Props {
 const SOURCE_TYPES = [
     { value: 'invoice', label: 'Invoice' },
     { value: 'received_payment', label: 'Received Payment' },
+    { value: 'booking', label: 'Booking' },
+    { value: 'donation', label: 'Donation' },
     { value: 'expense', label: 'Expense' },
     { value: 'payroll', label: 'Payroll' },
     { value: 'manual', label: 'Manual' },

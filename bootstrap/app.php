@@ -2,6 +2,7 @@
 
 use App\Exceptions\NonPostableAccountException;
 use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureTenantContext;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'active' => EnsureUserIsActive::class,
             'tenant' => EnsureTenantContext::class,
+            'module' => EnsureModuleEnabled::class,
         ]);
 
         // Laravel's default Authenticate middleware redirects guests to

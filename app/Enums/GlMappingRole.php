@@ -26,6 +26,10 @@ enum GlMappingRole: string
     case BookingCashPayment = 'booking_cash_payment';
     case BookingBankPayment = 'booking_bank_payment';
     case BookingPosPayment = 'booking_pos_payment';
+    case DonationRevenue = 'donation_revenue';
+    case DonationCashPayment = 'donation_cash_payment';
+    case DonationBankPayment = 'donation_bank_payment';
+    case DonationPosPayment = 'donation_pos_payment';
 
     public function label(): string
     {
@@ -47,6 +51,10 @@ enum GlMappingRole: string
             self::BookingCashPayment => 'Booking cash payments received into',
             self::BookingBankPayment => 'Booking bank transfers received into',
             self::BookingPosPayment => 'Booking POS (card) payments received into',
+            self::DonationRevenue => 'Donations income',
+            self::DonationCashPayment => 'Cash donations received into',
+            self::DonationBankPayment => 'Bank-transfer donations received into',
+            self::DonationPosPayment => 'POS (card) donations received into',
         };
     }
 
@@ -70,6 +78,10 @@ enum GlMappingRole: string
             self::BookingCashPayment => 'The cash account a booking is paid into when the customer pays in cash.',
             self::BookingBankPayment => 'The bank account a booking is paid into when the customer pays by bank transfer.',
             self::BookingPosPayment => 'The account card payments taken on the POS machine are recorded in, usually a bank or card-clearing account.',
+            self::DonationRevenue => 'The income account every donation is credited to.',
+            self::DonationCashPayment => 'The cash account a donation is paid into when the donor gives cash.',
+            self::DonationBankPayment => 'The bank account a donation is paid into when the donor pays by bank transfer.',
+            self::DonationPosPayment => 'The account donations taken on the POS machine are recorded in, usually a bank or card-clearing account.',
         };
     }
 
@@ -81,9 +93,9 @@ enum GlMappingRole: string
     public function allowedTypes(): array
     {
         return match ($this) {
-            self::Receivable, self::TaxReceivable, self::FixedAsset, self::AccumulatedDepreciation, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment => [AccountType::Asset],
+            self::Receivable, self::TaxReceivable, self::FixedAsset, self::AccumulatedDepreciation, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment => [AccountType::Asset],
             self::Payable, self::TaxPayable, self::PayrollPayable, self::PayrollDeductions => [AccountType::Liability],
-            self::Revenue, self::BookingRevenue => [AccountType::Revenue],
+            self::Revenue, self::BookingRevenue, self::DonationRevenue => [AccountType::Revenue],
             self::PurchaseExpense, self::PayrollExpense, self::Depreciation => [AccountType::Expense],
             self::FxGainLoss => [AccountType::Revenue, AccountType::Expense],
         };
@@ -101,6 +113,19 @@ enum GlMappingRole: string
             self::FixedAsset, self::Depreciation, self::AccumulatedDepreciation => 'Fixed assets',
             self::FxGainLoss => 'Currency',
             self::BookingRevenue, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment => 'Booking',
+            self::DonationRevenue, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment => 'Donations',
+        };
+    }
+
+    /**
+     * The optional module this role belongs to — the mapping screen only
+     * lists the role for tenants that have the module switched on.
+     */
+    public function module(): ?TenantModule
+    {
+        return match ($this) {
+            self::DonationRevenue, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment => TenantModule::Donations,
+            default => null,
         };
     }
 }

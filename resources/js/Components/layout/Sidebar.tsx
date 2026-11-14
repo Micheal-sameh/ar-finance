@@ -30,7 +30,8 @@ export function Sidebar({
 }) {
     const [branchOpen, setBranchOpen] = useState(false);
     const navRef = useRef<HTMLElement>(null);
-    const { platform, memberTenants, auth } = usePage<{
+    const { platform, memberTenants, auth, enabledModules } = usePage<{
+        enabledModules: string[];
         platform: PlatformShare | null;
         memberTenants: MemberTenants | null;
         auth: { permissions: string[]; user: { name: string; email: string } | null };
@@ -49,7 +50,7 @@ export function Sidebar({
     }
 
     const isPlatformAdminViewingAllTenants = Boolean(platform) && !platform?.isImpersonating;
-    const visibleGroups = visibleNavGroups(auth.permissions, isPlatformAdminViewingAllTenants);
+    const visibleGroups = visibleNavGroups(auth.permissions, isPlatformAdminViewingAllTenants, enabledModules);
 
     // Keep the nav where the user left it across full page loads, then make
     // sure the current page's link is on screen after every navigation.

@@ -25,6 +25,10 @@ class DashboardController extends Controller
             return redirect()->route('bookings.index');
         }
 
+        if (! $request->user()->can('accounts.view') && $request->user()->can('donations.view')) {
+            return redirect()->route('donations.index');
+        }
+
         $validated = $request->validate([
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],

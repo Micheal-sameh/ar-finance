@@ -16,7 +16,7 @@ interface SearchEntry {
  * with Ctrl/⌘ + K.
  */
 export function GlobalSearch() {
-    const { platform, auth } = usePage<{ platform: PlatformShare | null; auth: { permissions: string[] } }>().props;
+    const { platform, auth, enabledModules } = usePage<{ platform: PlatformShare | null; auth: { permissions: string[] }; enabledModules: string[] }>().props;
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [active, setActive] = useState(0);
@@ -25,10 +25,10 @@ export function GlobalSearch() {
     const entries = useMemo<SearchEntry[]>(() => {
         const viewingAllTenants = Boolean(platform) && !platform?.isImpersonating;
 
-        return visibleNavGroups(auth.permissions, viewingAllTenants).flatMap((group) =>
+        return visibleNavGroups(auth.permissions, viewingAllTenants, enabledModules).flatMap((group) =>
             group.items.map((item) => ({ label: item.label, group: group.label, routeName: item.routeName })),
         );
-    }, [auth.permissions, platform]);
+    }, [auth.permissions, platform, enabledModules]);
 
     const results = useMemo(() => {
         const needle = query.trim().toLowerCase();

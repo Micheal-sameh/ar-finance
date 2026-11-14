@@ -1,6 +1,6 @@
 export type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
 export type NormalBalance = 'debit' | 'credit';
-export type JournalSourceType = 'invoice' | 'expense' | 'payroll' | 'manual' | 'depreciation' | 'revaluation' | 'received_payment';
+export type JournalSourceType = 'invoice' | 'expense' | 'payroll' | 'manual' | 'depreciation' | 'revaluation' | 'received_payment' | 'booking' | 'donation';
 
 export interface Tenant {
     id: number;
@@ -8,6 +8,7 @@ export interface Tenant {
     slug: string;
     base_currency: string;
     is_active: boolean;
+    modules?: string[] | null;
 }
 
 export interface Account {
