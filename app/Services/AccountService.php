@@ -141,9 +141,13 @@ class AccountService
      *
      * @param  array<int, array{row: int, code: string, name: string, type: AccountType, normal_balance: ?NormalBalance, parent_code: ?string, is_active: bool, opening_balance: ?float}>  $rows
      *
+     * A row whose code already exists renames that account when the name in
+     * the file differs (nothing else on it changes); identical rows are skipped.
+     * @return array{created: int, renamed: int}
+     *
      * @throws AccountImportException
      */
-    public function import(array $rows, int $createdBy): int
+    public function import(array $rows, int $createdBy): array
     {
         return DB::transaction(function () use ($rows, $createdBy) {
             $sorted = $rows;
@@ -168,10 +172,44 @@ class AccountService
                 }
             }
 
+            $existingByCode = $this->accounts->filtered()->keyBy('code');
+            $seenExisting = [];
+            $renames = [];
             $errors = [];
             $valid = [];
 
             foreach ($sorted as $row) {
+                $existing = $existingByCode->get($row['code']);
+
+                if ($existing) {
+                    if (isset($seenExisting[$row['code']])) {
+                        $errors[] = "Row {$row['row']}: code {$row['code']} appears more than once in the file.";
+
+                        continue;
+                    }
+
+                    $seenExisting[$row['code']] = true;
+
+                    if ($row['name'] === $existing->name) {
+                        continue;
+                    }
+
+                    $oldKey = $existing->type->value.'|'.mb_strtolower($existing->name);
+                    $newKey = $existing->type->value.'|'.mb_strtolower($row['name']);
+
+                    if ($newKey !== $oldKey && isset($usedNames[$newKey])) {
+                        $errors[] = "Row {$row['row']}: the name \"{$row['name']}\" is already used by another {$existing->type->label()} account.";
+
+                        continue;
+                    }
+
+                    unset($usedNames[$oldKey]);
+                    $usedNames[$newKey] = true;
+                    $renames[] = [$existing, $row['name']];
+
+                    continue;
+                }
+
                 $rowErrors = $this->validateImportRow($row, $knownTypes, $usedCodes, $usedNames, $codesWithBalance);
 
                 if ($rowErrors !== []) {
@@ -197,6 +235,10 @@ class AccountService
                 throw new AccountImportException($errors);
             }
 
+            foreach ($renames as [$account, $newName]) {
+                $this->accounts->update($account, ['name' => $newName]);
+            }
+
             $codeToId = [];
 
             foreach ($valid as $row) {
@@ -217,7 +259,7 @@ class AccountService
                 $codeToId[$account->code] = $account->id;
             }
 
-            return count($valid);
+            return ['created' => count($valid), 'renamed' => count($renames)];
         });
     }
 

@@ -352,6 +352,41 @@ class AccountManagementTest extends TestCase
         $this->assertDatabaseMissing('accounts', ['code' => '2000']);
     }
 
+    public function test_importing_an_existing_code_with_a_new_name_renames_the_account(): void
+    {
+        $this->actingAs($this->user)->post(route('accounts.store'), [
+            'code' => '1000',
+            'name' => 'Cash',
+            'type' => AccountType::Asset->value,
+            'opening_balance' => 500,
+        ])->assertSessionHasNoErrors();
+
+        $csv = "code,name,type\n"
+            ."1000,Cash on Hand,asset\n"
+            ."1010,Petty Cash,asset\n";
+
+        $this->actingAs($this->user)->post(route('accounts.import'), [
+            'file' => $this->csvFile($csv),
+        ])->assertSessionHasNoErrors()
+            ->assertSessionHas('success', 'Imported 1 account(s), renamed 1.');
+
+        $this->assertDatabaseHas('accounts', ['code' => '1000', 'name' => 'Cash on Hand']);
+        $this->assertDatabaseHas('accounts', ['code' => '1010', 'name' => 'Petty Cash']);
+        $this->assertSame(1, Account::where('code', '1000')->count());
+    }
+
+    public function test_importing_a_rename_to_a_name_used_by_another_account_is_rejected(): void
+    {
+        $this->actingAs($this->user)->post(route('accounts.store'), ['code' => '1000', 'name' => 'Cash', 'type' => AccountType::Asset->value]);
+        $this->actingAs($this->user)->post(route('accounts.store'), ['code' => '1010', 'name' => 'Bank', 'type' => AccountType::Asset->value]);
+
+        $this->actingAs($this->user)->post(route('accounts.import'), [
+            'file' => $this->csvFile("code,name,type\n1000,Bank,asset\n"),
+        ])->assertSessionHasErrors('file');
+
+        $this->assertDatabaseHas('accounts', ['code' => '1000', 'name' => 'Cash']);
+    }
+
     public function test_importing_accounts_requires_a_file(): void
     {
         $response = $this->actingAs($this->user)->post(route('accounts.import'), []);

@@ -175,12 +175,15 @@ class AccountController extends Controller
     public function import(ImportAccountsRequest $request): RedirectResponse
     {
         try {
-            $count = $this->accounts->import($request->rows(), $request->user()->id);
+            $result = $this->accounts->import($request->rows(), $request->user()->id);
         } catch (AccountImportException $e) {
             return back()->withErrors(['file' => implode("\n", $e->rowErrors())]);
         }
 
-        return redirect()->route('accounts.index')->with('success', "Imported {$count} account(s).");
+        return redirect()->route('accounts.index')->with(
+            'success',
+            "Imported {$result['created']} account(s), renamed {$result['renamed']}.",
+        );
     }
 
     public function destroy(Account $account): RedirectResponse
