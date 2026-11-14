@@ -156,6 +156,7 @@ export default function DonorsIndex({ donors, filters, canCreate, canManage }: P
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    <button type="submit" hidden tabIndex={-1} aria-hidden="true" />
                     <Input label="Name" help="The donor’s full name as it should appear on their receipt." value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} error={form.errors.name} />
                     <Input label="Phone (optional)" help="A number to reach the donor on. You can leave it blank." value={form.data.phone} onChange={(e) => form.setData('phone', e.target.value)} error={form.errors.phone} />
                     <Input label="Email (optional)" help="An email address for the donor. You can leave it blank." type="email" value={form.data.email} onChange={(e) => form.setData('email', e.target.value)} error={form.errors.email} />

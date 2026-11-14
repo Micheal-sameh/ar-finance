@@ -9,6 +9,7 @@ enum BookingPaymentMethod: string
     case Cash = 'cash';
     case BankTransfer = 'bank_transfer';
     case Pos = 'pos';
+    case Instapay = 'instapay';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum BookingPaymentMethod: string
             self::Cash => 'Cash',
             self::BankTransfer => 'Bank transfer',
             self::Pos => 'POS',
+            self::Instapay => 'InstaPay',
         };
     }
 
@@ -28,6 +30,7 @@ enum BookingPaymentMethod: string
             self::Cash => GlMappingRole::BookingCashPayment,
             self::BankTransfer => GlMappingRole::BookingBankPayment,
             self::Pos => GlMappingRole::BookingPosPayment,
+            self::Instapay => GlMappingRole::BookingInstapayPayment,
         };
     }
 }

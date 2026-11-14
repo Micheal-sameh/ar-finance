@@ -38,8 +38,12 @@ class DonationResource extends JsonResource
             'created_by_name' => $this->creator?->name,
             'created_at' => $this->created_at?->toIso8601String(),
             'tenant_name' => app(TenantContext::class)->isViewingAllTenants() ? $this->tenant?->name : null,
+            'cancel_reason' => $this->cancel_reason,
+            'cancel_requested_at' => $this->cancel_requested_at?->toIso8601String(),
+            'cancel_requested_by_name' => $this->cancelRequester?->name,
             'can_cancel' => $this->status === DonationStatus::Received && $user->can('cancel', $this->resource),
-            'can_print' => $this->status === DonationStatus::Received && $user->can('view', $this->resource),
+            'can_approve_cancel' => $this->status === DonationStatus::CancelRequested && $user->can('tenants.manage'),
+            'can_print' => $this->status !== DonationStatus::Cancelled && $user->can('view', $this->resource),
         ];
     }
 }

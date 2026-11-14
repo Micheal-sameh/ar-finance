@@ -6,6 +6,7 @@ use App\DTOs\CreateJournalEntryData;
 use App\DTOs\JournalLineData;
 use App\Enums\GlMappingRole;
 use App\Enums\JournalSourceType;
+use App\Models\User;
 use App\Modules\Donations\DTOs\CreateDonationData;
 use App\Modules\Donations\Enums\DonationPaymentMethod;
 use App\Modules\Donations\Enums\DonationStatus;
@@ -16,6 +17,7 @@ use App\Repositories\Contracts\CostCenterRepositoryInterface;
 use App\Services\ExchangeRateService;
 use App\Services\GlMappingService;
 use App\Services\JournalService;
+use App\Services\PaymentAccountService;
 use App\Support\ArabicAmountInWords;
 use App\Support\TenantContext;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -37,6 +39,7 @@ class DonationService
         private readonly GlMappingService $glMapping,
         private readonly ExchangeRateService $exchangeRates,
         private readonly TenantContext $tenantContext,
+        private readonly PaymentAccountService $paymentAccounts,
     ) {}
 
     /**
@@ -52,6 +55,34 @@ class DonationService
         return $this->donations->find($id);
     }
 
+    /**
+     * The text printed at the bottom of every receipt telling donors how to
+     * give without visiting (InstaPay address, bank account, …).
+     */
+    public function instructions(): ?string
+    {
+        return $this->tenantContext->tenant()?->donation_instructions;
+    }
+
+    public function hasActiveTenant(): bool
+    {
+        return $this->tenantContext->tenant() !== null;
+    }
+
+    /**
+     * @throws RuntimeException when a Platform Admin is viewing all tenants
+     */
+    public function updateInstructions(?string $instructions): void
+    {
+        $tenant = $this->tenantContext->tenant();
+
+        if ($tenant === null) {
+            throw new RuntimeException('Switch into a church first — the receipt donation info belongs to one church.');
+        }
+
+        $tenant->update(['donation_instructions' => $instructions]);
+    }
+
     public function baseCurrency(): string
     {
         return strtoupper($this->tenantContext->tenant()?->base_currency ?? 'EGP');
@@ -61,7 +92,7 @@ class DonationService
      * Everything the donation form and filters offer: donors, centers,
      * currencies (the tenant's base first) and the payment methods.
      *
-     * @return array{donors: array<int, array{id: int, name: string, phone: string|null}>, costCenters: array<int, array{id: int, name: string}>, currencies: array<int, array{code: string, name: string}>, baseCurrency: string, paymentMethods: array<int, array{value: string, label: string}>, creators: array<int, array{id: int, name: string}>}
+     * @return array{donors: array<int, array{id: int, name: string, phone: string|null}>, costCenters: array<int, array{id: int, name: string}>, currencies: array<int, array{code: string, name: string}>, baseCurrency: string, paymentMethods: array<int, array{value: string, label: string}>, paymentAccounts: array<string, array<int, array{id: int, label: string}>>, creators: array<int, array{id: int, name: string}>}
      */
     public function formOptions(): array
     {
@@ -75,6 +106,10 @@ class DonationService
             'currencies' => $currencies,
             'baseCurrency' => $base,
             'paymentMethods' => array_map(fn (DonationPaymentMethod $method) => ['value' => $method->value, 'label' => $method->label()], DonationPaymentMethod::cases()),
+            'paymentAccounts' => $this->paymentAccounts->optionsByMethod(array_combine(
+                array_map(fn (DonationPaymentMethod $method) => $method->value, DonationPaymentMethod::cases()),
+                array_map(fn (DonationPaymentMethod $method) => $method->glRole(), DonationPaymentMethod::cases()),
+            )),
             'creators' => $this->donations->creators()->map(fn ($user) => ['id' => $user->id, 'name' => $user->name])->all(),
         ];
     }
@@ -104,12 +139,8 @@ class DonationService
         }
 
         $defaults = $this->glMapping->defaults();
-        $paymentAccountId = $defaults[$data->paymentMethod->glRole()->value] ?? null;
+        $paymentAccountId = $this->paymentAccounts->resolve($data->paymentMethod->value, $data->paymentMethod->glRole(), $data->paymentAccountId, $data->paymentMethod->label());
         $revenueAccountId = $defaults[GlMappingRole::DonationRevenue->value] ?? null;
-
-        if ($paymentAccountId === null) {
-            throw new RuntimeException("No account is set for {$data->paymentMethod->label()} donations — ask finance or an admin to set \"{$data->paymentMethod->glRole()->label()}\" in the General Ledger mapping, or choose another payment method.");
-        }
 
         if ($revenueAccountId === null) {
             throw new RuntimeException('No donations income account is set — ask finance or an admin to set "'.GlMappingRole::DonationRevenue->label().'" in the General Ledger mapping.');
@@ -127,6 +158,7 @@ class DonationService
                 'donated_at' => $data->donatedAt,
                 'payment_method' => $data->paymentMethod,
                 'payment_reference' => $data->paymentReference,
+                'payment_account_id' => $data->paymentAccountId,
                 'status' => DonationStatus::Received,
                 'notes' => $data->notes,
                 'receipt_number' => $this->donations->nextReceiptNumber(),
@@ -153,6 +185,72 @@ class DonationService
     }
 
     /**
+     * Platform Admins / Portal Managers (tenants.manage) cancel directly;
+     * everyone else files a request they must approve.
+     *
+     * @throws RuntimeException
+     */
+    public function cancel(Donation $donation, User $user, ?string $reason): Donation
+    {
+        if ($user->can('tenants.manage')) {
+            return $this->reverse($donation, $user->id);
+        }
+
+        return $this->requestCancel($donation, $user->id, $reason);
+    }
+
+    /**
+     * Marks the donation as awaiting a cancellation decision. Nothing is
+     * posted to the ledger until a Platform Admin / Portal Manager approves.
+     *
+     * @throws RuntimeException
+     */
+    public function requestCancel(Donation $donation, int $userId, ?string $reason): Donation
+    {
+        if ($donation->status !== DonationStatus::Received) {
+            throw new RuntimeException($donation->status === DonationStatus::Cancelled
+                ? 'This donation is already cancelled.'
+                : 'A cancellation has already been requested for this donation.');
+        }
+
+        return $this->donations->update($donation, [
+            'status' => DonationStatus::CancelRequested,
+            'cancel_reason' => $reason,
+            'cancel_requested_at' => now(),
+            'cancel_requested_by' => $userId,
+        ]);
+    }
+
+    /**
+     * @throws RuntimeException
+     */
+    public function approveCancel(Donation $donation, int $userId): Donation
+    {
+        if ($donation->status !== DonationStatus::CancelRequested) {
+            throw new RuntimeException('This donation has no cancellation request to approve.');
+        }
+
+        return $this->reverse($donation, $userId);
+    }
+
+    /**
+     * @throws RuntimeException
+     */
+    public function rejectCancel(Donation $donation): Donation
+    {
+        if ($donation->status !== DonationStatus::CancelRequested) {
+            throw new RuntimeException('This donation has no cancellation request to reject.');
+        }
+
+        return $this->donations->update($donation, [
+            'status' => DonationStatus::Received,
+            'cancel_reason' => null,
+            'cancel_requested_at' => null,
+            'cancel_requested_by' => null,
+        ]);
+    }
+
+    /**
      * Cancels the donation: each journal entry posted for it is reversed as
      * its own entry (debits and credits swapped, same accounts and center),
      * so the money and income come back out of the books exactly where they
@@ -160,7 +258,7 @@ class DonationService
      *
      * @throws RuntimeException
      */
-    public function cancel(Donation $donation, int $userId): Donation
+    public function reverse(Donation $donation, int $userId): Donation
     {
         if ($donation->status === DonationStatus::Cancelled) {
             throw new RuntimeException('This donation is already cancelled.');
@@ -210,6 +308,7 @@ class DonationService
 
         return [
             'tenantName' => $donation->tenant?->name,
+            'instructions' => $donation->tenant?->donation_instructions,
             'churchLogoPath' => resource_path('js/assets/church-logo.png'),
             'receiptNumber' => str_pad((string) $donation->receipt_number, 6, '0', STR_PAD_LEFT),
             'date' => $donation->donated_at->format('Y-m-d'),

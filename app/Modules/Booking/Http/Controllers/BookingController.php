@@ -31,6 +31,7 @@ class BookingController extends Controller
 
         return Inertia::render('Booking/Calendar/Index', [
             'viewingAllTenants' => $this->tenantContext->isViewingAllTenants(),
+            'paymentAccounts' => $this->bookings->paymentAccountOptions(),
         ]);
     }
 

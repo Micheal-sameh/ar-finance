@@ -29,10 +29,14 @@
     .amount-box .number { font-size: 28px; font-weight: bold; color: #000000; padding: 4px 0; }
     .amount-box .words { font-size: 14px; color: #000000; }
 
-    table.signatures { width: 100%; margin-top: 54px; border-collapse: collapse; }
-    table.signatures td { width: 50%; text-align: center; font-size: 12.5px; color: #444; padding: 0 18px; }
-    .sign-line { border-top: 1px solid #444; margin-bottom: 5px; }
+    table.signatures { width: 100%; margin-top: 16px; border-collapse: collapse; }
+    table.signatures td { text-align: center; font-size: 12.5px; color: #444; }
+    table.signatures td.line { height: 90px; border-bottom: 1px solid #444; }
+    table.signatures td.gap { width: 8%; }
+    table.signatures td.cell { width: 42%; padding-top: 5px; }
 
+    .remote { margin-top: 18px; padding: 9px 12px; border: 1px solid #000000; font-size: 12px; }
+    .remote .head { font-weight: bold; font-size: 12.5px; margin-bottom: 3px; }
     .note { margin-top: 26px; padding-top: 10px; border-top: 0.5px solid #999999; text-align: center; font-size: 12px; color: #666; }
 </style>
 </head>
@@ -90,16 +94,24 @@
 
     <table class="signatures">
         <tr>
-            <td>
-                <div class="sign-line"></div>
-                المستلم: {{ $receivedBy }}
-            </td>
-            <td>
-                <div class="sign-line"></div>
-                التوقيع / الختم
-            </td>
+            <td class="line" style="width: 42%;">&nbsp;</td>
+            <td class="gap">&nbsp;</td>
+            <td class="line" style="width: 42%;">&nbsp;</td>
+        </tr>
+        <tr>
+            <td class="cell">المستلم: {{ $receivedBy }}</td>
+            <td class="gap"></td>
+            <td class="cell">التوقيع / الختم</td>
         </tr>
     </table>
+
+    @if (filled($instructions))
+        <div class="remote">
+            <div class="head">للتبرع عن بعد</div>
+            {!! nl2br(e($instructions)) !!}
+            <div style="margin-top: 5px; font-weight: bold;">للحصول على ايصال التبرع عبر الواتساب رجاء كتابة رقم الهاتف في سبب التحويل</div>
+        </div>
+    @endif
 
     <div class="note">شكراً لمحبتكم وعطائكم &mdash; الرب يعوض تعب محبتكم</div>
 </div>

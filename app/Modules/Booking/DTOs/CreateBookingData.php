@@ -20,6 +20,7 @@ final readonly class CreateBookingData
         public ?string $recurrenceUntil = null,
         public ?BookingDiscountType $discountType = null,
         public ?float $discountValue = null,
+        public ?int $paymentAccountId = null,
     ) {}
 
     public static function fromArray(array $data): self
@@ -36,6 +37,7 @@ final readonly class CreateBookingData
             recurrenceUntil: $data['recurrence_until'] ?? null,
             discountType: ! empty($data['discount_type']) ? BookingDiscountType::from($data['discount_type']) : null,
             discountValue: isset($data['discount_value']) && $data['discount_value'] !== '' ? (float) $data['discount_value'] : null,
+            paymentAccountId: ! empty($data['payment_account_id']) ? (int) $data['payment_account_id'] : null,
         );
     }
 }

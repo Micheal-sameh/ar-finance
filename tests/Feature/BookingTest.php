@@ -7,6 +7,7 @@ use App\Enums\GlMappingRole;
 use App\Models\Account;
 use App\Models\CostCenter;
 use App\Models\GlMapping;
+use App\Models\PaymentAccount;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Booking\Models\BookableItem;
@@ -570,6 +571,57 @@ class BookingTest extends TestCase
 
         $this->assertDatabaseCount('bookings', 0);
         $this->assertDatabaseCount('journal_entries', 0);
+    }
+
+    public function test_a_booking_can_be_paid_into_an_extra_account_of_its_payment_method(): void
+    {
+        $second = Account::create(['tenant_id' => $this->tenant->id, 'code' => '1001', 'name' => 'Second Bank', 'type' => AccountType::Asset, 'normal_balance' => 'debit']);
+        PaymentAccount::create(['tenant_id' => $this->tenant->id, 'method' => 'instapay', 'account_id' => $second->id, 'label' => 'InstaPay wallet']);
+        GlMapping::create(['tenant_id' => $this->tenant->id, 'role' => GlMappingRole::BookingInstapayPayment, 'account_id' => $this->bank->id]);
+        $item = $this->item(isExclusive: true);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'instapay',
+            'payment_account_id' => $second->id,
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
+        ])->assertSessionHasNoErrors();
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'instapay',
+            'starts_at' => '2027-01-11 10:00:00',
+            'ends_at' => '2027-01-11 12:00:00',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $second->id, 'debit' => 200.00]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'debit' => 200.00]);
+    }
+
+    public function test_a_booking_cannot_be_paid_into_an_account_that_is_not_set_up_for_its_method(): void
+    {
+        $other = Account::create(['tenant_id' => $this->tenant->id, 'code' => '1002', 'name' => 'Unlisted Bank', 'type' => AccountType::Asset, 'normal_balance' => 'debit']);
+        $item = $this->item(isExclusive: true);
+
+        $this->actingAs($this->user)->post(route('bookings.store'), [
+            'bookable_item_id' => $item->id,
+            'payment_method' => 'bank_transfer',
+            'payment_account_id' => $other->id,
+            'starts_at' => '2027-01-10 10:00:00',
+            'ends_at' => '2027-01-10 12:00:00',
+        ])->assertSessionHas('error');
+
+        $this->assertDatabaseCount('bookings', 0);
+    }
+
+    public function test_the_calendar_page_offers_the_accounts_of_each_payment_method(): void
+    {
+        $second = Account::create(['tenant_id' => $this->tenant->id, 'code' => '1001', 'name' => 'Second Bank', 'type' => AccountType::Asset, 'normal_balance' => 'debit']);
+        PaymentAccount::create(['tenant_id' => $this->tenant->id, 'method' => 'bank_transfer', 'account_id' => $second->id]);
+
+        $this->actingAs($this->user)->get(route('bookings.index'))
+            ->assertInertia(fn ($page) => $page->has('paymentAccounts.bank_transfer', 2)->has('paymentAccounts.cash', 1));
     }
 
     public function test_each_payment_method_posts_to_its_own_mapped_account(): void

@@ -29,6 +29,12 @@ export function Sidebar({
     onToggleCollapsed: () => void;
 }) {
     const [branchOpen, setBranchOpen] = useState(false);
+    const [branchQuery, setBranchQuery] = useState('');
+    const matchesQuery = (name: string) => name.toLowerCase().includes(branchQuery.trim().toLowerCase());
+    const toggleBranchMenu = () => {
+        setBranchQuery('');
+        setBranchOpen(!branchOpen);
+    };
     const navRef = useRef<HTMLElement>(null);
     const { platform, memberTenants, auth, enabledModules } = usePage<{
         enabledModules: string[];
@@ -111,7 +117,7 @@ export function Sidebar({
 
             {platform && (
                 <div className="branch-wrap" onClick={(event) => event.stopPropagation()}>
-                    <button type="button" className="branch-switcher" onClick={() => setBranchOpen(!branchOpen)}>
+                    <button type="button" className="branch-switcher" onClick={toggleBranchMenu}>
                         <span className="branch-icon">
                             <Icon name="bank" size={17} />
                         </span>
@@ -123,6 +129,18 @@ export function Sidebar({
                     </button>
                     {branchOpen && (
                         <div className="branch-menu">
+                            {platform.tenants.length > 6 && (
+                                <input
+                                    type="search"
+                                    className="branch-search"
+                                    placeholder="Search…"
+                                    aria-label="Search services"
+                                    autoFocus
+                                    value={branchQuery}
+                                    onChange={(event) => setBranchQuery(event.target.value)}
+                                />
+                            )}
+                            {matchesQuery('All services') && (
                             <button
                                 type="button"
                                 className={!activeTenant ? 'selected' : ''}
@@ -134,7 +152,8 @@ export function Sidebar({
                                 All services
                                 <span>{!activeTenant && <Icon name="check" size={14} />}</span>
                             </button>
-                            {platform.tenants.map((tenant) => (
+                            )}
+                            {platform.tenants.filter((tenant) => matchesQuery(tenant.name)).map((tenant) => (
                                 <button
                                     type="button"
                                     key={tenant.id}
@@ -155,7 +174,7 @@ export function Sidebar({
 
             {!platform && memberTenants && (
                 <div className="branch-wrap" onClick={(event) => event.stopPropagation()}>
-                    <button type="button" className="branch-switcher" onClick={() => setBranchOpen(!branchOpen)}>
+                    <button type="button" className="branch-switcher" onClick={toggleBranchMenu}>
                         <span className="branch-icon">
                             <Icon name="bank" size={17} />
                         </span>
@@ -167,7 +186,18 @@ export function Sidebar({
                     </button>
                     {branchOpen && (
                         <div className="branch-menu">
-                            {memberTenants.tenants.map((tenant) => (
+                            {memberTenants.tenants.length > 6 && (
+                                <input
+                                    type="search"
+                                    className="branch-search"
+                                    placeholder="Search…"
+                                    aria-label="Search services"
+                                    autoFocus
+                                    value={branchQuery}
+                                    onChange={(event) => setBranchQuery(event.target.value)}
+                                />
+                            )}
+                            {memberTenants.tenants.filter((tenant) => matchesQuery(tenant.name)).map((tenant) => (
                                 <button
                                     type="button"
                                     key={tenant.id}

@@ -4,7 +4,7 @@ import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction'
 import FullCalendar from '@fullcalendar/react';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { Head, router } from '@inertiajs/react';
-import { Banknote, CalendarClock, CreditCard, Landmark } from 'lucide-react';
+import { Banknote, CalendarClock, CreditCard, Landmark, Smartphone } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { PageHeader } from '@/Components/layout/PageHeader';
 import { Badge } from '@/Components/ui/Badge';
@@ -34,9 +34,11 @@ function toInputValue(date: Date): string {
 
 interface Props {
     viewingAllTenants: boolean;
+    /** Accounts each payment method can be paid into; the first is the default. */
+    paymentAccounts: Record<string, { id: number; label: string }[]>;
 }
 
-export default function CalendarIndex({ viewingAllTenants }: Props) {
+export default function CalendarIndex({ viewingAllTenants, paymentAccounts }: Props) {
     const calendarRef = useRef<FullCalendar>(null);
     /** Placeholder shown the instant a booking is saved, until the refetch brings the real event in. */
     const pendingEventRef = useRef<EventApi | null>(null);
@@ -49,7 +51,8 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
     const [recurrence, setRecurrence] = useState<BookingRecurrence>('none');
     const [recurrenceUntil, setRecurrenceUntil] = useState('');
     const [notes, setNotes] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer' | 'pos'>('cash');
+    const [paymentMethod, setPaymentMethod] = useState<'cash' | 'bank_transfer' | 'pos' | 'instapay'>('cash');
+    const [paymentAccountId, setPaymentAccountId] = useState<number | null>(null);
     const [paymentReference, setPaymentReference] = useState('');
     const [discountType, setDiscountType] = useState<'percent' | 'fixed'>('percent');
     const [discountValue, setDiscountValue] = useState('');
@@ -121,6 +124,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
         setDiscountType('percent');
         setDiscountValue('');
         setPaymentMethod('cash');
+        setPaymentAccountId(null);
         setPaymentReference('');
         setBookingError(null);
 
@@ -188,6 +192,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                 notes: notes || null,
                 payment_method: paymentMethod,
                 payment_reference: paymentReference.trim() || null,
+                payment_account_id: (paymentAccounts[paymentMethod]?.length ?? 0) > 1 ? paymentAccountId : null,
                 discount_type: discountValue === '' ? null : discountType,
                 discount_value: discountValue === '' ? null : Number(discountValue),
             },
@@ -467,6 +472,7 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                     { value: 'cash', label: 'Cash', icon: <Banknote size={16} /> },
                                     { value: 'bank_transfer', label: 'Bank transfer', icon: <Landmark size={16} /> },
                                     { value: 'pos', label: 'POS', icon: <CreditCard size={16} /> },
+                                    { value: 'instapay', label: 'InstaPay', icon: <Smartphone size={16} /> },
                                 ] as const
                             ).map((method) => (
                                 <Button
@@ -475,7 +481,10 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                                     variant={paymentMethod === method.value ? 'primary' : 'outline'}
                                     leadingIcon={method.icon}
                                     aria-pressed={paymentMethod === method.value}
-                                    onClick={() => setPaymentMethod(method.value)}
+                                    onClick={() => {
+                                        setPaymentMethod(method.value);
+                                        setPaymentAccountId(null);
+                                    }}
                                     style={{ flex: 1 }}
                                 >
                                     {method.label}
@@ -484,9 +493,30 @@ export default function CalendarIndex({ viewingAllTenants }: Props) {
                         </div>
                     </div>
 
+                        {(paymentAccounts[paymentMethod]?.length ?? 0) > 1 && (
+                            <Select
+                                label="Paid into account"
+                                help="Which of your accounts received this payment. The first one is the default; pick another when the customer paid into a different bank account."
+                                value={paymentAccountId ?? paymentAccounts[paymentMethod][0].id}
+                                onChange={(e) => setPaymentAccountId(Number(e.target.value))}
+                            >
+                                {paymentAccounts[paymentMethod].map((account) => (
+                                    <option key={account.id} value={account.id}>
+                                        {account.label}
+                                    </option>
+                                ))}
+                            </Select>
+                        )}
+
                         <Input
                             label={
-                                paymentMethod === 'pos' ? 'POS transaction reference (optional)' : paymentMethod === 'cash' ? 'Cash receipt number (optional)' : 'Bank transfer reference (optional)'
+                                paymentMethod === 'pos'
+                                    ? 'POS transaction reference (optional)'
+                                    : paymentMethod === 'cash'
+                                      ? 'Cash receipt number (optional)'
+                                      : paymentMethod === 'instapay'
+                                        ? 'InstaPay reference number (optional)'
+                                        : 'Bank transfer reference (optional)'
                             }
                             help={
                                 paymentMethod === 'pos'

@@ -18,6 +18,7 @@ use App\Modules\Booking\Models\BookingType;
 use App\Modules\Booking\Repositories\Contracts\BookingRepositoryInterface;
 use App\Services\GlMappingService;
 use App\Services\JournalService;
+use App\Services\PaymentAccountService;
 use App\Support\TenantContext;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -43,7 +44,21 @@ class BookingService
         private readonly BookingRepositoryInterface $bookings,
         private readonly JournalService $journals,
         private readonly GlMappingService $glMapping,
+        private readonly PaymentAccountService $paymentAccounts,
     ) {}
+
+    /**
+     * The accounts each payment method can be paid into, for the booking form.
+     *
+     * @return array<string, array<int, array{id: int, label: string}>>
+     */
+    public function paymentAccountOptions(): array
+    {
+        return $this->paymentAccounts->optionsByMethod(array_combine(
+            array_map(fn (BookingPaymentMethod $method) => $method->value, BookingPaymentMethod::cases()),
+            array_map(fn (BookingPaymentMethod $method) => $method->glRole(), BookingPaymentMethod::cases()),
+        ));
+    }
 
     public function find(int $id): ?Booking
     {
@@ -163,12 +178,13 @@ class BookingService
             'notes' => $data->notes,
             'payment_method' => $data->paymentMethod,
             'payment_reference' => $data->paymentReference,
+            'payment_account_id' => $data->paymentAccountId,
             'recurrence' => $groupId !== null ? $data->recurrence : BookingRecurrence::None,
             'recurrence_until' => $groupId !== null ? $data->recurrenceUntil : null,
             'recurrence_group_id' => $groupId,
         ]);
 
-        return $this->settle($booking, $item, $data->paymentMethod);
+        return $this->settle($booking, $item, $data->paymentMethod, $data->paymentAccountId);
     }
 
     /**
@@ -257,17 +273,12 @@ class BookingService
      * both at the type's cost center. A free booking owes nothing, so it is
      * marked paid without touching the ledger.
      */
-    private function settle(Booking $booking, BookableItem $item, BookingPaymentMethod $method): Booking
+    private function settle(Booking $booking, BookableItem $item, BookingPaymentMethod $method, ?int $chosenAccountId = null): Booking
     {
         $price = (float) $booking->price;
 
         if ($price > 0) {
-            $role = $method->glRole();
-            $paymentAccountId = $this->glMapping->defaults()[$role->value] ?? null;
-
-            if ($paymentAccountId === null) {
-                throw new RuntimeException("No account is set for {$method->label()} payments — ask finance or an admin to set \"{$role->label()}\" in the General Ledger mapping, or choose another payment method.");
-            }
+            $paymentAccountId = $this->paymentAccounts->resolve($method->value, $method->glRole(), $chosenAccountId, $method->label());
 
             $costCenterId = $item->costCenterIdFor($booking->booking_type_id);
 

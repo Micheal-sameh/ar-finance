@@ -30,6 +30,8 @@ class StoreDonationRequest extends FormRequest
             'payment_method' => ['required', new Enum(DonationPaymentMethod::class)],
             // The cash receipt, POS transaction or bank transfer number.
             'payment_reference' => ['nullable', 'string', 'max:100'],
+            // Which of the method's configured accounts received it; blank = the default.
+            'payment_account_id' => ['nullable', new ExistsInTenant('accounts')],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
     }

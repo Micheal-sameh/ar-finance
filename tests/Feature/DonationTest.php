@@ -7,6 +7,7 @@ use App\Enums\GlMappingRole;
 use App\Models\Account;
 use App\Models\CostCenter;
 use App\Models\GlMapping;
+use App\Models\PaymentAccount;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Donations\Models\Donation;
@@ -138,6 +139,82 @@ class DonationTest extends TestCase
         $this->assertNull($donation->donor_id);
     }
 
+    public function test_a_donation_can_be_paid_into_an_extra_account_of_its_payment_method(): void
+    {
+        $second = $this->account('1050', 'Second Bank', AccountType::Asset);
+        PaymentAccount::create(['tenant_id' => $this->tenant->id, 'method' => 'bank_transfer', 'account_id' => $second->id, 'label' => 'CIB']);
+
+        $chosen = $this->record(['payment_method' => 'bank_transfer', 'payment_account_id' => $second->id]);
+        $this->record(['payment_method' => 'bank_transfer']);
+
+        $this->assertSame($second->id, $chosen->payment_account_id);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $second->id, 'debit' => 250.00]);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'debit' => 250.00]);
+    }
+
+    public function test_a_donation_cannot_be_paid_into_an_account_that_is_not_set_up_for_its_method(): void
+    {
+        $other = $this->account('1051', 'Unlisted', AccountType::Asset);
+
+        $this->actingAs($this->agent)->post(route('donations.store'), $this->payload(['payment_method' => 'pos', 'payment_account_id' => $other->id]))
+            ->assertSessionHas('error');
+
+        $this->assertDatabaseCount('donations', 0);
+    }
+
+    public function test_the_donation_form_offers_the_accounts_of_each_payment_method(): void
+    {
+        $second = $this->account('1050', 'Second Bank', AccountType::Asset);
+        PaymentAccount::create(['tenant_id' => $this->tenant->id, 'method' => 'instapay', 'account_id' => $second->id]);
+
+        $this->actingAs($this->agent)->get(route('donations.index'))
+            ->assertInertia(fn ($page) => $page->has('options.paymentAccounts.instapay', 2)->has('options.paymentAccounts.cash', 1));
+    }
+
+    public function test_payment_accounts_are_configured_per_service_and_must_be_active_postable_assets(): void
+    {
+        $second = $this->account('1050', 'Second Bank', AccountType::Asset);
+        $admin = $this->user('Super Admin');
+
+        $this->actingAs($admin)->put(route('gl-mapping.payment-accounts'), ['accounts' => [
+            ['method' => 'bank_transfer', 'account_id' => $second->id, 'label' => 'CIB'],
+            ['method' => 'pos', 'account_id' => $second->id, 'label' => ''],
+        ]])->assertSessionHasNoErrors()->assertSessionHas('success');
+
+        $this->assertDatabaseHas('payment_accounts', ['tenant_id' => $this->tenant->id, 'method' => 'bank_transfer', 'account_id' => $second->id, 'label' => 'CIB']);
+        $this->assertDatabaseHas('payment_accounts', ['method' => 'pos', 'label' => null]);
+
+        $this->actingAs($admin)->put(route('gl-mapping.payment-accounts'), ['accounts' => [
+            ['method' => 'bank_transfer', 'account_id' => $this->income->id],
+        ]])->assertSessionHas('error');
+        $this->actingAs($admin)->put(route('gl-mapping.payment-accounts'), ['accounts' => [
+            ['method' => 'bank_transfer', 'account_id' => $second->id],
+            ['method' => 'bank_transfer', 'account_id' => $second->id],
+        ]])->assertSessionHas('error');
+        $this->actingAs($admin)->put(route('gl-mapping.payment-accounts'), ['accounts' => [
+            ['method' => 'cash', 'account_id' => $second->id],
+        ]])->assertSessionHasErrors('accounts.0.method');
+
+        $this->assertDatabaseCount('payment_accounts', 2);
+    }
+
+    public function test_a_service_cannot_use_another_services_account_as_a_payment_account(): void
+    {
+        $otherTenant = Tenant::create(['name' => 'Other', 'slug' => 'other']);
+        $foreign = Account::create(['tenant_id' => $otherTenant->id, 'code' => '1000', 'name' => 'Foreign Bank', 'type' => AccountType::Asset, 'normal_balance' => 'debit']);
+
+        $this->actingAs($this->user('Super Admin'))->put(route('gl-mapping.payment-accounts'), ['accounts' => [
+            ['method' => 'bank_transfer', 'account_id' => $foreign->id],
+        ]])->assertSessionHasErrors('accounts.0.account_id');
+
+        $this->assertDatabaseCount('payment_accounts', 0);
+    }
+
+    public function test_a_donations_agent_cannot_change_the_payment_accounts(): void
+    {
+        $this->actingAs($this->agent)->put(route('gl-mapping.payment-accounts'), ['accounts' => []])->assertForbidden();
+    }
+
     public function test_each_payment_method_posts_to_its_own_account(): void
     {
         $this->record(['payment_method' => 'bank_transfer', 'payment_reference' => 'TRX-1']);
@@ -250,23 +327,108 @@ class DonationTest extends TestCase
         $this->actingAs($this->agent)->get(route('donations.index'))->assertInertia(fn ($page) => $page->has('donations.data', 3));
     }
 
-    public function test_cancelling_reverses_the_journal_at_the_same_accounts_and_center(): void
+    public function test_a_platform_manager_cancelling_reverses_the_journal_at_the_same_accounts_and_center(): void
     {
         $donation = $this->record();
+        $manager = $this->user('Portal Manager');
 
-        $this->actingAs($this->admin)->post(route('donations.cancel', $donation))->assertSessionHas('success');
+        $this->withSession(['acting_tenant_id' => $this->tenant->id])->actingAs($manager)->post(route('donations.cancel', $donation))->assertSessionHas('success');
 
         $donation->refresh();
         $this->assertSame('cancelled', $donation->status->value);
-        $this->assertSame($this->admin->id, $donation->cancelled_by);
+        $this->assertSame($manager->id, $donation->cancelled_by);
         $this->assertNotNull($donation->cancelled_at);
         $this->assertDatabaseCount('journal_entries', 2);
         $this->assertDatabaseHas('journal_lines', ['account_id' => $this->cash->id, 'credit' => 250.00, 'cost_center_id' => $this->center->id]);
         $this->assertDatabaseHas('journal_lines', ['account_id' => $this->income->id, 'debit' => 250.00, 'cost_center_id' => $this->center->id]);
         $this->assertEquals(0.0, (float) DB::table('journal_lines')->where('account_id', $this->income->id)->selectRaw('sum(credit) - sum(debit) as net')->value('net'));
 
-        $this->actingAs($this->admin)->post(route('donations.cancel', $donation))->assertSessionHas('error');
+        $this->withSession(['acting_tenant_id' => $this->tenant->id])->actingAs($manager)->post(route('donations.cancel', $donation))->assertSessionHas('error');
         $this->assertDatabaseCount('journal_entries', 2);
+    }
+
+    public function test_a_donations_admin_can_only_request_a_cancellation_which_posts_nothing(): void
+    {
+        $donation = $this->record();
+
+        $this->actingAs($this->admin)->post(route('donations.cancel', $donation), ['reason' => 'Wrong amount'])->assertSessionHas('success');
+
+        $donation->refresh();
+        $this->assertSame('cancel_requested', $donation->status->value);
+        $this->assertSame('Wrong amount', $donation->cancel_reason);
+        $this->assertSame($this->admin->id, $donation->cancel_requested_by);
+        $this->assertNull($donation->cancelled_at);
+        $this->assertDatabaseCount('journal_entries', 1);
+
+        $this->actingAs($this->admin)->post(route('donations.cancel', $donation))->assertSessionHas('error');
+    }
+
+    public function test_a_platform_manager_approves_a_cancellation_request_and_the_journal_is_reversed(): void
+    {
+        $donation = $this->record();
+        $this->actingAs($this->admin)->post(route('donations.cancel', $donation), ['reason' => 'Duplicate']);
+        $manager = $this->user('Portal Manager');
+
+        $this->withSession(['acting_tenant_id' => $this->tenant->id])->actingAs($manager)->post(route('donations.approve-cancel', $donation))->assertSessionHas('success');
+
+        $donation->refresh();
+        $this->assertSame('cancelled', $donation->status->value);
+        $this->assertSame($manager->id, $donation->cancelled_by);
+        $this->assertDatabaseCount('journal_entries', 2);
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->income->id, 'debit' => 250.00]);
+    }
+
+    public function test_a_platform_manager_can_reject_a_cancellation_request(): void
+    {
+        $donation = $this->record();
+        $this->actingAs($this->admin)->post(route('donations.cancel', $donation), ['reason' => 'Duplicate']);
+
+        $this->withSession(['acting_tenant_id' => $this->tenant->id])->actingAs($this->user('Portal Manager'))->post(route('donations.reject-cancel', $donation))->assertSessionHas('success');
+
+        $donation->refresh();
+        $this->assertSame('received', $donation->status->value);
+        $this->assertNull($donation->cancel_reason);
+        $this->assertDatabaseCount('journal_entries', 1);
+    }
+
+    public function test_the_cancel_requests_page_lists_pending_requests_for_platform_roles_only(): void
+    {
+        $pending = $this->record();
+        $this->record();
+        $this->actingAs($this->admin)->post(route('donations.cancel', $pending), ['reason' => 'Duplicate']);
+
+        $this->actingAs($this->admin)->get(route('donations.cancel-requests'))->assertForbidden();
+
+        $this->withSession(['acting_tenant_id' => $this->tenant->id])
+            ->actingAs($this->user('Portal Manager'))
+            ->get(route('donations.cancel-requests'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Donations/CancelRequests')
+                ->has('donations.data', 1)
+                ->where('donations.data.0.cancel_reason', 'Duplicate')
+                ->where('donations.data.0.cancel_requested_by_name', $this->admin->name));
+    }
+
+    public function test_only_platform_roles_can_approve_or_reject_a_cancellation(): void
+    {
+        $donation = $this->record();
+        $this->actingAs($this->admin)->post(route('donations.cancel', $donation));
+
+        $this->actingAs($this->admin)->post(route('donations.approve-cancel', $donation))->assertForbidden();
+        $this->actingAs($this->admin)->post(route('donations.reject-cancel', $donation))->assertForbidden();
+        $this->actingAs($this->agent)->post(route('donations.approve-cancel', $donation))->assertForbidden();
+
+        $this->assertSame('cancel_requested', $donation->fresh()->status->value);
+        $this->assertDatabaseCount('journal_entries', 1);
+    }
+
+    public function test_a_receipt_can_still_be_printed_while_a_cancellation_is_pending(): void
+    {
+        $donation = $this->record();
+        $this->actingAs($this->admin)->post(route('donations.cancel', $donation));
+
+        $this->actingAs($this->agent)->get(route('donations.receipt', $donation))->assertOk();
     }
 
     public function test_an_agent_cannot_cancel_a_donation_or_edit_a_donor(): void
@@ -357,7 +519,7 @@ class DonationTest extends TestCase
         $this->assertStringContainsString('donation-receipt-000001.pdf', (string) $response->headers->get('Content-Disposition'));
         $this->assertStringStartsWith('%PDF', $response->streamedContent());
 
-        $this->actingAs($this->admin)->post(route('donations.cancel', $donation));
+        $this->withSession(['acting_tenant_id' => $this->tenant->id])->actingAs($this->user('Portal Manager'))->post(route('donations.cancel', $donation));
         $this->actingAs($this->agent)->get(route('donations.receipt', $donation))->assertSessionHas('error');
     }
 
@@ -388,6 +550,59 @@ class DonationTest extends TestCase
         $this->assertStringContainsString('Charity', $html);
         $this->assertStringContainsString('St. Mary Church', $html);
         $this->assertStringContainsString(e($this->agent->name), $html);
+    }
+
+    public function test_donation_info_is_saved_by_an_admin_and_printed_on_the_receipt(): void
+    {
+        $this->withSession(['acting_tenant_id' => $this->tenant->id])->actingAs($this->user('Portal Manager'))->put(route('donations.instructions'), [
+            'instructions' => "InstaPay: church@instapay\nBank: CIB 1234567890",
+        ])->assertSessionHasNoErrors();
+
+        $donation = $this->record();
+        $html = view('pdf.donation-receipt', app(DonationService::class)->receiptData($donation))->render();
+
+        $this->assertStringContainsString('InstaPay: church@instapay', $html);
+        $this->assertStringContainsString('CIB 1234567890', $html);
+        $this->assertStringContainsString('عبر الواتساب رجاء كتابة رقم الهاتف في سبب التحويل', $html);
+    }
+
+    public function test_the_receipt_has_no_donation_info_section_when_none_is_set(): void
+    {
+        $html = view('pdf.donation-receipt', app(DonationService::class)->receiptData($this->record()))->render();
+
+        $this->assertStringNotContainsString('للتبرع عن بعد', $html);
+    }
+
+    public function test_a_platform_admin_can_print_a_receipt_with_the_donation_info(): void
+    {
+        $this->tenant->update(['donation_instructions' => 'InstaPay: church@instapay']);
+        $donation = $this->record();
+        $admin = $this->user('Platform Admin');
+
+        foreach ([['acting_tenant_id' => $this->tenant->id], []] as $session) {
+            $response = $this->withSession($session)->actingAs($admin)->get(route('donations.receipt', ['donation' => $donation, 'inline' => 1]));
+
+            $response->assertOk();
+            $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        }
+    }
+
+    public function test_a_platform_admin_viewing_all_tenants_cannot_save_the_donation_info(): void
+    {
+        $this->actingAs($this->user('Platform Admin'))->put(route('donations.instructions'), ['instructions' => 'x'])
+            ->assertSessionHas('error');
+
+        $this->assertNull($this->tenant->fresh()->donation_instructions);
+    }
+
+    public function test_only_platform_roles_can_change_the_donation_info(): void
+    {
+        foreach ([$this->agent, $this->admin] as $user) {
+            $this->actingAs($user)->put(route('donations.instructions'), ['instructions' => 'x'])->assertForbidden();
+        }
+
+        $this->withSession(['acting_tenant_id' => $this->tenant->id])->actingAs($this->user('Platform Admin'))->put(route('donations.instructions'), ['instructions' => 'x'])->assertRedirect();
+        $this->assertSame('x', $this->tenant->fresh()->donation_instructions);
     }
 
     public function test_a_donations_only_user_is_sent_from_the_dashboard_to_donations(): void

@@ -18,6 +18,7 @@ class Tenant extends Model
         'base_currency',
         'is_active',
         'modules',
+        'donation_instructions',
     ];
 
     protected $casts = [

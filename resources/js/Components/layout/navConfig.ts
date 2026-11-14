@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Gauge, HeartHandshake, Target, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Users, Users2, Waves, Workflow } from 'lucide-react';
+import { ArrowLeftRight, Gauge, HeartHandshake, Target, HandCoins, Boxes, BookOpen, BookText, Building2, Calendar, CircleDollarSign, ClipboardList, FileText, Globe, LandmarkIcon, ListTree, LayoutDashboard, PiggyBank, Receipt, ReceiptText, Percent, RefreshCw, Scale, ShieldCheck, Tags, TrendingUp, Truck, Undo2, Users, Users2, Waves, Workflow } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavConfigItem {
@@ -55,6 +55,7 @@ export const navConfig: NavConfigGroup[] = [
         items: [
             { label: 'Donations', routeName: 'donations.index', icon: HeartHandshake, permission: 'donations.view' },
             { label: 'Donors', routeName: 'donors.index', icon: Users, permission: 'donations.view' },
+            { label: 'Cancel requests', routeName: 'donations.cancel-requests', icon: Undo2, permission: 'tenants.manage' },
         ],
     },
     {

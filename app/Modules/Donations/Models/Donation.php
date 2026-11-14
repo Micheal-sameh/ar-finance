@@ -27,12 +27,16 @@ class Donation extends Model
         'donated_at',
         'payment_method',
         'payment_reference',
+        'payment_account_id',
         'status',
         'notes',
         'receipt_number',
         'created_by',
         'cancelled_at',
         'cancelled_by',
+        'cancel_reason',
+        'cancel_requested_at',
+        'cancel_requested_by',
     ];
 
     protected $casts = [
@@ -43,6 +47,7 @@ class Donation extends Model
         'payment_method' => DonationPaymentMethod::class,
         'status' => DonationStatus::class,
         'cancelled_at' => 'datetime',
+        'cancel_requested_at' => 'datetime',
     ];
 
     public function donor(): BelongsTo
@@ -58,6 +63,11 @@ class Donation extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function cancelRequester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancel_requested_by');
     }
 
     public function canceller(): BelongsTo

@@ -1,6 +1,6 @@
 import type { Paginated } from '@/types/finance';
 
-export type DonationStatus = 'received' | 'cancelled';
+export type DonationStatus = 'received' | 'cancel_requested' | 'cancelled';
 export type DonationPaymentMethod = 'cash' | 'bank_transfer' | 'pos' | 'instapay';
 
 export interface Donation {
@@ -25,7 +25,11 @@ export interface Donation {
     created_by_name: string | null;
     created_at: string | null;
     tenant_name: string | null;
+    cancel_reason: string | null;
+    cancel_requested_at: string | null;
+    cancel_requested_by_name: string | null;
     can_cancel: boolean;
+    can_approve_cancel: boolean;
     can_print: boolean;
 }
 
@@ -44,6 +48,8 @@ export interface DonationOptions {
     currencies: { code: string; name: string }[];
     baseCurrency: string;
     paymentMethods: { value: DonationPaymentMethod; label: string }[];
+    /** Accounts each method can be paid into; the first is the default. */
+    paymentAccounts: Record<string, { id: number; label: string }[]>;
     creators: { id: number; name: string }[];
 }
 

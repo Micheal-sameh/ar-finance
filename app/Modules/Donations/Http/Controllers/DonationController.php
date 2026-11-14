@@ -4,10 +4,15 @@ namespace App\Modules\Donations\Http\Controllers;
 
 use App\Http\Controllers\Concerns\GeneratesPdf;
 use App\Http\Controllers\Controller;
+use App\Modules\Donations\Enums\DonationStatus;
+use App\Modules\Donations\Http\Requests\ApproveDonationCancelRequest;
 use App\Modules\Donations\Http\Requests\CancelDonationRequest;
+use App\Modules\Donations\Http\Requests\ListCancelRequestsRequest;
 use App\Modules\Donations\Http\Requests\ListDonationsRequest;
+use App\Modules\Donations\Http\Requests\RejectDonationCancelRequest;
 use App\Modules\Donations\Http\Requests\ShowDonationReceiptRequest;
 use App\Modules\Donations\Http\Requests\StoreDonationRequest;
+use App\Modules\Donations\Http\Requests\UpdateDonationInstructionsRequest;
 use App\Modules\Donations\Http\Resources\DonationResource;
 use App\Modules\Donations\Models\Donation;
 use App\Modules\Donations\Services\DonationService;
@@ -35,7 +40,29 @@ class DonationController extends Controller
             'filters' => $filters,
             'options' => $this->donations->formOptions(),
             'canCreate' => $request->user()->can('donations.create'),
+            'canApproveCancel' => $request->user()->can('tenants.manage'),
+            'canEditInfo' => $request->user()->can('tenants.manage') && $this->donations->hasActiveTenant(),
+            'instructions' => $this->donations->instructions(),
         ]);
+    }
+
+    public function cancelRequests(ListCancelRequestsRequest $request): Response
+    {
+        return Inertia::render('Donations/CancelRequests', [
+            'donations' => $this->donations->paginate(['status' => DonationStatus::CancelRequested->value])
+                ->through(fn (Donation $donation) => (new DonationResource($donation))->resolve()),
+        ]);
+    }
+
+    public function updateInstructions(UpdateDonationInstructionsRequest $request): RedirectResponse
+    {
+        try {
+            $this->donations->updateInstructions($request->instructions());
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Receipt donation info saved.');
     }
 
     public function store(StoreDonationRequest $request): RedirectResponse
@@ -54,12 +81,36 @@ class DonationController extends Controller
     public function cancel(CancelDonationRequest $request, Donation $donation): RedirectResponse
     {
         try {
-            $this->donations->cancel($donation, $request->user()->id);
+            $cancelled = $this->donations->cancel($donation, $request->user(), $request->reason());
         } catch (RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
 
-        return back()->with('success', 'Donation cancelled and its journal entries reversed.');
+        return back()->with('success', $cancelled->status === DonationStatus::Cancelled
+            ? 'Donation cancelled and its journal entries reversed.'
+            : 'Cancellation requested — a Platform Admin or Portal Manager must approve it.');
+    }
+
+    public function approveCancel(ApproveDonationCancelRequest $request, Donation $donation): RedirectResponse
+    {
+        try {
+            $this->donations->approveCancel($donation, $request->user()->id);
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Cancellation approved — the donation is cancelled and its journal entries reversed.');
+    }
+
+    public function rejectCancel(RejectDonationCancelRequest $request, Donation $donation): RedirectResponse
+    {
+        try {
+            $this->donations->rejectCancel($donation);
+        } catch (RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Cancellation rejected — the donation stays received.');
     }
 
     public function receipt(ShowDonationReceiptRequest $request, Donation $donation): StreamedResponse|RedirectResponse

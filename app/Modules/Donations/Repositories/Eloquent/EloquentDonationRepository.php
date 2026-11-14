@@ -15,7 +15,7 @@ class EloquentDonationRepository implements DonationRepositoryInterface
     public function paginate(array $filters = [], int $perPage = 25): LengthAwarePaginator
     {
         return Donation::query()
-            ->with(['donor', 'costCenter:id,name', 'creator:id,name', 'tenant:id,name'])
+            ->with(['donor', 'costCenter:id,name', 'creator:id,name', 'tenant:id,name', 'cancelRequester:id,name'])
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(function ($query) use ($search) {
                 $query->where('payment_reference', 'like', "%{$search}%")
                     ->orWhere('receipt_number', $search)

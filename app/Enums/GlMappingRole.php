@@ -26,6 +26,7 @@ enum GlMappingRole: string
     case BookingCashPayment = 'booking_cash_payment';
     case BookingBankPayment = 'booking_bank_payment';
     case BookingPosPayment = 'booking_pos_payment';
+    case BookingInstapayPayment = 'booking_instapay_payment';
     case DonationRevenue = 'donation_revenue';
     case DonationCashPayment = 'donation_cash_payment';
     case DonationBankPayment = 'donation_bank_payment';
@@ -52,6 +53,7 @@ enum GlMappingRole: string
             self::BookingCashPayment => 'Booking cash payments received into',
             self::BookingBankPayment => 'Booking bank transfers received into',
             self::BookingPosPayment => 'Booking POS (card) payments received into',
+            self::BookingInstapayPayment => 'Booking InstaPay payments received into',
             self::DonationRevenue => 'Donations income',
             self::DonationCashPayment => 'Cash donations received into',
             self::DonationBankPayment => 'Bank-transfer donations received into',
@@ -80,6 +82,7 @@ enum GlMappingRole: string
             self::BookingCashPayment => 'The cash account a booking is paid into when the customer pays in cash.',
             self::BookingBankPayment => 'The bank account a booking is paid into when the customer pays by bank transfer.',
             self::BookingPosPayment => 'The account card payments taken on the POS machine are recorded in, usually a bank or card-clearing account.',
+            self::BookingInstapayPayment => 'The bank account a booking is paid into when the customer pays by InstaPay.',
             self::DonationRevenue => 'The income account every donation is credited to.',
             self::DonationCashPayment => 'The cash account a donation is paid into when the donor gives cash.',
             self::DonationBankPayment => 'The bank account a donation is paid into when the donor pays by bank transfer.',
@@ -96,7 +99,7 @@ enum GlMappingRole: string
     public function allowedTypes(): array
     {
         return match ($this) {
-            self::Receivable, self::TaxReceivable, self::FixedAsset, self::AccumulatedDepreciation, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment, self::DonationInstapayPayment => [AccountType::Asset],
+            self::Receivable, self::TaxReceivable, self::FixedAsset, self::AccumulatedDepreciation, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment, self::BookingInstapayPayment, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment, self::DonationInstapayPayment => [AccountType::Asset],
             self::Payable, self::TaxPayable, self::PayrollPayable, self::PayrollDeductions => [AccountType::Liability],
             self::Revenue, self::BookingRevenue, self::DonationRevenue => [AccountType::Revenue],
             self::PurchaseExpense, self::PayrollExpense, self::Depreciation => [AccountType::Expense],
@@ -115,7 +118,7 @@ enum GlMappingRole: string
             self::PayrollExpense, self::PayrollPayable, self::PayrollDeductions => 'Payroll',
             self::FixedAsset, self::Depreciation, self::AccumulatedDepreciation => 'Fixed assets',
             self::FxGainLoss => 'Currency',
-            self::BookingRevenue, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment => 'Booking',
+            self::BookingRevenue, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment, self::BookingInstapayPayment => 'Booking',
             self::DonationRevenue, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment, self::DonationInstapayPayment => 'Donations',
         };
     }

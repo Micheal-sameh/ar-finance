@@ -33,6 +33,7 @@ class Booking extends Model
         'discount_amount',
         'payment_method',
         'payment_reference',
+        'payment_account_id',
         'status',
         'notes',
         'recurrence',

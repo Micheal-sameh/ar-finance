@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Banknote, CreditCard, FileDown, HeartHandshake, Landmark, Plus, Printer, Smartphone, UserPlus, XCircle } from 'lucide-react';
+import { Banknote, Check, CreditCard, FileDown, HeartHandshake, Landmark, Plus, Printer, Smartphone, Undo2, UserPlus, XCircle } from 'lucide-react';
 import { FormEvent, type ReactNode, useState } from 'react';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
@@ -22,6 +22,9 @@ interface Props {
     filters: DonationFilters;
     options: DonationOptions;
     canCreate: boolean;
+    canEditInfo: boolean;
+    canApproveCancel: boolean;
+    instructions: string | null;
 }
 
 const METHOD_ICONS: Record<DonationPaymentMethod, ReactNode> = {
@@ -33,10 +36,13 @@ const METHOD_ICONS: Record<DonationPaymentMethod, ReactNode> = {
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-export default function DonationsIndex({ donations, filters, options, canCreate }: Props) {
+export default function DonationsIndex({ donations, filters, options, canCreate, canEditInfo, canApproveCancel, instructions }: Props) {
     const confirm = useConfirm();
     const [modalOpen, setModalOpen] = useState(false);
     const [donorModalOpen, setDonorModalOpen] = useState(false);
+    const [infoModalOpen, setInfoModalOpen] = useState(false);
+    const [cancelTarget, setCancelTarget] = useState<Donation | null>(null);
+    const cancelForm = useForm({ reason: '' });
     const [formError, setFormError] = useState<string | null>(null);
     const [filterValues, setFilterValues] = useState({
         search: filters.search ?? '',
@@ -58,11 +64,13 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
         donated_at: today(),
         payment_method: 'cash' as DonationPaymentMethod,
         payment_reference: '',
+        payment_account_id: '' as number | '',
         notes: '',
     };
 
     const form = useForm(emptyForm);
     const donorForm = useForm({ name: '', phone: '', email: '', notes: '' });
+    const infoForm = useForm({ instructions: instructions ?? '' });
     const isForeign = form.data.currency !== options.baseCurrency;
     const hasFilters = Object.values(filterValues).some((value) => value !== '');
     const from = donations.total === 0 ? 0 : (donations.current_page - 1) * donations.per_page + 1;
@@ -87,6 +95,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
 
     function submit(e: FormEvent, printAfter = false) {
         e.preventDefault();
+        if (form.data.cost_center_id === '' || form.data.amount === '') return;
         setFormError(null);
 
         // Without preserveState the page remounts on the redirect back and a
@@ -115,8 +124,17 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
         });
     }
 
+    function submitInfo(e: FormEvent) {
+        e.preventDefault();
+        infoForm.put(route('donations.instructions'), {
+            preserveScroll: true,
+            onSuccess: () => setInfoModalOpen(false),
+        });
+    }
+
     function submitDonor(e: FormEvent) {
         e.preventDefault();
+        if (donorForm.data.name.trim() === '') return;
         const knownIds = new Set(options.donors.map((donor) => donor.id));
 
         donorForm.post(route('donors.store'), {
@@ -132,14 +150,31 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
         });
     }
 
-    async function cancelDonation(donation: Donation) {
-        const confirmed = await confirm(`Cancel donation #${donation.receipt_number}? Its journal entries will be reversed.`, {
-            variant: 'danger',
-            confirmLabel: 'Cancel donation',
+    function openCancel(donation: Donation) {
+        cancelForm.reset();
+        setCancelTarget(donation);
+    }
+
+    function submitCancel(e: FormEvent) {
+        e.preventDefault();
+        if (!cancelTarget) return;
+
+        cancelForm.post(route('donations.cancel', cancelTarget.id), {
+            preserveScroll: true,
+            onSuccess: () => setCancelTarget(null),
         });
+    }
+
+    async function decideCancel(donation: Donation, approve: boolean) {
+        const confirmed = await confirm(
+            approve
+                ? `Approve cancelling donation #${donation.receipt_number}? Its journal entries will be reversed.`
+                : `Reject the cancellation of donation #${donation.receipt_number}? It stays received.`,
+            { variant: approve ? 'danger' : 'primary', confirmLabel: approve ? 'Approve cancellation' : 'Reject request' },
+        );
 
         if (confirmed) {
-            router.post(route('donations.cancel', donation.id), {}, { preserveScroll: true });
+            router.post(route(approve ? 'donations.approve-cancel' : 'donations.reject-cancel', donation.id), {}, { preserveScroll: true });
         }
     }
 
@@ -164,11 +199,18 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                 title="Donations"
                 subtitle="Record what donors give, post it to the ledger at the right center, and print the donor’s receipt."
                 action={
-                    canCreate && (
-                        <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
-                            Record Donation
-                        </Button>
-                    )
+                    <div className="d-flex gap-2">
+                        {canEditInfo && (
+                            <Button variant="outline" leadingIcon={<Smartphone size={16} />} onClick={() => setInfoModalOpen(true)}>
+                                Receipt donation info
+                            </Button>
+                        )}
+                        {canCreate && (
+                            <Button leadingIcon={<Plus size={16} />} onClick={openCreate}>
+                                Record Donation
+                            </Button>
+                        )}
+                    </div>
                 }
             />
 
@@ -206,6 +248,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                             <Select aria-label="Status" value={filterValues.status} onChange={(e) => setFilterValues({ ...filterValues, status: e.target.value })}>
                                 <option value="">All statuses</option>
                                 <option value="received">Received</option>
+                                <option value="cancel_requested">Cancel requested</option>
                                 <option value="cancelled">Cancelled</option>
                             </Select>
                             <Select aria-label="Recorded by" value={filterValues.created_by} onChange={(e) => setFilterValues({ ...filterValues, created_by: e.target.value })}>
@@ -265,7 +308,9 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                                     </Table.Cell>
                                     <Table.Cell label="Recorded by">{donation.created_by_name ?? '—'}</Table.Cell>
                                     <Table.Cell label="Status">
-                                        <Badge variant={donation.status === 'received' ? 'success' : 'neutral'}>{donation.status_label}</Badge>
+                                        <span title={donation.cancel_reason ? `${donation.cancel_requested_by_name ?? ''}: ${donation.cancel_reason}` : undefined}>
+                                            <Badge variant={donation.status === 'received' ? 'success' : donation.status === 'cancel_requested' ? 'warning' : 'neutral'}>{donation.status_label}</Badge>
+                                        </span>
                                     </Table.Cell>
                                     <Table.Cell className="text-end pe-3" label="Actions">
                                         <div className="d-flex justify-content-end gap-1">
@@ -288,9 +333,19 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                                                 </>
                                             )}
                                             {donation.can_cancel && (
-                                                <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => cancelDonation(donation)} aria-label="Cancel donation" title="Cancel donation">
+                                                <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => openCancel(donation)} aria-label={canApproveCancel ? 'Cancel donation' : 'Request cancellation'} title={canApproveCancel ? 'Cancel donation' : 'Request cancellation'}>
                                                     <XCircle size={16} />
                                                 </button>
+                                            )}
+                                            {donation.can_approve_cancel && (
+                                                <>
+                                                    <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-danger)' }} onClick={() => decideCancel(donation, true)} aria-label="Approve cancellation" title="Approve cancellation">
+                                                        <Check size={16} />
+                                                    </button>
+                                                    <button type="button" className="btn btn-sm p-1" style={{ color: 'var(--af-label)' }} onClick={() => decideCancel(donation, false)} aria-label="Reject cancellation request" title="Reject cancellation request">
+                                                        <Undo2 size={16} />
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
                                     </Table.Cell>
@@ -333,6 +388,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                 }
             >
                 <form onSubmit={submit} className="d-flex flex-column gap-3">
+                    <button type="submit" hidden tabIndex={-1} aria-hidden="true" />
                     {formError && <div style={{ color: 'var(--af-danger)', fontSize: '13px' }}>{formError}</div>}
 
                     <div className="d-flex gap-2 align-items-end">
@@ -433,7 +489,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                                     variant={form.data.payment_method === method.value ? 'primary' : 'outline'}
                                     leadingIcon={METHOD_ICONS[method.value]}
                                     aria-pressed={form.data.payment_method === method.value}
-                                    onClick={() => form.setData('payment_method', method.value)}
+                                    onClick={() => form.setData((data) => ({ ...data, payment_method: method.value, payment_account_id: '' }))}
                                     style={{ flex: 1 }}
                                 >
                                     {method.label}
@@ -442,6 +498,22 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                         </div>
                         {form.errors.payment_method && <div style={{ color: 'var(--af-danger)', fontSize: '12px', marginTop: '4px' }}>{form.errors.payment_method}</div>}
                     </div>
+
+                    {(options.paymentAccounts[form.data.payment_method]?.length ?? 0) > 1 && (
+                        <Select
+                            label="Paid into account"
+                            help="Which of your accounts received this donation. The first one is the default; pick another when the donor paid into a different bank account."
+                            value={form.data.payment_account_id === '' ? options.paymentAccounts[form.data.payment_method][0].id : form.data.payment_account_id}
+                            onChange={(e) => form.setData('payment_account_id', Number(e.target.value))}
+                            error={form.errors.payment_account_id}
+                        >
+                            {options.paymentAccounts[form.data.payment_method].map((account) => (
+                                <option key={account.id} value={account.id}>
+                                    {account.label}
+                                </option>
+                            ))}
+                        </Select>
+                    )}
 
                     <Input
                         label={referenceLabel}
@@ -453,6 +525,67 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                     />
 
                     <Input label="Notes (optional)" help="Anything worth remembering about this donation." value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)} error={form.errors.notes} />
+                </form>
+            </Modal>
+
+            <Modal
+                open={cancelTarget !== null}
+                onClose={() => setCancelTarget(null)}
+                title={canApproveCancel ? 'Cancel donation' : 'Request cancellation'}
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setCancelTarget(null)}>
+                            Back
+                        </Button>
+                        <Button variant="danger" onClick={submitCancel} loading={cancelForm.processing}>
+                            {canApproveCancel ? 'Cancel donation' : 'Send request'}
+                        </Button>
+                    </>
+                }
+            >
+                <form onSubmit={submitCancel} className="d-flex flex-column gap-2">
+                    <button type="submit" hidden tabIndex={-1} aria-hidden="true" />
+                    <div style={{ fontSize: '13px' }}>
+                        {canApproveCancel
+                            ? `Donation #${cancelTarget?.receipt_number} will be cancelled and its journal entries reversed.`
+                            : `Donation #${cancelTarget?.receipt_number} stays in the books until a Platform Admin or Portal Manager approves the request.`}
+                    </div>
+                    <Input label="Reason" help="Why this donation should be cancelled, for example a wrong amount or a duplicate. The approver sees it." value={cancelForm.data.reason} onChange={(e) => cancelForm.setData('reason', e.target.value)} error={cancelForm.errors.reason} />
+                </form>
+            </Modal>
+
+            <Modal
+                open={infoModalOpen}
+                onClose={() => setInfoModalOpen(false)}
+                title="Receipt donation info"
+                footer={
+                    <>
+                        <Button variant="outline" onClick={() => setInfoModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={submitInfo} loading={infoForm.processing}>
+                            Save
+                        </Button>
+                    </>
+                }
+            >
+                <form onSubmit={submitInfo} className="d-flex flex-column gap-2">
+                    <label htmlFor="donation-instructions" className="form-label mb-0">
+                        How to donate without visiting
+                    </label>
+                    <textarea
+                        id="donation-instructions"
+                        className="form-control"
+                        rows={5}
+                        maxLength={1000}
+                        placeholder={'InstaPay: name@instapay\nBank: CIB — account 1234567890'}
+                        value={infoForm.data.instructions}
+                        onChange={(e) => infoForm.setData('instructions', e.target.value)}
+                    />
+                    <div style={{ fontSize: '12px', color: 'var(--af-label)' }}>
+                        Printed at the bottom of every donation receipt so donors know they can give by InstaPay or bank transfer without coming to the church. Put your InstaPay address and bank account details here, one per line. Leave it empty to print nothing.
+                    </div>
+                    {infoForm.errors.instructions && <div style={{ fontSize: '12px', color: 'var(--af-danger, #b00020)' }}>{infoForm.errors.instructions}</div>}
                 </form>
             </Modal>
 
@@ -472,6 +605,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                 }
             >
                 <form onSubmit={submitDonor} className="d-flex flex-column gap-3">
+                    <button type="submit" hidden tabIndex={-1} aria-hidden="true" />
                     <Input label="Name" help="The donor’s full name as it should appear on their receipt." value={donorForm.data.name} onChange={(e) => donorForm.setData('name', e.target.value)} error={donorForm.errors.name} />
                     <Input label="Phone (optional)" help="A number to reach the donor on. You can leave it blank." value={donorForm.data.phone} onChange={(e) => donorForm.setData('phone', e.target.value)} error={donorForm.errors.phone} />
                     <Input label="Email (optional)" help="An email address for the donor. You can leave it blank." type="email" value={donorForm.data.email} onChange={(e) => donorForm.setData('email', e.target.value)} error={donorForm.errors.email} />

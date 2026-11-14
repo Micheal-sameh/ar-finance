@@ -16,6 +16,7 @@ final readonly class CreateDonationData
         public DonationPaymentMethod $paymentMethod,
         public ?string $paymentReference,
         public ?string $notes,
+        public ?int $paymentAccountId = null,
     ) {}
 
     /**
@@ -33,6 +34,7 @@ final readonly class CreateDonationData
             paymentMethod: DonationPaymentMethod::from($data['payment_method']),
             paymentReference: isset($data['payment_reference']) && trim((string) $data['payment_reference']) !== '' ? trim((string) $data['payment_reference']) : null,
             notes: isset($data['notes']) && trim((string) $data['notes']) !== '' ? trim((string) $data['notes']) : null,
+            paymentAccountId: ! empty($data['payment_account_id']) ? (int) $data['payment_account_id'] : null,
         );
     }
 }

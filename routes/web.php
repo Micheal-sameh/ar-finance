@@ -222,6 +222,7 @@ Route::middleware(['auth', 'active', 'tenant', 'throttle:240,1'])->group(functio
 
     Route::get('gl-mapping', [GlMappingController::class, 'index'])->name('gl-mapping.index');
     Route::put('gl-mapping', [GlMappingController::class, 'update'])->name('gl-mapping.update');
+    Route::put('gl-mapping/payment-accounts', [GlMappingController::class, 'updatePaymentAccounts'])->name('gl-mapping.payment-accounts');
 
     Route::get('budgets', [BudgetController::class, 'index'])->name('budgets.index');
     Route::get('budgets/import-template', [BudgetController::class, 'importTemplate'])->name('budgets.import-template');
