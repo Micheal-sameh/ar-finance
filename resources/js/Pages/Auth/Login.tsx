@@ -9,7 +9,7 @@ import { InfoTip } from '@/Components/ui/InfoTip';
 export default function Login() {
     const { turnstile_site_key: turnstileSiteKey } = usePage<{ turnstile_site_key?: string }>().props;
     const turnstileRef = useRef<TurnstileHandle>(null);
-    const form = useForm({ identifier: '', password: '', remember: false, 'cf-turnstile-response': '' });
+    const form = useForm({ identifier: '', password: '', remember: true, 'cf-turnstile-response': '' });
     const [showPassword, setShowPassword] = useState(false);
     const captchaError = (form.errors as Record<string, string | undefined>)['cf-turnstile-response'];
 
