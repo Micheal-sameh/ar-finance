@@ -1,7 +1,7 @@
 import type { Paginated } from '@/types/finance';
 
 export type DonationStatus = 'received' | 'cancelled';
-export type DonationPaymentMethod = 'cash' | 'bank_transfer' | 'pos';
+export type DonationPaymentMethod = 'cash' | 'bank_transfer' | 'pos' | 'instapay';
 
 export interface Donation {
     id: number;

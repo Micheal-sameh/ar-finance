@@ -37,6 +37,8 @@ class DonationTest extends TestCase
 
     private Account $pos;
 
+    private Account $instapay;
+
     private Account $income;
 
     protected function setUp(): void
@@ -52,6 +54,7 @@ class DonationTest extends TestCase
         $this->cash = $this->account('1010', 'Cash on Hand', AccountType::Asset);
         $this->bank = $this->account('1020', 'Bank', AccountType::Asset);
         $this->pos = $this->account('1030', 'POS Clearing', AccountType::Asset);
+        $this->instapay = $this->account('1040', 'InstaPay Bank', AccountType::Asset);
         $this->income = $this->account('4500', 'Donations Income', AccountType::Revenue);
 
         $this->center = CostCenter::create(['tenant_id' => $this->tenant->id, 'name' => 'Charity', 'type' => 'profit']);
@@ -61,6 +64,7 @@ class DonationTest extends TestCase
             GlMappingRole::DonationCashPayment->value => $this->cash,
             GlMappingRole::DonationBankPayment->value => $this->bank,
             GlMappingRole::DonationPosPayment->value => $this->pos,
+            GlMappingRole::DonationInstapayPayment->value => $this->instapay,
             GlMappingRole::DonationRevenue->value => $this->income,
         ] as $role => $account) {
             GlMapping::create(['tenant_id' => $this->tenant->id, 'role' => $role, 'account_id' => $account->id]);
@@ -138,11 +142,13 @@ class DonationTest extends TestCase
     {
         $this->record(['payment_method' => 'bank_transfer', 'payment_reference' => 'TRX-1']);
         $this->record(['payment_method' => 'pos', 'payment_reference' => 'POS-1']);
+        $this->record(['payment_method' => 'instapay', 'payment_reference' => 'IPN-1']);
 
+        $this->assertDatabaseHas('journal_lines', ['account_id' => $this->instapay->id, 'debit' => 250.00]);
         $this->assertDatabaseHas('journal_lines', ['account_id' => $this->bank->id, 'debit' => 250.00]);
         $this->assertDatabaseHas('journal_lines', ['account_id' => $this->pos->id, 'debit' => 250.00]);
         $this->assertDatabaseMissing('journal_lines', ['account_id' => $this->cash->id]);
-        $this->assertSame([1, 2], Donation::orderBy('id')->pluck('receipt_number')->all());
+        $this->assertSame([1, 2, 3], Donation::orderBy('id')->pluck('receipt_number')->all());
     }
 
     public function test_a_foreign_currency_donation_is_posted_in_the_base_currency(): void

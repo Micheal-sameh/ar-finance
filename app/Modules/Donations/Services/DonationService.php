@@ -223,6 +223,7 @@ class DonationService
                 DonationPaymentMethod::Cash => 'نقداً',
                 DonationPaymentMethod::BankTransfer => 'تحويل بنكي',
                 DonationPaymentMethod::Pos => 'ماكينة نقاط البيع',
+                DonationPaymentMethod::Instapay => 'إنستاباي',
             },
             'paymentReference' => $donation->payment_reference,
             'receivedBy' => $donation->creator?->name,

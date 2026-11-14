@@ -9,6 +9,7 @@ enum DonationPaymentMethod: string
     case Cash = 'cash';
     case BankTransfer = 'bank_transfer';
     case Pos = 'pos';
+    case Instapay = 'instapay';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum DonationPaymentMethod: string
             self::Cash => 'Cash',
             self::BankTransfer => 'Bank transfer',
             self::Pos => 'POS',
+            self::Instapay => 'InstaPay',
         };
     }
 
@@ -28,6 +30,7 @@ enum DonationPaymentMethod: string
             self::Cash => GlMappingRole::DonationCashPayment,
             self::BankTransfer => GlMappingRole::DonationBankPayment,
             self::Pos => GlMappingRole::DonationPosPayment,
+            self::Instapay => GlMappingRole::DonationInstapayPayment,
         };
     }
 }

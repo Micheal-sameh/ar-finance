@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Banknote, CreditCard, FileDown, HeartHandshake, Landmark, Plus, Printer, UserPlus, XCircle } from 'lucide-react';
+import { Banknote, CreditCard, FileDown, HeartHandshake, Landmark, Plus, Printer, Smartphone, UserPlus, XCircle } from 'lucide-react';
 import { FormEvent, type ReactNode, useState } from 'react';
 import { MoneyDisplay } from '@/Components/finance/MoneyDisplay';
 import { PageHeader } from '@/Components/layout/PageHeader';
@@ -28,6 +28,7 @@ const METHOD_ICONS: Record<DonationPaymentMethod, ReactNode> = {
     cash: <Banknote size={16} />,
     bank_transfer: <Landmark size={16} />,
     pos: <CreditCard size={16} />,
+    instapay: <Smartphone size={16} />,
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -153,7 +154,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
     }
 
     const referenceLabel =
-        form.data.payment_method === 'pos' ? 'POS transaction reference (optional)' : form.data.payment_method === 'bank_transfer' ? 'Bank transfer reference (optional)' : 'Cash receipt number (optional)';
+        form.data.payment_method === 'pos' ? 'POS transaction reference (optional)' : form.data.payment_method === 'instapay' ? 'InstaPay reference number (optional)' : form.data.payment_method === 'bank_transfer' ? 'Bank transfer reference (optional)' : 'Cash receipt number (optional)';
 
     return (
         <>
@@ -444,7 +445,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
 
                     <Input
                         label={referenceLabel}
-                        help="The receipt, POS transaction or bank transfer number, so the payment can be matched to the slip or bank statement later."
+                        help="The receipt, POS transaction, InstaPay or bank transfer number, so the payment can be matched to the slip or bank statement later."
                         maxLength={100}
                         value={form.data.payment_reference}
                         onChange={(e) => form.setData('payment_reference', e.target.value)}
