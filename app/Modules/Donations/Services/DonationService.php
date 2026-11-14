@@ -210,10 +210,10 @@ class DonationService
 
         return [
             'tenantName' => $donation->tenant?->name,
-            'logoPath' => resource_path('js/assets/logo.png'),
+            'churchLogoPath' => resource_path('js/assets/church-logo.png'),
             'receiptNumber' => str_pad((string) $donation->receipt_number, 6, '0', STR_PAD_LEFT),
             'date' => $donation->donated_at->format('Y-m-d'),
-            'donorName' => $donation->donor?->name ?? 'فاعل خير',
+            'donorName' => $donation->donor?->name ?? 'ابناء الانبا رويس',
             'amountNumber' => number_format($amount, 2),
             'currency' => $donation->currency,
             'currencyName' => ArabicAmountInWords::currencyName($donation->currency),

@@ -381,7 +381,7 @@ class DonationTest extends TestCase
         $this->assertStringContainsString('جنيه مصري', $html);
         $this->assertStringContainsString('Charity', $html);
         $this->assertStringContainsString('St. Mary Church', $html);
-        $this->assertStringContainsString($this->agent->name, $html);
+        $this->assertStringContainsString(e($this->agent->name), $html);
     }
 
     public function test_a_donations_only_user_is_sent_from_the_dashboard_to_donations(): void

@@ -3,49 +3,63 @@
 <head>
 <meta charset="utf-8">
 <style>
-    body { font-family: dejavusans; font-size: 14px; color: #1a1a1a; direction: rtl; text-align: right; }
-    .frame { border: 2px solid #1e3a5f; padding: 22px 26px; }
-    .header { width: 100%; border-bottom: 1.5px solid #1e3a5f; padding-bottom: 12px; margin-bottom: 18px; }
-    .header td { vertical-align: middle; }
-    .logo { width: 90px; }
-    .church-name { font-size: 20px; font-weight: bold; color: #1e3a5f; }
-    .title { font-size: 24px; font-weight: bold; text-align: center; margin: 6px 0 18px; color: #1e3a5f; }
-    .meta { width: 100%; margin-bottom: 14px; }
-    .meta td { width: 50%; font-size: 13px; color: #444; }
+    body { font-family: dejavusans; font-size: 13px; color: #1a1a1a; direction: rtl; text-align: right; }
+    .frame { border: 2.5px solid #000000; padding: 6px; }
+    .inner { border: 0.75px solid #777777; padding: 20px 24px; }
+
+    table.header { width: 100%; table-layout: fixed; border-collapse: collapse; border-bottom: 2px solid #000000; }
+    table.header td { vertical-align: middle; padding-bottom: 12px; }
+    .logo { width: 95px; }
+    .church-name { font-size: 19px; font-weight: bold; color: #000000; text-align: center; }
+
+    .title { font-size: 26px; font-weight: bold; text-align: center; color: #000000; margin: 18px 0 4px; }
+    .title-rule { width: 90px; border-top: 2px solid #000000; margin: 0 auto 18px; }
+
+    table.meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    table.meta td { width: 50%; padding: 6px 2px; border-bottom: 1px solid #000000; font-size: 13px; color: #333; }
+    table.meta td strong { color: #000000; font-size: 15px; }
+
     table.rows { width: 100%; border-collapse: collapse; }
-    table.rows td { padding: 11px 6px; border-bottom: 0.5px solid #d6d6d6; vertical-align: top; }
-    table.rows td.label { width: 30%; color: #666; font-size: 13px; }
-    table.rows td.value { font-size: 15px; font-weight: bold; }
-    .amount-box { margin: 18px 0 8px; padding: 12px 14px; background: #f1f5fa; border: 1px solid #c9d6e6; text-align: center; }
-    .amount-box .number { font-size: 26px; font-weight: bold; color: #1e3a5f; }
-    .amount-box .words { font-size: 14px; margin-top: 6px; }
-    .signatures { width: 100%; margin-top: 46px; }
-    .signatures td { width: 50%; text-align: center; font-size: 13px; color: #444; }
-    .sign-line { border-top: 1px solid #444; width: 70%; margin: 0 auto 4px; }
-    .note { margin-top: 22px; text-align: center; font-size: 12px; color: #666; }
+    table.rows td { padding: 11px 10px; border-bottom: 0.5px solid #dcdcdc; vertical-align: middle; }
+    table.rows td.label { width: 32%; color: #666; font-size: 12.5px; }
+    table.rows td.value { font-size: 15px; font-weight: bold; color: #111; }
+
+    .amount-box { margin: 22px 0 6px; padding: 14px 16px; background: #ffffff; border: 2px solid #000000; text-align: center; }
+    .amount-box .caption { font-size: 12px; color: #444444; }
+    .amount-box .number { font-size: 28px; font-weight: bold; color: #000000; padding: 4px 0; }
+    .amount-box .words { font-size: 14px; color: #000000; }
+
+    table.signatures { width: 100%; margin-top: 54px; border-collapse: collapse; }
+    table.signatures td { width: 50%; text-align: center; font-size: 12.5px; color: #444; padding: 0 18px; }
+    .sign-line { border-top: 1px solid #444; margin-bottom: 5px; }
+
+    .note { margin-top: 26px; padding-top: 10px; border-top: 0.5px solid #999999; text-align: center; font-size: 12px; color: #666; }
 </style>
 </head>
 <body>
 <div class="frame">
+<div class="inner">
     <table class="header">
         <tr>
-            <td style="width: 100px;">
-                @if (is_file($logoPath))
-                    <img src="{{ $logoPath }}" class="logo" alt="">
-                @endif
-            </td>
-            <td>
+            <td style="width: 25%;"></td>
+            <td style="width: 50%; text-align: center;">
                 <div class="church-name">{{ $tenantName }}</div>
+            </td>
+            <td style="width: 25%; text-align: left;">
+                @if (is_file($churchLogoPath))
+                    <img src="{{ $churchLogoPath }}" class="logo" alt="">
+                @endif
             </td>
         </tr>
     </table>
 
     <div class="title">إيصال تبرع</div>
+    <div class="title-rule"></div>
 
     <table class="meta">
         <tr>
-            <td>رقم الإيصال: <strong>{{ $receiptNumber }}</strong></td>
-            <td>التاريخ: <strong>{{ $date }}</strong></td>
+            <td>رقم الإيصال: <strong dir="ltr">{{ $receiptNumber }}</strong></td>
+            <td style="text-align: left;">التاريخ: <strong dir="ltr">{{ $date }}</strong></td>
         </tr>
     </table>
 
@@ -69,6 +83,7 @@
     </table>
 
     <div class="amount-box">
+        <div class="caption">المبلغ المستلم</div>
         <div class="number" dir="ltr">{{ $amountNumber }} {{ $currency }}</div>
         <div class="words">{{ $amountWords }}</div>
     </div>
@@ -87,6 +102,7 @@
     </table>
 
     <div class="note">شكراً لمحبتكم وعطائكم &mdash; الرب يعوض تعب محبتكم</div>
+</div>
 </div>
 </body>
 </html>

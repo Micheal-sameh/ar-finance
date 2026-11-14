@@ -253,7 +253,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                                         <div style={{ fontWeight: 600 }}>#{donation.receipt_number}</div>
                                         <div style={{ color: 'var(--af-label)', fontSize: '12px' }}>{donation.donated_at}</div>
                                     </Table.Cell>
-                                    <Table.Cell label="Donor">{donation.donor_name ?? <span style={{ color: 'var(--af-label)' }}>Anonymous</span>}</Table.Cell>
+                                    <Table.Cell label="Donor">{donation.donor_name ?? <span style={{ color: 'var(--af-label)' }}>ابناء الانبا رويس</span>}</Table.Cell>
                                     <Table.Cell label="Center">{donation.cost_center_name ?? '—'}</Table.Cell>
                                     <Table.Cell label="Amount">
                                         <MoneyDisplay amount={donation.amount} currency={donation.currency} />
@@ -342,7 +342,7 @@ export default function DonationsIndex({ donations, filters, options, canCreate 
                                 options={options.donors.map((donor) => ({ id: donor.id, label: donor.name, detail: donor.phone }))}
                                 value={form.data.donor_id === '' ? null : form.data.donor_id}
                                 onChange={(id) => form.setData('donor_id', id ?? '')}
-                                emptyLabel="Anonymous"
+                                emptyLabel="ابناء الانبا رويس"
                                 placeholder="Search donors…"
                                 noResultsLabel="No donor matches — add them with New donor."
                                 error={form.errors.donor_id}
