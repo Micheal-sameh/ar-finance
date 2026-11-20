@@ -10,11 +10,13 @@ namespace App\Enums;
 enum TenantModule: string
 {
     case Donations = 'donations';
+    case Treasury = 'treasury';
 
     public function label(): string
     {
         return match ($this) {
             self::Donations => 'Donations',
+            self::Treasury => 'Treasury',
         };
     }
 
@@ -22,6 +24,7 @@ enum TenantModule: string
     {
         return match ($this) {
             self::Donations => 'Record donations from donors, post them to the ledger and print receipts.',
+            self::Treasury => 'Hand money to the treasurer, ask for it back and see what the treasury holds for you.',
         };
     }
 }

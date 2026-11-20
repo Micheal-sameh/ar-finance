@@ -67,6 +67,9 @@ class RolePermissionSeeder extends Seeder
         'donations.view',
         'donations.create',
         'donations.manage',
+        'treasury.view',
+        'treasury.request',
+        'treasury.manage',
     ];
 
     /**
@@ -199,5 +202,12 @@ class RolePermissionSeeder extends Seeder
         // and edit donors. No access to accounting or the GL mapping.
         $donationsAdmin = Role::firstOrCreate(['name' => 'Donations Admin', 'guard_name' => 'web']);
         $donationsAdmin->syncPermissions(['donations.view', 'donations.create', 'donations.manage']);
+
+        // Treasurer (أمين الصندوق) = runs the treasury tenant: accepts deposits
+        // and withdrawals, funds tenants, moves money between safe and banks.
+        // Tenant-side requests come from the tenant's own admins
+        // (treasury.request, part of every Admin-level role).
+        $treasurer = Role::firstOrCreate(['name' => 'Treasurer', 'guard_name' => 'web']);
+        $treasurer->syncPermissions(['treasury.view', 'treasury.manage', 'accounts.view', 'journals.view', 'bank_accounts.view']);
     }
 }

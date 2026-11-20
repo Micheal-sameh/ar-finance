@@ -38,6 +38,7 @@ class TenantService
             'slug' => $data['slug'],
             'base_currency' => $data['base_currency'],
             'is_active' => $data['is_active'] ?? true,
+            'is_treasury' => $data['is_treasury'] ?? false,
             'modules' => array_values(array_unique($data['modules'] ?? [])),
         ]);
 
@@ -56,6 +57,7 @@ class TenantService
             'slug' => $data['slug'],
             'base_currency' => $data['base_currency'],
             'is_active' => $data['is_active'] ?? $tenant->is_active,
+            'is_treasury' => $data['is_treasury'] ?? $tenant->is_treasury,
             'modules' => array_key_exists('modules', $data) ? array_values(array_unique($data['modules'] ?? [])) : $tenant->modules,
         ]);
 

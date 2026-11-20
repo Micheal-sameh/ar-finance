@@ -17,12 +17,14 @@ class Tenant extends Model
         'slug',
         'base_currency',
         'is_active',
+        'is_treasury',
         'modules',
         'donation_instructions',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_treasury' => 'boolean',
         'modules' => 'array',
     ];
 

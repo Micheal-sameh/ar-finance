@@ -8,6 +8,7 @@ export interface Tenant {
     slug: string;
     base_currency: string;
     is_active: boolean;
+    is_treasury?: boolean;
     modules?: string[] | null;
 }
 

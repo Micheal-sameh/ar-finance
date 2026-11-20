@@ -95,12 +95,14 @@ export default function TenantsIndex({ tenants, moduleOptions }: Props) {
         slug: string;
         base_currency: string;
         is_active: boolean;
+        is_treasury: boolean;
         modules: string[];
     }>({
         name: '',
         slug: '',
         base_currency: 'EGP',
         is_active: true,
+        is_treasury: false,
         modules: [],
     });
 
@@ -118,6 +120,7 @@ export default function TenantsIndex({ tenants, moduleOptions }: Props) {
             slug: tenant.slug,
             base_currency: tenant.base_currency,
             is_active: tenant.is_active,
+            is_treasury: tenant.is_treasury ?? false,
             modules: tenant.modules ?? [],
         });
         form.clearErrors();
@@ -281,6 +284,11 @@ export default function TenantsIndex({ tenants, moduleOptions }: Props) {
                             Active
                         </label>
                     )}
+                    <label className="d-flex align-items-center gap-2" style={{ fontSize: '14px' }}>
+                        <input type="checkbox" checked={form.data.is_treasury} onChange={(e) => form.setData('is_treasury', e.target.checked)} />
+                        This is the treasury (أمين الصندوق)
+                    </label>
+                    {form.errors.is_treasury && <div style={{ color: 'var(--af-danger)', fontSize: '12px' }}>{form.errors.is_treasury}</div>}
                 </form>
             </Modal>
         </>

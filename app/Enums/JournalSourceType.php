@@ -14,6 +14,7 @@ enum JournalSourceType: string
     case Booking = 'booking';
     case ReceivedPayment = 'received_payment';
     case Donation = 'donation';
+    case Treasury = 'treasury';
 
     public function label(): string
     {
@@ -28,6 +29,7 @@ enum JournalSourceType: string
             self::Booking => 'Booking',
             self::ReceivedPayment => 'Received Payment',
             self::Donation => 'Donation',
+            self::Treasury => 'Treasury',
         };
     }
 }

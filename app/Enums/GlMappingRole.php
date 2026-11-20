@@ -32,6 +32,11 @@ enum GlMappingRole: string
     case DonationBankPayment = 'donation_bank_payment';
     case DonationPosPayment = 'donation_pos_payment';
     case DonationInstapayPayment = 'donation_instapay_payment';
+    case TreasuryCash = 'treasury_cash';
+    case TreasuryReceivable = 'treasury_receivable';
+    case TreasuryPayable = 'treasury_payable';
+    case TreasuryHeld = 'treasury_held';
+    case TreasuryAdvances = 'treasury_advances';
 
     public function label(): string
     {
@@ -59,6 +64,11 @@ enum GlMappingRole: string
             self::DonationBankPayment => 'Bank-transfer donations received into',
             self::DonationPosPayment => 'POS (card) donations received into',
             self::DonationInstapayPayment => 'InstaPay donations received into',
+            self::TreasuryCash => 'Cash account for treasury transfers',
+            self::TreasuryReceivable => 'Due from treasury (money held by the treasurer)',
+            self::TreasuryPayable => 'Due to treasury (funding to repay)',
+            self::TreasuryHeld => 'Held for tenants (treasury ledger)',
+            self::TreasuryAdvances => 'Advances to tenants (treasury ledger)',
         };
     }
 
@@ -88,6 +98,11 @@ enum GlMappingRole: string
             self::DonationBankPayment => 'The bank account a donation is paid into when the donor pays by bank transfer.',
             self::DonationPosPayment => 'The account donations taken on the POS machine are recorded in, usually a bank or card-clearing account.',
             self::DonationInstapayPayment => 'The bank account a donation is paid into when the donor sends it by InstaPay, without coming to the church.',
+            self::TreasuryCash => 'The cash or bank account money leaves when you deposit with the treasurer, and arrives in when the treasurer funds you or pays out your balance.',
+            self::TreasuryReceivable => 'The asset that records the money you have handed to the treasurer and can still ask back.',
+            self::TreasuryPayable => 'The liability that records money the treasurer funded you with and you still have to repay.',
+            self::TreasuryHeld => 'Treasury tenant only: the liability for the money tenants have deposited and can ask back.',
+            self::TreasuryAdvances => 'Treasury tenant only: the asset for money the treasurer funded tenants with and is waiting to get back.',
         };
     }
 
@@ -99,8 +114,8 @@ enum GlMappingRole: string
     public function allowedTypes(): array
     {
         return match ($this) {
-            self::Receivable, self::TaxReceivable, self::FixedAsset, self::AccumulatedDepreciation, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment, self::BookingInstapayPayment, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment, self::DonationInstapayPayment => [AccountType::Asset],
-            self::Payable, self::TaxPayable, self::PayrollPayable, self::PayrollDeductions => [AccountType::Liability],
+            self::Receivable, self::TaxReceivable, self::FixedAsset, self::AccumulatedDepreciation, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment, self::BookingInstapayPayment, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment, self::DonationInstapayPayment, self::TreasuryCash, self::TreasuryReceivable, self::TreasuryAdvances => [AccountType::Asset],
+            self::Payable, self::TaxPayable, self::PayrollPayable, self::PayrollDeductions, self::TreasuryPayable, self::TreasuryHeld => [AccountType::Liability],
             self::Revenue, self::BookingRevenue, self::DonationRevenue => [AccountType::Revenue],
             self::PurchaseExpense, self::PayrollExpense, self::Depreciation => [AccountType::Expense],
             self::FxGainLoss => [AccountType::Revenue, AccountType::Expense],
@@ -120,6 +135,7 @@ enum GlMappingRole: string
             self::FxGainLoss => 'Currency',
             self::BookingRevenue, self::BookingCashPayment, self::BookingBankPayment, self::BookingPosPayment, self::BookingInstapayPayment => 'Booking',
             self::DonationRevenue, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment, self::DonationInstapayPayment => 'Donations',
+            self::TreasuryCash, self::TreasuryReceivable, self::TreasuryPayable, self::TreasuryHeld, self::TreasuryAdvances => 'Treasury',
         };
     }
 
@@ -131,6 +147,7 @@ enum GlMappingRole: string
     {
         return match ($this) {
             self::DonationRevenue, self::DonationCashPayment, self::DonationBankPayment, self::DonationPosPayment, self::DonationInstapayPayment => TenantModule::Donations,
+            self::TreasuryCash, self::TreasuryReceivable, self::TreasuryPayable, self::TreasuryHeld, self::TreasuryAdvances => TenantModule::Treasury,
             default => null,
         };
     }
