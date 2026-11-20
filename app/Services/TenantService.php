@@ -89,6 +89,11 @@ class TenantService
      */
     private function provisionTreasuryAccounts(Tenant $tenant): void
     {
+        // The treasury tenant cannot reach its own page with the module off.
+        if ($tenant->is_treasury && ! $tenant->hasModule(TenantModule::Treasury)) {
+            $tenant->update(['modules' => array_values(array_unique([...($tenant->modules ?? []), TenantModule::Treasury->value]))]);
+        }
+
         if ($tenant->hasModule(TenantModule::Treasury) || $tenant->is_treasury) {
             app(TreasuryAccountProvisioner::class)->provision($tenant);
         }

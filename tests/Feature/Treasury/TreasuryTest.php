@@ -4,6 +4,7 @@ namespace Tests\Feature\Treasury;
 
 use App\Enums\AccountType;
 use App\Enums\GlMappingRole;
+use App\Enums\TenantModule;
 use App\Models\Account;
 use App\Models\GlMapping;
 use App\Models\Tenant;
@@ -457,6 +458,47 @@ class TreasuryTest extends TestCase
         $this->requestAs($this->churchAdmin, 'deposit', 0)->assertSessionHasErrors('amount');
         $this->requestAs($this->churchAdmin, 'deposit', 100, ['transfer_date' => '2999-01-01'])->assertSessionHasErrors('transfer_date');
         $this->requestAs($this->churchAdmin, 'funding', 100)->assertSessionHasErrors('type');
+    }
+
+    public function test_a_control_account_cannot_be_the_cash_side_of_a_transfer(): void
+    {
+        // The tenant cannot take deposit money out of its own "Due from treasury" account.
+        $this->requestAs($this->churchAdmin, 'deposit', 100, [], 'church_receivable')->assertSessionHas('error');
+        $this->assertSame(0, TreasuryTransfer::query()->count());
+
+        // Nor can the treasurer park received cash in the "Advances to tenants" account.
+        $this->requestAs($this->churchAdmin, 'deposit', 100);
+        $transfer = TreasuryTransfer::query()->firstOrFail();
+        $this->accept($transfer, 100, 'advances')->assertSessionHas('error');
+        $this->assertSame(0, DB::table('journal_entries')->count());
+        $this->assertSame(TreasuryTransferStatus::Requested, $transfer->fresh()->status);
+    }
+
+    public function test_control_accounts_are_not_offered_in_the_pickers(): void
+    {
+        $this->actingAs($this->churchAdmin)->get(route('treasury.index'))->assertInertia(fn ($page) => $page
+            ->where('options.accounts', fn ($accounts) => collect($accounts)->pluck('id')->doesntContain($this->accounts['church_receivable']->id)
+                && collect($accounts)->pluck('id')->contains($this->accounts['church_cash']->id)));
+
+        $this->actingAs($this->treasurer)->get(route('treasury.index'))->assertInertia(fn ($page) => $page
+            ->where('options.locations', fn ($locations) => collect($locations)->pluck('id')->doesntContain($this->accounts['advances']->id)
+                && collect($locations)->pluck('id')->contains($this->accounts['safe']->id)));
+    }
+
+    public function test_marking_a_tenant_as_the_treasury_switches_its_module_on(): void
+    {
+        $this->treasury->update(['modules' => []]);
+        $admin = $this->user('Platform Admin', $this->church);
+
+        $this->actingAs($admin)->put(route('platform.tenants.update', $this->treasury), [
+            'name' => 'Treasury',
+            'slug' => 'treasury',
+            'base_currency' => 'EGP',
+            'is_treasury' => true,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertTrue($this->treasury->fresh()->hasModule(TenantModule::Treasury));
+        $this->actingAs($this->treasurer)->get(route('treasury.index'))->assertOk();
     }
 
     public function test_only_one_tenant_can_be_the_treasury(): void

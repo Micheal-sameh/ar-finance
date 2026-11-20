@@ -9,6 +9,7 @@ use App\Enums\GlMappingRole;
 use App\Enums\JournalSourceType;
 use App\Enums\TenantModule;
 use App\Models\Account;
+use App\Models\GlMapping;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Treasury\DTOs\TreasuryTransferData;
@@ -189,6 +190,7 @@ class TreasuryService
             ?? throw new RuntimeException("{$tenant->name} has no \"".GlMappingRole::TreasuryCash->label().'" account set in its General Ledger mapping, so the funding has nowhere to arrive.');
 
         return DB::transaction(function () use ($data, $user, $treasury, $tenant, $tenantAccountId) {
+            $this->lockTreasuryLedger();
             $transfer = $this->transfers->create([
                 'treasury_tenant_id' => $treasury->id,
                 'tenant_id' => $tenant->id,
@@ -229,6 +231,7 @@ class TreasuryService
         $treasury = $this->tenantContext->tenant();
 
         return DB::transaction(function () use ($data, $user, $treasury) {
+            $this->lockTreasuryLedger();
             $transfer = $this->transfers->create([
                 'treasury_tenant_id' => $treasury->id,
                 'tenant_id' => null,
@@ -263,6 +266,7 @@ class TreasuryService
         $this->assertTreasurySide();
 
         return DB::transaction(function () use ($transferId, $amount, $treasuryAccountId, $user) {
+            $this->lockTreasuryLedger();
             $transfer = $this->lockedTransfer($transferId);
 
             if (! $transfer->status->isDecidable()) {
@@ -321,6 +325,7 @@ class TreasuryService
         $this->assertTreasurySide();
 
         return DB::transaction(function () use ($transferId, $user) {
+            $this->lockTreasuryLedger();
             $transfer = $this->lockedTransfer($transferId);
 
             if (! $transfer->status->isVoidable()) {
@@ -575,10 +580,48 @@ class TreasuryService
         if ($account->type !== AccountType::Asset || ! $account->is_active || $account->children()->exists()) {
             throw new RuntimeException("{$account->code} {$account->name} must be an active cash or bank (asset) account that can be posted to.");
         }
+
+        if (in_array($account->id, $this->reservedAccountIds($account->tenant_id), true)) {
+            throw new RuntimeException("{$account->code} {$account->name} is a control account (receivables, fixed assets or a treasury balance), not a cash or bank account.");
+        }
     }
 
     /**
-     * Active, postable asset accounts of the current tenant.
+     * Asset accounts that are not money held: customer receivables, fixed
+     * assets and the treasury's own control accounts. They can never be the
+     * cash side of a treasury transfer — it would tie the books in knots.
+     *
+     * @return array<int, int>
+     */
+    private function reservedAccountIds(int $tenantId): array
+    {
+        return GlMapping::query()->withoutGlobalScopes()
+            ->where('tenant_id', $tenantId)
+            ->whereIn('role', [
+                GlMappingRole::Receivable->value,
+                GlMappingRole::TaxReceivable->value,
+                GlMappingRole::FixedAsset->value,
+                GlMappingRole::AccumulatedDepreciation->value,
+                GlMappingRole::TreasuryReceivable->value,
+                GlMappingRole::TreasuryAdvances->value,
+            ])
+            ->pluck('account_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * Serialises everything that spends the treasury's cash. Without it two
+     * treasurers accepting at the same moment could each see enough money in
+     * the safe and together overdraw it. Call first inside the transaction.
+     */
+    private function lockTreasuryLedger(): void
+    {
+        Tenant::query()->whereKey($this->tenantContext->id())->lockForUpdate()->first();
+    }
+
+    /**
+     * Active, postable cash/bank-type asset accounts of the current tenant.
      *
      * @return Collection<int, Account>
      */
@@ -586,9 +629,10 @@ class TreasuryService
     {
         $all = $this->accounts->all();
         $parentIds = $all->pluck('parent_id')->filter()->unique();
+        $reserved = $this->reservedAccountIds((int) $this->tenantContext->id());
 
         return $all
-            ->filter(fn (Account $account) => $account->type === AccountType::Asset && ! $parentIds->contains($account->id))
+            ->filter(fn (Account $account) => $account->type === AccountType::Asset && ! $parentIds->contains($account->id) && ! in_array($account->id, $reserved, true))
             ->sortBy('code')
             ->values();
     }
