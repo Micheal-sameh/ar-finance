@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\TenantModule;
 use App\Models\Tenant;
+use App\Modules\Treasury\Services\TreasuryAccountProvisioner;
 use Database\Seeders\ChartOfAccountsSeeder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -43,6 +44,7 @@ class TenantService
         ]);
 
         (new ChartOfAccountsSeeder)->run($tenant->id);
+        $this->provisionTreasuryAccounts($tenant);
 
         return $tenant;
     }
@@ -61,6 +63,8 @@ class TenantService
             'modules' => array_key_exists('modules', $data) ? array_values(array_unique($data['modules'] ?? [])) : $tenant->modules,
         ]);
 
+        $this->provisionTreasuryAccounts($tenant);
+
         return $tenant;
     }
 
@@ -74,6 +78,19 @@ class TenantService
     {
         $tenant->update(['modules' => array_values(array_unique($modules))]);
 
+        $this->provisionTreasuryAccounts($tenant);
+
         return $tenant;
+    }
+
+    /**
+     * A tenant that uses the treasury (or is it) gets the ledger accounts and
+     * mappings the treasury posts to; whatever already exists is left alone.
+     */
+    private function provisionTreasuryAccounts(Tenant $tenant): void
+    {
+        if ($tenant->hasModule(TenantModule::Treasury) || $tenant->is_treasury) {
+            app(TreasuryAccountProvisioner::class)->provision($tenant);
+        }
     }
 }
