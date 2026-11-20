@@ -13,7 +13,8 @@ RUN composer install \
         --no-interaction \
         --prefer-dist \
         --ignore-platform-req=ext-exif \
-        --ignore-platform-req=ext-gd
+        --ignore-platform-req=ext-gd \
+        --ignore-platform-req=php
 COPY . .
 RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 
